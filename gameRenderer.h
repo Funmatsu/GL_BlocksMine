@@ -1062,7 +1062,7 @@ public:
                             }
                         }
                     } 
-                    if (chunk->neighboursPresent == 0x1E) { // 1 1110
+                    if (chunk->neighboursPresent == 0x1E) { // 1 1110 
                         chNeighPack chunkochunks;
                         chunkochunks.coords = coords;   
                         memcpy(chunkochunks.block_data.data(), chunk->block_data.data(), CHUNK_VOLUME);
