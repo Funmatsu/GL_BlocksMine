@@ -1,0 +1,9 @@
+#version 330 core
+                                       
+out vec4 color;
+uniform sampler2D theTexture;
+in vec4 pdc;
+
+void main(){
+    color = vec4(vec3(0), 1.0f);
+};

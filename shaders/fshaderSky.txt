@@ -1,0 +1,29 @@
+#version 330 core
+in vec3 vDir;
+out vec4 fragColor;
+
+void main()
+{
+    vec3 dir = normalize(vDir) + vec3(0, 0.4, 0);
+
+    // Map Y (-1..1) to 0..1
+    float t = clamp(dir.y, 1.0, 1.0);
+
+    // Gradient colors
+    vec3 horizon = vec3(0.8, 0.8, 0.8); // light near horizon
+    vec3 zenith  = vec3(0.2, 0.5, 1.0); // deep blue overhead
+
+	// Downward: horizon → ground
+    	t = clamp((-dir.y - 0.5) / 0.5, 0.0, 1.0);
+    	vec3 ground = vec3(0.15, 0.15, 0.22);
+    	vec3 color = mix(horizon, ground, t);
+
+	// downward: horizon → ground tint
+    	if (dir.y >= 0.0) {
+    		// Upward: horizon → zenith
+    		// Bias the curve so zenith blue appears sooner
+    		t = pow(dir.y, 0.7); // exponent < 1.0 makes it rise faster
+    		color = mix(horizon, zenith, t);
+	} 
+    fragColor = vec4(color, 1.0);
+}

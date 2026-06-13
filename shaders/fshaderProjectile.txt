@@ -1,0 +1,29 @@
+#version 330 core
+                                       
+out vec4 color;
+in vec2 texCoords;
+in float transparency;
+in vec3 colorMask;
+int bufferWidth = 1920;
+int bufferHeight = 1059;
+
+uniform sampler2D theTexture;
+uniform sampler2D topTexture;
+
+
+void main(){
+	uint uvs = floatBitsToUint(transparency);
+	uint tileSize = (uvs >> 16) & 0xFFu;
+	vec2 uv = vec2((uvs & 0xFFu), (uvs >> 8) & 0xFFu);
+	vec2 uvCoords = (fract(texCoords) + uv) / float(tileSize);
+	vec4 tex = texture(theTexture, uvCoords);
+	if (tex.a < 0.6) discard;
+	
+	vec4 finalColor = vec4(1.0f);
+	
+	vec4 topTex = texture(topTexture, uvCoords);
+	vec4 overlayColorMask = (uvCoords.y >= 0.4 && uvCoords.x >= 0.6) &&
+							(uvCoords.y <= 0.6 && uvCoords.x <= 0.8) ? vec4(1.0f) : vec4(colorMask, 1.0f);
+
+	color = (topTex * (vec4(colorMask, 1.0f) - vec4(0.3f, 0.0f, 0.1f, 0.0f)) + max(tex * overlayColorMask - topTex * vec4(0.2f, 1.0f, 0.2f, 1.0f), vec4(0.2f))) * vec4(1.0, 1.0f, 1.0f, 1.0f) * finalColor;
+};

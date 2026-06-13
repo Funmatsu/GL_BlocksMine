@@ -1,0 +1,44 @@
+#version 330 core
+                                       
+out vec4 color;
+uniform sampler2D theTexture;
+uniform sampler2D topTexture;
+in vec2 texCoords;
+in vec3 colorMask;
+in vec3 normal;
+
+struct Light{
+	vec3 color;
+	float ambientIntensity;
+	float diffuseIntensity;
+};
+
+struct DirectionalLight{
+	Light base;
+    vec3 direction;
+};
+uniform DirectionalLight directionalLight;
+
+vec4 calcLightByDirection(Light light, vec3 direction){
+	vec4 ambientColor = vec4(light.color * light.ambientIntensity, 1.0f);
+    float diffuseFactor = max(dot(normalize(normal), normalize(direction)), 0.0f);
+	vec4 diffuseColor = vec4(light.color * light.diffuseIntensity * diffuseFactor, 1.0f);
+	return vec4((ambientColor + diffuseColor).xyz, 1.0f);
+}
+vec4 calcDirLight(){ 
+	return calcLightByDirection(directionalLight.base, directionalLight.direction);
+}
+
+void main(){
+	vec4 finalColor = calcDirLight();
+	vec4 tex = texture(theTexture, texCoords),
+		 topTex = texture(topTexture, texCoords);
+		 if(tex.a < 0.4) discard;
+	vec4 overlayColorMask = ((texCoords.y >= 0.4 && texCoords.x >= 0.6  &&
+							  texCoords.y <= 0.6 && texCoords.x <= 0.8) || 
+							 (texCoords.x >= 0.0 && texCoords.y >= 0.6  &&
+							  texCoords.x <= 0.2 && texCoords.y <= 0.8)) ? vec4(1.0f) : vec4(colorMask, 1.0f);
+
+    color = (max(overlayColorMask*tex - topTex, vec4(0.2)) + topTex*vec4(mix(colorMask, vec3(0.0f), 0.5f), 1.0f)) * finalColor;
+	color.a = 1.0f;
+};

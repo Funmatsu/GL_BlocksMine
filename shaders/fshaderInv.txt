@@ -1,0 +1,12 @@
+#version 330 core
+                                       
+out vec4 color;
+uniform sampler2D theTexture;
+in vec2 texCoords;
+in vec3 colorMask;
+
+void main(){
+	vec4 overlayColorMask = (texCoords.y + 0.2 >= 0.6 && texCoords.x + 0.2 >= 0.8) &&
+							(texCoords.y + 0.2 <= 0.8 && texCoords.x + 0.2 <= 1.0) ? vec4(colorMask, 1.0f) : vec4(colorMask, 1.0f);
+    color = texture(theTexture, texCoords) * overlayColorMask;
+};
