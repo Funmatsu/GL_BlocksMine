@@ -4,13 +4,13 @@ using abyte = uint8_t;
 inline int chunkSize = 16;
 
 inline ivec2 unpack(uint32_t packedxz) {
-    uint32_t x = uint16_t(packedxz >> 16), z = uint16_t(packedxz);
+    int32_t x = int16_t(packedxz >> 16), z = int16_t(packedxz);
     return ivec2(x, z);
 }
 
 inline uint32_t pack(ivec2 xz) {
-    uint32_t x = uint16_t(xz.x), z = uint16_t(xz.y);
-    return (x << 16) | z;
+    uint32_t x = uint16_t(xz.x) << 16, z = uint16_t(xz.y);
+    return x | z;
 }
 
 class CloudMesh {

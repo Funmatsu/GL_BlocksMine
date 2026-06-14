@@ -1049,7 +1049,7 @@ public:
                 //if ((coords.x <= _2dPlPosLo.x || coords.x >= _2dPlPosHi.x) ||
                 //    (coords.y <= _2dPlPosLo.y || coords.y >= _2dPlPosHi.y))
                 //{
-                //    chunkCoords.erase(to(coords));
+                //    chunkCoords.erase((chunk->coord));
                 //    it = world.chunkData.erase(it);
                 //    continue;
                 //}
@@ -1057,7 +1057,8 @@ public:
                 if (!(chunk->neighboursPresent & 1)) {
                     if ((chunk->neighboursPresent & 0x1E) != 0x1E) {
                         for (int i = 0; i < 4; i++) {
-                            if (world.chunkData.count(pack(coords + ivec2(dirsX[i], dirsX[i + 4]))) > 0) {
+                            ivec2 chcrds = coords + ivec2(dirsX[i], dirsX[i + 4]);
+                            if (world.chunkData.count(pack(chcrds)) > 0) {
                                 chunk->neighboursPresent |= (1 << (i + 1));
                             }
                         }
@@ -1067,7 +1068,8 @@ public:
                         chunkochunks.coords = coords;   
                         memcpy(chunkochunks.block_data.data(), chunk->block_data.data(), CHUNK_VOLUME);
                         for (int i = 0; i < 4; i++) {
-                            uint idxcrds = pack(chunkochunks.coords + ivec2(dirsX[i], dirsX[i + 4]));
+                            ivec2 chcrds = chunkochunks.coords + ivec2(dirsX[i], dirsX[i + 4]);
+                            uint idxcrds = pack(chcrds);
 
                             //auto itch = world.chunkData.find(idxcrds);
                             //if (itch != world.chunkData.end()) {
@@ -1091,13 +1093,13 @@ public:
                     }
                 }
 
-                //if ((coords.x <= _2dPlPosLo.x || coords.x >= _2dPlPosHi.x) ||
-                //    (coords.y <= _2dPlPosLo.y || coords.y >= _2dPlPosHi.y))
-                //{
-                //    chunkCoords.erase(to(coords));
-                //    it = world.chunkData.erase(it);
-                //    continue;
-                //}
+                if ((coords.x <= _2dPlPosLo.x || coords.x >= _2dPlPosHi.x) ||
+                    (coords.y <= _2dPlPosLo.y || coords.y >= _2dPlPosHi.y))
+                {
+                    chunkCoords.erase((chunk->coord));
+                    it = world.chunkData.erase(it);
+                    continue;
+                }
             
             }
 

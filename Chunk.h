@@ -173,11 +173,11 @@ public:
     //bool updateCloud() { return (needUpdate >> 7) & 1; }
     //void setCloud() { needUpdate |= (1 << 7); }
     //void stopCloud() { needUpdate &= ~(1 << 7); }
-    vec2 coords() {
-        return vec2(int16_t((coord >> 16) & 0xFFFF), int16_t(coord & 0xFFFF));
+    ivec2 coords() {
+        return ivec2(int16_t((coord >> 16)), int16_t(coord));
     }
     void toCoords(ivec2 chunkCoord) {
-        coord = ((uint16_t(chunkCoord.x) & 0xFFFF) << 16) | (uint16_t(chunkCoord.y) & 0xFFFF);
+        coord = ((uint16_t(chunkCoord.x)) << 16) | (uint16_t(chunkCoord.y));
     }
     int at(vec3 position) {
         ivec2 thisCoord = coords();
