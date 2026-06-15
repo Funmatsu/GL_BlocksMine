@@ -23,7 +23,7 @@ unsigned int pointLightCount = 0;
 //}
 //
 //int main() {
-//	cout << to_string(oords(0xFFFDFFFD)) << " " << to_string(oords((tooords(vec2(-3, -3)))));
+//	cout << to_string(oords(4294049806));// << " " << to_string(oords((tooords(vec2(-3, -3)))));
 //}
 int main(){
 	startMenu startMenu;

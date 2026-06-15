@@ -158,7 +158,7 @@ public:
         sky.buildSky();
 
         for (int i = 0; i < 3; ++i) {
-            //if (i < 3)
+            if (i < 1)
                 workers.push_back(thread(updateChunkJob));
             if (i < 2)
                 workers.push_back(thread(chunkWorker)); // worker thread is somewhere in threading.h
@@ -239,7 +239,7 @@ public:
                     chNeighRes = move(chunkMeshResult.front());
                     chunkMeshResult.pop();                    
                 }
-
+                if (!world.chunkData.count(chNeighRes.coords)) continue;
                 world.chunkData[chNeighRes.coords]->mesh->createMesh(chNeighRes.mesh->vertices, chNeighRes.mesh->indices);
 
                 if(!(count++ % 3)) break;
@@ -1043,7 +1043,7 @@ public:
             auto& chunk = it->second;
             ivec2 coords = chunk->coords();
 
-            int dirsX[] = { -1, 1, 0, 0,   0, 0, -1, 1 };
+            int dirs[] = { -1, 1, 0, 0,   0, 0, -1, 1 };
 
             if (!(tps++ % 4)) {
                 //if ((coords.x <= _2dPlPosLo.x || coords.x >= _2dPlPosHi.x) ||
@@ -1057,7 +1057,7 @@ public:
                 if (!(chunk->neighboursPresent & 1)) {
                     if ((chunk->neighboursPresent & 0x1E) != 0x1E) {
                         for (int i = 0; i < 4; i++) {
-                            ivec2 chcrds = coords + ivec2(dirsX[i], dirsX[i + 4]);
+                            ivec2 chcrds = coords + ivec2(dirs[i], dirs[i + 4]);
                             if (world.chunkData.count(pack(chcrds)) > 0) {
                                 chunk->neighboursPresent |= (1 << (i + 1));
                             }
@@ -1065,23 +1065,22 @@ public:
                     } 
                     if (chunk->neighboursPresent == 0x1E) { // 1 1110 
                         chNeighPack chunkochunks;
-                        chunkochunks.coords = coords;   
+                        chunkochunks.coords = coords;
                         memcpy(chunkochunks.block_data.data(), chunk->block_data.data(), CHUNK_VOLUME);
                         for (int i = 0; i < 4; i++) {
-                            ivec2 chcrds = chunkochunks.coords + ivec2(dirsX[i], dirsX[i + 4]);
+                            ivec2 chcrds = chunkochunks.coords + ivec2(dirs[i], dirs[i + 4]);
                             uint idxcrds = pack(chcrds);
-
                             //auto itch = world.chunkData.find(idxcrds);
-                            //if (itch != world.chunkData.end()) {
+                            if (world.chunkData.count(idxcrds)) {
                                 //unique_ptr<Chunk>& ch = it->second;
-                            unique_ptr<Chunk>& ch = world.chunkData[idxcrds];
+                                unique_ptr<Chunk>& ch = world.chunkData[idxcrds];
 
-                            memcpy(chunkochunks.neighbour_data[i].data(), ch->block_data.data(), CHUNK_VOLUME);
-                            //}
-                            //if (ch) { chunkochunks.neighbo2ur_data[i] = ch->block_data.data(); }
-                            
+                                memcpy(chunkochunks.neighbour_data[i].data(), ch->block_data.data(), CHUNK_VOLUME);
+                            }
+                            //if (ch) { chunkochunks.neighbour_data[i] = ch->block_data.data(); }
+                            //
                         }
-                        //chunkCleanupVector.push_back(chunkochunks);
+                        //chunkCleanupVector.push_back(chunkochunks);   
                         {
                             std::lock_guard<std::mutex> lock(chunkUpdateRequestMutex);
                             //chunkCleanupVector.push_back(move(chunkochunks));

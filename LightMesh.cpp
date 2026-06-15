@@ -7,6 +7,7 @@ LightMesh::LightMesh() {
 
 void LightMesh::createMesh(vector<float>& verts, vector<unsigned int>& inds) {
     unsigned int verticesCount = verts.size(), indicesCount = inds.size();
+	if (verticesCount == 0 || indicesCount == 0) return;
     unsigned int& vao = meshAttrs->vao, &vbo = meshAttrs->vbo, &ibo = meshAttrs->ibo, &indexCount = meshAttrs->indexCount;
     indexCount = indicesCount;
     if (indexCount != 0) {
