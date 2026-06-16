@@ -158,7 +158,7 @@ public:
         sky.buildSky();
 
         for (int i = 0; i < 3; ++i) {
-            if (i < 1)
+            //if (i < 1)
                 workers.push_back(thread(updateChunkJob));
             if (i < 2)
                 workers.push_back(thread(chunkWorker)); // worker thread is somewhere in threading.h
@@ -1035,73 +1035,49 @@ public:
              _2dPlPosLo = vec2(playerPos.x, playerPos.z) - float(renderDistance);
 
         for (auto it = world.chunkData.begin(); it != world.chunkData.end(); ) {
-            //if (!it->second) {
-            //    it = world.chunkData.erase(it);
-            //    continue;
-            //}
-
             auto& chunk = it->second;
             ivec2 coords = chunk->coords();
 
             int dirs[] = { -1, 1, 0, 0,   0, 0, -1, 1 };
 
-            if (!(tps++ % 4)) {
-                //if ((coords.x <= _2dPlPosLo.x || coords.x >= _2dPlPosHi.x) ||
-                //    (coords.y <= _2dPlPosLo.y || coords.y >= _2dPlPosHi.y))
-                //{
-                //    chunkCoords.erase((chunk->coord));
-                //    it = world.chunkData.erase(it);
-                //    continue;
-                //}
-                
-                if (!(chunk->neighboursPresent & 1)) {
-                    if ((chunk->neighboursPresent & 0x1E) != 0x1E) {
-                        for (int i = 0; i < 4; i++) {
-                            ivec2 chcrds = coords + ivec2(dirs[i], dirs[i + 4]);
-                            if (world.chunkData.count(pack(chcrds)) > 0) {
-                                chunk->neighboursPresent |= (1 << (i + 1));
-                            }
-                        }
-                    } 
-                    if (chunk->neighboursPresent == 0x1E) { // 1 1110 
-                        chNeighPack chunkochunks;
-                        chunkochunks.coords = coords;
-                        memcpy(chunkochunks.block_data.data(), chunk->block_data.data(), CHUNK_VOLUME);
-                        for (int i = 0; i < 4; i++) {
-                            ivec2 chcrds = chunkochunks.coords + ivec2(dirs[i], dirs[i + 4]);
-                            uint idxcrds = pack(chcrds);
-                            //auto itch = world.chunkData.find(idxcrds);
-                            if (world.chunkData.count(idxcrds)) {
-                                //unique_ptr<Chunk>& ch = it->second;
-                                unique_ptr<Chunk>& ch = world.chunkData[idxcrds];
-
-                                memcpy(chunkochunks.neighbour_data[i].data(), ch->block_data.data(), CHUNK_VOLUME);
-                            }
-                            //if (ch) { chunkochunks.neighbour_data[i] = ch->block_data.data(); }
-                            //
-                        }
-                        //chunkCleanupVector.push_back(chunkochunks);   
-                        {
-                            std::lock_guard<std::mutex> lock(chunkUpdateRequestMutex);
-                            //chunkCleanupVector.push_back(move(chunkochunks));
-                            //chunkUpdateRequestQueue.push(coords);
-                            chunkCleanupQueue.push(move(chunkochunks));
-                        }
-                        chunkUpdateCV.notify_one();
-                        chunk->neighboursPresent |= 1;
-                    }
-                }
-
-                if ((coords.x <= _2dPlPosLo.x || coords.x >= _2dPlPosHi.x) ||
-                    (coords.y <= _2dPlPosLo.y || coords.y >= _2dPlPosHi.y))
-                {
-                    chunkCoords.erase((chunk->coord));
-                    it = world.chunkData.erase(it);
-                    continue;
-                }
-            
+            if ((coords.x <= _2dPlPosLo.x || coords.x >= _2dPlPosHi.x) ||
+                (coords.y <= _2dPlPosLo.y || coords.y >= _2dPlPosHi.y))
+            {
+                chunkCoords.erase((chunk->coord));
+                it = world.chunkData.erase(it);
+                continue;
             }
-
+                
+            if (!(chunk->neighboursPresent & 1)) {
+                if ((chunk->neighboursPresent & 0x1E) != 0x1E) {
+                    for (int i = 0; i < 4; i++) {
+                        ivec2 chcrds = coords + ivec2(dirs[i], dirs[i + 4]);
+                        if (world.chunkData.count(pack(chcrds)) > 0) {
+                            chunk->neighboursPresent |= (1 << (i + 1));
+                        }
+                    }
+                } 
+                if (chunk->neighboursPresent == 0x1E) { // 1 1110 
+                    chNeighPack chunkochunks;
+                    chunkochunks.coords = chunk->coord;
+                    memcpy(chunkochunks.block_data.data(), chunk->block_data.data(), CHUNK_VOLUME);
+                    for (int i = 0; i < 4; i++) {
+                        ivec2 chcrds = coords + ivec2(dirs[i], dirs[i + 4]);
+                        uint idxcrds = pack(chcrds);
+                        if (world.chunkData.count(idxcrds)) {
+                            unique_ptr<Chunk>& ch = world.chunkData[idxcrds] ;
+                            memcpy(chunkochunks.neighbour_data[i].data(), ch->block_data.data(), CHUNK_VOLUME);
+                        }
+                    }
+                    {
+                        std::lock_guard<std::mutex> lock(chunkUpdateRequestMutex);
+                        chunkCleanupQueue.push(move(chunkochunks));
+                    }
+                    chunkUpdateCV.notify_one();
+                    chunk->neighboursPresent |= 1;
+                }
+            }
+            
             vec3 center = vec3((coords.x + 0.5) * CHUNK_SIZE, playerPos.y, (coords.y + 0.5) * CHUNK_SIZE);
             if (sphereInFrustum(center, CHUNK_SIZE * 2)) {
                 chunk->mesh->renderMesh();
@@ -1109,16 +1085,6 @@ public:
 
             it++;
         }
-
-        //for (auto it = world.chunkData.begin(); it != world.chunkData.end(); it++) {
-        //    auto& chunk = it->second;
-        //    ivec2 coords = chunk->coords();
-        //    
-        //    vec3 center = vec3((coords.x + 0.5) * CHUNK_SIZE, playerPos.y, (coords.y + 0.5) * CHUNK_SIZE);
-        //    if (sphereInFrustum(center, CHUNK_SIZE * 2)) {
-        //        chunk->mesh->renderMesh();
-        //    }
-        //}
     }
 
     void renderShadowWorld() {

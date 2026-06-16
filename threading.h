@@ -1383,7 +1383,7 @@ void meshChunk(vec2 xyChunk, unique_ptr<Chunk>& ch){//, int subChunkH) {
 
 void meshChunk(chNeighPack& chNeigh) {//, int subChunkH) {
     //auto start = chrono::high_resolution_clock::now();
-	vec2 xyChunk = chNeigh.coords;
+	vec2 xyChunk = unpack(chNeigh.coords);
     chNeighResult chNeighRes;
     unique_ptr<Mesh>& mesh = chNeighRes.mesh;
     chNeighRes.coords = toCoords(xyChunk);

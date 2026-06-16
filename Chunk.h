@@ -313,72 +313,10 @@ struct chPack {
 };
 
 struct chNeighPack { 
-    ivec2 coords;
+    //ivec2 coords;
+    uint coords;
     array<BlockData, CHUNK_VOLUME> block_data;
     array<BlockData, CHUNK_VOLUME> neighbour_data[4];
-
-	//ivec2 coords;
-	//BlockData* block_data;
-	//BlockData* neighbour_data[4];
-
-///*    chNeighPack() {
-//        block_data = new BlockData[CHUNK_VOLUME];
-//        for (int i = 0; i < 4; i++) {
-//            neighbour_data[i] = new BlockData[CHUNK_VOLUME];
-//        }
-//    }
-//
-//    chNeighPack operator=(chNeighPack& ch) noexcept {
-//        if (this == &ch) 
-//            return *this;
-//        coords = ch.coords;
-//
-//        block_data = new BlockData[CHUNK_VOLUME];
-//        memcpy(block_data, ch.block_data, CHUNK_VOLUME);
-//        for (int i = 0; i < 4; i++) {
-//            neighbour_data[i] = new BlockData[CHUNK_VOLUME];
-//            memcpy(neighbour_data[i], ch.neighbour_data[i], CHUNK_VOLUME);
-//        }
-//    }
-//
-//    chNeighPack(chNeighPack& ch) noexcept {
-//        coords = ch.coords;
-//
-//        block_data = new BlockData[CHUNK_VOLUME];
-//        memcpy(block_data, ch.block_data, CHUNK_VOLUME);
-//        for (int i = 0; i < 4; i++) {
-//            neighbour_data[i] = new BlockData[CHUNK_VOLUME];
-//            memcpy(neighbour_data[i], ch.neighbour_data[i], CHUNK_VOLUME);
-//        }
-//    }
-//
-//    chNeighPack& operator=(chNeighPack&& ch) noexcept {
-//        coords = ch.coords;
-//        block_data = ch.block_data;
-//        ch.block_data = nullptr;
-//        for (int i = 0; i < 4; i++) {
-//            neighbour_data[i] = ch.neighbour_data[i];
-//            ch.neighbour_data[i] = nullptr;
-//        }
-//    }
-//
-//    chNeighPack(chNeighPack&& ch) noexcept {
-//        coords = ch.coords;
-//        block_data = ch.block_data;
-//        ch.block_data = nullptr;
-//        for (int i = 0; i < 4; i++) {
-//            neighbour_data[i] = ch.neighbour_data[i];
-//            ch.neighbour_data[i] = nullptr;
-//        }
-//    }
-//
-//    ~chNeighPack() {
-//        if(block_data)
-//            delete[] block_data;
-//        for (int i = 0; i < 4; i++)
-//            if (neighbour_data[i])
-//                delete[] neighbour_data[i];
-//    }*/
 };
 
 struct chNeighResult {
