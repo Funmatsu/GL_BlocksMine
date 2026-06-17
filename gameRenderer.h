@@ -158,8 +158,7 @@ public:
         sky.buildSky();
 
         for (int i = 0; i < 3; ++i) {
-            //if (i < 1)
-                workers.push_back(thread(updateChunkJob));
+            workers.push_back(thread(updateChunkJob));
             if (i < 2)
                 workers.push_back(thread(chunkWorker)); // worker thread is somewhere in threading.h
         }
@@ -171,10 +170,10 @@ public:
             0.8f, 0.5f,
             0.0f, -CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE, CHUNK_SIZE);//CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE, CHUNK_SIZE
 
-        auxLight = DirectionalLight(100, 100,
-            1.0f, 1.0f, 1.0f,
-            0.7f, 0.5f,
-            -1.0f, 1.5f, 0.0f);
+        auxLight = DirectionalLight(100 , 100 ,
+                                    1.0f, 1.0f, 1.0f,
+                                    0.7f, 0.5f,
+                                   -1.0f, 1.5f, 0.0f);
 
         position.model = translate(mat4(1.0f), vec3(50, 1700, 0));
 
@@ -185,11 +184,6 @@ public:
     }
 
     void run() {
-        //game = new Game();
-        //return;
-
-		//thread renderThread(renderInQueue);
-        
         while (!mainWindow.getShouldClose()) {
             //glBindVertexArray(item_vao);
             auto startframe = chrono::high_resolution_clock::now();
