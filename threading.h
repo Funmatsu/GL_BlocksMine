@@ -1381,7 +1381,7 @@ void meshChunk(vec2 xyChunk, unique_ptr<Chunk>& ch){//, int subChunkH) {
     //cout << chunkCount++ << "meshing chunks, " << timelapsed << "s" << endl;
 }
 
-void meshChunk(chNeighPack& chNeigh) {//, int subChunkH) {
+void meshChunk(chNeighPack& chNeigh) {
     //auto start = chrono::high_resolution_clock::now();
 	vec2 xyChunk = unpack(chNeigh.coords);
     chNeighResult chNeighRes;
