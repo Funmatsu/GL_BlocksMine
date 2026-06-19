@@ -848,7 +848,7 @@ public:
                 it = world.chunkData.erase(it);
                 continue;
             }
-                
+               
             if (!(chunk->neighboursPresent & 1)) {
                 if ((chunk->neighboursPresent & 0x1E) != 0x1E) {
                     for (int i = 0; i < 4; i++) {
@@ -869,8 +869,8 @@ public:
                             unique_ptr<Chunk>& ch = world.chunkData.at(idxcrds);
                             for (int j = 0; j < CHUNK_HEIGHT - 1; j++) {
                                 for (int k = 0; k < CHUNK_SIZE; k++) {
-                                    int x = 7.5 - (7.5 * dirs[i])     + k * dirsval[i], 
-                                        z = 7.5 - (7.5 * dirs[i + 4]) + k * dirsval[i + 4];
+                                    int x = (15 * dirsval[i])     + k * dirs[i]     * (1 - dirsval[i]),
+                                        z = (15 * dirsval[i + 4]) + k * dirs[i + 4] * (1 - dirsval[i + 4]);
                                     int idx = at(x, j, z);
                                     chunkochunks.neighbour_data[i][idx] = ch->block_data[idx];
                                 }
