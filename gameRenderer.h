@@ -874,8 +874,7 @@ public:
                                     int idx = at(x, j, z);
                                     chunkochunks.neighbour_data[i][idx] = ch->block_data[idx];
                                 }
-                            }
-                            //memcpy(chunkochunks.neighbour_data[i].data(), ch->block_data.data(), CHUNK_VOLUME);
+                            } //memcpy(chunkochunks.neighbour_data[i].data(), ch->block_data.data(), CHUNK_VOLUME);
                         }
                     }
                     {
@@ -904,13 +903,12 @@ public:
         for (auto& chunks : world.chunkData) {
             ivec2 coords = chunks.second->coords();
             unique_ptr<Chunk>& chunk = chunks.second;
-           if (chunk) {
-                if ((coords.x >= _2dPlPosLo.x && coords.x <= _2dPlPosHi.x) &&
-                    (coords.y >= _2dPlPosLo.y && coords.y <= _2dPlPosHi.y)) {
-                    vec3 center = vec3((coords.x + 0.5) * CHUNK_SIZE, playerpos.y, (coords.y + 0.5) * CHUNK_SIZE);
-                    if(sphereInFrustum(center, CHUNK_SIZE)) {
-                        chunk->mesh->renderMesh();
-                    }
+
+            if ((coords.x >= _2dPlPosLo.x && coords.x <= _2dPlPosHi.x) &&
+                (coords.y >= _2dPlPosLo.y && coords.y <= _2dPlPosHi.y)) {
+                vec3 center = vec3((coords.x + 0.5) * CHUNK_SIZE, playerpos.y, (coords.y + 0.5) * CHUNK_SIZE);
+                if(sphereInFrustum(center, CHUNK_SIZE)) {
+                    chunk->mesh->renderMesh();
                 }
             }
         }
@@ -935,10 +933,10 @@ public:
     }
 
     bool playerCollides() {
-        return blockExistsAt(vec3(ftoint(firstCamera.getPosition().x - boundW / 2 + 0.5), firstCamera.getPosition().y - 1.5, ftoint(firstCamera.getPosition().z - boundL / 2 + 0.5)), 1) ||
-            blockExistsAt(vec3(ftoint(firstCamera.getPosition().x - boundW / 2 + 0.5), firstCamera.getPosition().y - 1.5, ftoint(firstCamera.getPosition().z + boundL / 2 + 0.5)), 1) ||
-            blockExistsAt(vec3(ftoint(firstCamera.getPosition().x + boundW / 2 + 0.5), firstCamera.getPosition().y - 1.5, ftoint(firstCamera.getPosition().z + boundL / 2 + 0.5)), 1) ||
-            blockExistsAt(vec3(ftoint(firstCamera.getPosition().x + boundW / 2 + 0.5), firstCamera.getPosition().y - 1.5, ftoint(firstCamera.getPosition().z - boundL / 2 + 0.5)), 1);
+        return  blockExistsAt(vec3(ftoint(firstCamera.getPosition().x - boundW / 2 + 0.5), firstCamera.getPosition().y - 1.5, ftoint(firstCamera.getPosition().z - boundL / 2 + 0.5)), 1) ||
+                blockExistsAt(vec3(ftoint(firstCamera.getPosition().x - boundW / 2 + 0.5), firstCamera.getPosition().y - 1.5, ftoint(firstCamera.getPosition().z + boundL / 2 + 0.5)), 1) ||
+                blockExistsAt(vec3(ftoint(firstCamera.getPosition().x + boundW / 2 + 0.5), firstCamera.getPosition().y - 1.5, ftoint(firstCamera.getPosition().z + boundL / 2 + 0.5)), 1) ||
+                blockExistsAt(vec3(ftoint(firstCamera.getPosition().x + boundW / 2 + 0.5), firstCamera.getPosition().y - 1.5, ftoint(firstCamera.getPosition().z - boundL / 2 + 0.5)), 1);
     }
 
     void keyControl(float dt) {
