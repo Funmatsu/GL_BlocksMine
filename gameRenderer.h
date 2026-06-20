@@ -839,7 +839,6 @@ public:
             ivec2 coords = chunk->coords();
 
             int dirs[]    = { -1, 1, 0, 0,   0, 0, -1, 1 };
-            int dirsval[] = {  1, 0, 0, 0,   0, 0,  1, 0 };
 
             if ((coords.x <= _2dPlPosLo.x || coords.x >= _2dPlPosHi.x) ||
                 (coords.y <= _2dPlPosLo.y || coords.y >= _2dPlPosHi.y))
@@ -869,8 +868,9 @@ public:
                             unique_ptr<Chunk>& ch = world.chunkData.at(idxcrds);
                             for (int j = 0; j < CHUNK_HEIGHT - 1; j++) {
                                 for (int k = 0; k < CHUNK_SIZE; k++) {
-                                    int x = (15 * dirsval[i])     + k * dirs[i]     * (1 - dirsval[i]),
-                                        z = (15 * dirsval[i + 4]) + k * dirs[i + 4] * (1 - dirsval[i + 4]);
+                                    int x = ((dirs[i + 0] < 0) ? CHUNK_SIZE - 1 : 0) + ((dirs[i + 0] == 0) ? k : 0),
+                                        z = ((dirs[i + 4] < 0) ? CHUNK_SIZE - 1 : 0) + ((dirs[i + 4] == 0) ? k : 0);
+                            
                                     int idx = at(x, j, z);
                                     chunkochunks.neighbour_data[i][idx] = ch->block_data[idx];
                                 }

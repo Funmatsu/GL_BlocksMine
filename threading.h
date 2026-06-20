@@ -1382,12 +1382,11 @@ void meshChunk(vec2 xyChunk, unique_ptr<Chunk>& ch){//, int subChunkH) {
 }
 
 void meshChunk(chNeighPack& chNeigh) {
-    //auto start = chrono::high_resolution_clock::now();
 	vec2 xyChunk = unpack(chNeigh.coords);
     chNeighResult chNeighRes;
     unique_ptr<Mesh>& mesh = chNeighRes.mesh;
     chNeighRes.coords = toCoords(xyChunk);
-    //unique_ptr<Mesh> mesh = make_unique<Mesh>();
+
     Mesh& m = *mesh;
     m.vertices.reserve(m.vertices.size() + 7000 * 7);
     m.indices.reserve(m.indices.size() + 7000 * 6);
@@ -1396,35 +1395,10 @@ void meshChunk(chNeighPack& chNeigh) {
     uint8_t maskY[CHUNK_SIZE * CHUNK_SIZE];
     uint8_t maskX[CHUNK_SIZE * CHUNK_HEIGHT];
     uint8_t maskZ[CHUNK_SIZE * CHUNK_HEIGHT];
-    //span<uint8_t> msk(maskX); good just with raw pointers
-    //lock_guard<mutex> lock(meshMutex);
-    //BlockData* mainData = chNeigh.block_data;
-    //BlockData* blockDatas[4];
-    //
-    //blockDatas = chNeigh->neighbour_data;
-    //
-    //int dirsX[] = { -1, 1, 0, 0 }, dirsY[] = { 0, 0, -1, 1 };
-    //for (int i = 0; i < 4; i++) {
-    //    ivec2 crds = xyChunk;
-    //    uint idxcrds = pack(crds + ivec2(dirsX[i], dirsY[i]));
-    //    blockDatas[i] = nullptr;
-    //    {
-    //        //lock_guard<mutex> lock(worldChunkDataMutex);
-    //        unique_ptr<Chunk>& chunk = world.chunkData[idxcrds];
-    //        if (chunk) {
-    //            blockDatas[i] = chunk->block_data.data();
-    //        }
-    //    }
-    //}
 
     int subChunkH = -1;
 
-    //auto end = chrono::high_resolution_clock::now();
-    //double timelapsed = chrono::duration<double>(end - start).count();
-    //cout << chunkCount++ << "meshing chunks, " << timelapsed << "s" << endl;
-
     int minX = xyChunk.x * CHUNK_SIZE, minZ = xyChunk.y * CHUNK_SIZE;
-    //auto start = chrono::high_resolution_clock::now();
 
     for (int x = (xyChunk.x) * CHUNK_SIZE; x < (xyChunk.x + 1) * CHUNK_SIZE; ++x) {
         buildMaskX(chNeigh.block_data.data(), chNeigh.neighbour_data[0].data(), (x + 0) - minX, 0, CHUNK_SIZE, CHUNK_HEIGHT - 1, subChunkH, maskX, -normX0, nextNormX0);
@@ -1440,7 +1414,7 @@ void meshChunk(chNeighPack& chNeigh) {
         buildMaskZ(chNeigh.block_data.data(), chNeigh.neighbour_data[3].data(), (z + 1) - minZ, 3, CHUNK_SIZE, CHUNK_HEIGHT - 1, subChunkH, maskZ, -normZ1, nextNormZ1);
         greedyMerge(maskZ, m, xyChunk, z + 1, CHUNK_SIZE, CHUNK_HEIGHT - 1, subChunkH, 3, normZ1, base);
     }
-    for (int y = 0; y < CHUNK_HEIGHT; ++y) { //CHUNK_SIZE*(CHUNK_SIZE + 2) + 5
+    for (int y = 0; y < CHUNK_HEIGHT; ++y) {
         buildMaskY(chNeigh.block_data.data(), y + 0, 4, CHUNK_SIZE, CHUNK_SIZE, subChunkH, maskY, -normY0);
         greedyMerge(maskY, m, xyChunk, y + 0, CHUNK_SIZE, CHUNK_SIZE, subChunkH, 4, normY0, base);
 
@@ -1448,205 +1422,19 @@ void meshChunk(chNeighPack& chNeigh) {
         greedyMerge(maskY, m, xyChunk, y + 1, CHUNK_SIZE, CHUNK_SIZE, subChunkH, 5, normY1, base);
     }
     
-    //auto end = chrono::high_resolution_clock::now();
-    //double timelapsed = chrono::duration<double>(end - start).count();
-    //cout << chunkCount++ << "meshing chunks, " << timelapsed << "s" << endl;
-
-    //(*chunk)[i].toCoords(subcoords);
     {
         std::lock_guard<std::mutex> lock(chunkMeshQueueMutex);
         chunkMeshResult.push(move(chNeighRes));
-        //chunkMeshResult.emplace_back(move(chNeighRes));
-        //chunkMeshQueue.push({ move(mesh), ch->mesh.get() });// , xyChunk });
     }
-
-    //auto end = chrono::high_resolution_clock::now();
-    //double timelapsed = chrono::duration<double>(end - start).count();
-    //cout << chunkCount++ << "meshing chunks, " << timelapsed << "s" << endl;
 }
-
-//void meshSubChunks(vec2 xyChunk, Chunk* ch) {
-//    auto start = chrono::high_resolution_clock::now();
-//	vec2 coords = xyChunk;
-//
-//    uint8_t maskY[CHUNK_SIZE * CHUNK_SIZE];
-//    uint8_t maskX[CHUNK_SIZE * CHUNK_SIZE];
-//    uint8_t maskZ[CHUNK_SIZE * CHUNK_SIZE];
-//    //span<uint8_t> msk(maskX); good just with raw pointers
-//    BlockData* mainData = ch->block_data.data();
-//    BlockData* blockDatas[4];
-//
-//    int dirsX[] = { -1, 1, 0, 0 }, dirsY[] = { 0, 0, -1, 1 };
-//    for (int i = 0; i < 4; i++) {
-//        ivec2 crds = ch->coords();
-//        uint idxcrds = pack(crds + ivec2(dirsX[i], dirsY[i]));
-//        unique_ptr<Chunk>& chunk = world.chunkData[idxcrds];
-//        if (chunk)
-//            blockDatas[i] = chunk->block_data.data();
-//        else {
-//            blockDatas[i] = nullptr;
-//        }
-//    }
-//
-//    ivec3 normX0 = ivec3(1, 0, 0),
-//          normX1 = ivec3(-1, 0, 0),
-//          normZ0 = ivec3(0, 0, 1),
-//          normZ1 = ivec3(0, 0, -1),
-//          normY0 = ivec3(0, 1, 0),
-//          normY1 = ivec3(0, -1, 0);
-//
-//    ivec3 nextNormX0 = normX0 * CHUNK_SIZE, // neighNorm = -normal * CHUNKSIZE
-//          nextNormX1 = normX1 * CHUNK_SIZE,
-//          nextNormZ0 = normZ0 * CHUNK_SIZE,
-//          nextNormZ1 = normZ1 * CHUNK_SIZE,
-//          nextNormY0 = normY0 * CHUNK_SIZE,
-//          nextNormY1 = normY1 * CHUNK_SIZE;
-//
-//    //subChunkH = 4;
-//
-//    int minX = xyChunk.x * CHUNK_SIZE, minZ = xyChunk.y * CHUNK_SIZE;
-//    for (int subChunkH = 0; subChunkH < CHUNK_SIZE; subChunkH++) {
-//        unique_ptr<Mesh> mesh = make_unique<Mesh>();
-//        Mesh& m = *mesh;
-//        m.vertices.reserve(m.vertices.size() + 500 * 5);
-//        m.indices.reserve(m.indices.size() + 500 * 6);
-//        int base = m.vertices.size();
-//
-//        for (int x = (xyChunk.x) * CHUNK_SIZE; x < (xyChunk.x + 1) * CHUNK_SIZE; ++x) {
-//            buildSubMaskX(ch, mainData, blockDatas[0], (x + 0) - minX, 0, CHUNK_SIZE, CHUNK_SIZE, subChunkH, maskX, -normX0, nextNormX0);
-//            greedySubMerge(ch, maskX, m, xyChunk, x + 0, CHUNK_SIZE, CHUNK_SIZE, subChunkH, 0, normX0, base);
-//
-//            buildSubMaskX(ch, mainData, blockDatas[1], (x + 1) - minX, 1, CHUNK_SIZE, CHUNK_SIZE, subChunkH, maskX, -normX1, nextNormX1);
-//            greedySubMerge(ch, maskX, m, xyChunk, x + 1, CHUNK_SIZE, CHUNK_SIZE, subChunkH, 1, normX1, base);
-//        }
-//        for (int z = (xyChunk.y) * CHUNK_SIZE; z < (xyChunk.y + 1) * CHUNK_SIZE; ++z) {
-//            buildSubMaskZ(ch, mainData, blockDatas[2], (z + 0) - minZ, 2, CHUNK_SIZE, CHUNK_SIZE, subChunkH, maskZ, -normZ0, nextNormZ0);
-//            greedySubMerge(ch, maskZ, m, xyChunk, z + 0, CHUNK_SIZE, CHUNK_SIZE, subChunkH, 2, normZ0, base);
-//
-//            buildSubMaskZ(ch, mainData, blockDatas[3], (z + 1) - minZ, 3, CHUNK_SIZE, CHUNK_SIZE, subChunkH, maskZ, -normZ1, nextNormZ1);
-//            greedySubMerge(ch, maskZ, m, xyChunk, z + 1, CHUNK_SIZE, CHUNK_SIZE, subChunkH, 3, normZ1, base);
-//        }
-//
-//        for (int y = subChunkH * CHUNK_SIZE; y < (subChunkH + 1) * CHUNK_SIZE; ++y) { //CHUNK_SIZE*(CHUNK_SIZE + 2) + 5
-//            buildSubMaskY(ch, mainData, y + 0, 4, CHUNK_SIZE, CHUNK_SIZE, subChunkH, maskY, -normY0);
-//            greedySubMerge(ch, maskY, m, xyChunk, y + 0, CHUNK_SIZE, CHUNK_SIZE, subChunkH, 4, normY0, base);
-//
-//            buildSubMaskY(ch, mainData, y + 1, 5, CHUNK_SIZE, CHUNK_SIZE, subChunkH, maskY, -normY1);
-//            greedySubMerge(ch, maskY, m, xyChunk, y + 1, CHUNK_SIZE, CHUNK_SIZE, subChunkH, 5, normY1, base);
-//        }
-//
-//        //cout << "Pushing chunk mesh for chunk " << coords.x << ", " << coords.y << " subchunk " << i << "\n";
-//        ivec3 subcoords = ivec3(coords.x, subChunkH, coords.y);
-//        (*ch)[subChunkH].needUpdate = true;
-//        //(*chunk)[i].toCoords(subcoords);
-//        {
-//            std::lock_guard<std::mutex> lock(chunkMeshQueueMutex);
-//            chunkMeshQueue.push(make_pair(move(mesh), subcoords));
-//        }
-//    }
-//    
-//    auto end = chrono::high_resolution_clock::now();
-//    double timelapsed = chrono::duration<double>(end - start).count();
-//    cout << chunkCount++ << " meshing chunks, " << timelapsed << "s" << endl;
-//}
-
-//void meshSubChunk(vec2 xyChunk, Chunk* ch, int subCh) {
-//    auto start = chrono::high_resolution_clock::now();
-//    vec2 coords = xyChunk;
-//
-//    uint8_t maskY[CHUNK_SIZE * CHUNK_SIZE];
-//    uint8_t maskX[CHUNK_SIZE * CHUNK_SIZE];
-//    uint8_t maskZ[CHUNK_SIZE * CHUNK_SIZE];
-//    //span<uint8_t> msk(maskX); good just with raw pointers
-//    BlockData* mainData = ch->block_data.data();
-//    BlockData* blockDatas[4];
-//
-//    int dirsX[] = { -1, 1, 0, 0 }, dirsY[] = { 0, 0, -1, 1 };
-//    for (int i = 0; i < 4; i++) {
-//        ivec2 crds = ch->coords();
-//        uint idxcrds = pack(crds + ivec2(dirsX[i], dirsY[i]));
-//        unique_ptr<Chunk>& chunk = world.chunkData[idxcrds];
-//        if (chunk)
-//            blockDatas[i] = chunk->block_data.data();
-//        else {
-//            blockDatas[i] = nullptr;
-//        }
-//    }
-//
-//    ivec3 normX0 = ivec3(1, 0, 0),
-//        normX1 = ivec3(-1, 0, 0),
-//        normZ0 = ivec3(0, 0, 1),
-//        normZ1 = ivec3(0, 0, -1),
-//        normY0 = ivec3(0, 1, 0),
-//        normY1 = ivec3(0, -1, 0);
-//
-//    ivec3 nextNormX0 = normX0 * CHUNK_SIZE, // neighNorm = -normal * CHUNKSIZE
-//        nextNormX1 = normX1 * CHUNK_SIZE,
-//        nextNormZ0 = normZ0 * CHUNK_SIZE,
-//        nextNormZ1 = normZ1 * CHUNK_SIZE,
-//        nextNormY0 = normY0 * CHUNK_SIZE,
-//        nextNormY1 = normY1 * CHUNK_SIZE;
-//
-//    //subChunkH = 4;
-//	int subChunkH = subCh;
-//
-//    int minX = xyChunk.x * CHUNK_SIZE, minZ = xyChunk.y * CHUNK_SIZE;
-//    unique_ptr<Mesh> mesh = make_unique<Mesh>();
-//    Mesh& m = *mesh;
-//    m.vertices.reserve(m.vertices.size() + 500 * 5);
-//    m.indices.reserve(m.indices.size() + 500 * 6);
-//    int base = m.vertices.size();
-//
-//    for (int x = (xyChunk.x) * CHUNK_SIZE; x < (xyChunk.x + 1) * CHUNK_SIZE; ++x) {
-//        buildSubMaskX(ch, mainData, blockDatas[0], (x + 0) - minX, 0, CHUNK_SIZE, CHUNK_SIZE, subChunkH, maskX, -normX0, nextNormX0);
-//        greedySubMerge(ch, maskX, m, xyChunk, x + 0, CHUNK_SIZE, CHUNK_SIZE, subChunkH, 0, normX0, base);
-//
-//        buildSubMaskX(ch, mainData, blockDatas[1], (x + 1) - minX, 1, CHUNK_SIZE, CHUNK_SIZE, subChunkH, maskX, -normX1, nextNormX1);
-//        greedySubMerge(ch, maskX, m, xyChunk, x + 1, CHUNK_SIZE, CHUNK_SIZE, subChunkH, 1, normX1, base);
-//    }
-//    for (int z = (xyChunk.y) * CHUNK_SIZE; z < (xyChunk.y + 1) * CHUNK_SIZE; ++z) {
-//        buildSubMaskZ(ch, mainData, blockDatas[2], (z + 0) - minZ, 2, CHUNK_SIZE, CHUNK_SIZE, subChunkH, maskZ, -normZ0, nextNormZ0);
-//        greedySubMerge(ch, maskZ, m, xyChunk, z + 0, CHUNK_SIZE, CHUNK_SIZE, subChunkH, 2, normZ0, base);
-//
-//        buildSubMaskZ(ch, mainData, blockDatas[3], (z + 1) - minZ, 3, CHUNK_SIZE, CHUNK_SIZE, subChunkH, maskZ, -normZ1, nextNormZ1);
-//        greedySubMerge(ch, maskZ, m, xyChunk, z + 1, CHUNK_SIZE, CHUNK_SIZE, subChunkH, 3, normZ1, base);
-//    }
-//
-//    for (int y = subChunkH * CHUNK_SIZE; y < (subChunkH + 1) * CHUNK_SIZE; ++y) { //CHUNK_SIZE*(CHUNK_SIZE + 2) + 5
-//        buildSubMaskY(ch, mainData, y + 0, 4, CHUNK_SIZE, CHUNK_SIZE, subChunkH, maskY, -normY0);
-//        greedySubMerge(ch, maskY, m, xyChunk, y + 0, CHUNK_SIZE, CHUNK_SIZE, subChunkH, 4, normY0, base);
-//
-//        buildSubMaskY(ch, mainData, y + 1, 5, CHUNK_SIZE, CHUNK_SIZE, subChunkH, maskY, -normY1);
-//        greedySubMerge(ch, maskY, m, xyChunk, y + 1, CHUNK_SIZE, CHUNK_SIZE, subChunkH, 5, normY1, base);
-//    }
-//
-//    //cout << "Pushing chunk mesh for chunk " << coords.x << ", " << coords.y << " subchunk " << i << "\n";
-//    ivec3 subcoords = ivec3(coords.x, subChunkH, coords.y);
-//    (*ch)[subChunkH].needUpdate = true;
-//    //(*chunk)[i].toCoords(subcoords);
-//    {
-//        std::lock_guard<std::mutex> lock(chunkMeshQueueMutex);
-//        chunkMeshQueue.push(make_pair(move(mesh), subcoords));
-//    }
-//
-//    auto end = chrono::high_resolution_clock::now();
-//    double timelapsed = chrono::duration<double>(end - start).count();
-//    cout << chunkCount++ << " meshing chunks, " << timelapsed << "s" << endl;
-//}
 
 bool buildMaskY(CloudMesh& chm, int planeDirVal, int W, int H, uint8_t* mask, ivec3 normal) {
     bool allAir = true;
-    //int posx, posy = planeDirVal, posz;
-    //int checkposy = posy + normal.y;
     for (int l = 0; l < H; l++) {
         for (int b = 0; b < W; b++) {
             int idx = b + l * W;
             uint8_t& maskItem = mask[idx]; maskItem = 0;
-            //posx = b, posz = l; //(dir == 0) ? ivec3(planeDirVal + minX, l, minZ + b) : (dir == 1) ? ivec3(minX + b, l, planeDirVal + minZ) : ivec3(minX + b, planeDirVal, minZ + l);            
-            //if (posy == -1 || checkposy == -1 || checkposy >= CHUNK_HEIGHT) continue;
-            //uint8_t neighItem = chm(posx, posz);
-            //if (neighItem == 0)
-                maskItem = 7;
+            maskItem = 7;
         }
     }
     return allAir;
@@ -1660,42 +1448,17 @@ void meshClouds(CloudMesh& cloudmesh, vec2 xyChunk) {
 
     uint8_t maskY[CHUNK_SIZE * CHUNK_SIZE];
 
-    ivec3
-          //normX0 = ivec3(1, 0, 0),
-          //normX1 = ivec3(-1, 0, 0),
-          //normZ0 = ivec3(0, 0, 1),
-          //normZ1 = ivec3(0, 0, -1),
-          normY0 = ivec3(0, 1, 0),
+    ivec3 normY0 = ivec3(0, 1, 0),
           normY1 = ivec3(0, -1, 0);
 
-    ivec3 
-          //nextNormX0 = normX0 * CHUNK_SIZE, // neighNorm = -normal * CHUNKSIZE
-          //nextNormX1 = normX1 * CHUNK_SIZE,
-          //nextNormZ0 = normZ0 * CHUNK_SIZE,
-          //nextNormZ1 = normZ1 * CHUNK_SIZE,
-          nextNormY0 = normY0 * CHUNK_SIZE,
+    ivec3 nextNormY0 = normY0 * CHUNK_SIZE,
           nextNormY1 = normY1 * CHUNK_SIZE;
 
-    for (int y = CHUNK_HEIGHT - 1; y < CHUNK_HEIGHT; ++y) { // may lower to have more layers like changing to CHUNK_HEIGHT - 2 to make the top visible /////CHUNK_SIZE*(CHUNK_SIZE + 2) + 5
+    for (int y = CHUNK_HEIGHT - 1; y < CHUNK_HEIGHT; ++y) {
         buildMaskY(cloudmesh, y + 0, CHUNK_SIZE, CHUNK_SIZE, maskY, -normY0);
         greedyMerge(maskY, m, xyChunk, y + 0, CHUNK_SIZE, CHUNK_SIZE, 4, normY0, base);
-
-        //buildMaskY(cloudmesh, y + 1, CHUNK_SIZE, CHUNK_SIZE, maskY, -normY1);
-        //greedyMerge(maskY, m, xyChunk, y + 1, CHUNK_SIZE, CHUNK_SIZE, 5, normY1, base);
     }
-    //bool carl = 2;
 }
-
-//
-//void generateChunkAt(vec2 xyChunk, Chunk* repChunk) {
-//    //auto start = std::chrono::high_resolution_clock::now();
-//
-//    generateBlocks(xyChunk, repChunk);
-//    //meshChunk(xyChunk, repChunk, repChunk->mesh);
-//
-//    //auto end = std::chrono::high_resolution_clock::now();
-//    //cout << repChunk->mesh->vertices.size() << "count : " << chunkCount << " : Elapsed: " << std::chrono::duration<double>(end - start).count() << " s\n";
-//}
 
 void breakThread() {
     while (blockBreaking) {
@@ -1740,47 +1503,13 @@ void chunkWorker() {
 
         unique_ptr<Chunk> newChunk = make_unique<Chunk>();
         newChunk->toCoords(coord);
-        //{
-            //std::lock_guard<std::mutex> lock(resultMutex);
-            //unique_ptr<CloudMesh> chm = make_unique<CloudMesh>();
-        generateBlocks(coord, newChunk.get());
-        //}
 
-//            abyte& neighPresent = newChunk->neighboursPresent;
-//
-//            if (!(neighPresent & 1)) {
-//                //cout << hex << (int)neighPresent << dec << endl;
-//                if ((neighPresent & 0x1E) != 0x1E) {
-//                    int dirsX[] = { -1, 0, 0, 1 }, dirsY[] = { 0, -1, 1, 0 };
-//                    for (int i = 0; i < 4 && (neighPresent & 0x1E) != 0x1E; i++) {
-//						//lock_guard<mutex> lock(addChunkMutex);
-//                        auto it = world.chunkData.find(pack(coord + ivec2(dirsX[i], dirsY[i])));
-//                        if (it != world.chunkData.end()) {
-//                            neighPresent |= (1 << (i + 1));
-//                            auto& chunkNeigh = it->second;
-//                            chunkNeigh->neighboursPresent |= (1 << (((i + 2) % 4) + 1));
-//                        }
-//                        //cout << hex << (int)neighPresent << dec << endl;
-//                    }
-//                }
-//                //if (neighPresent == 0x1E) { // 1 1110
-//                //    {
-//                //        std::lock_guard<std::mutex> lock(chunkUpdateRequestMutex);
-//                //        chunkUpdateRequestQueue.push(crd);
-//                //    }
-//                //    chunkUpdateCV.notify_one();
-//                //    neighPresent |= 1;
-//
-//                //} //if (!(chunk->neighboursPresent & 1)) continue;
-//            }
+        generateBlocks(coord, newChunk.get());
+        
         {
             lock_guard<mutex> lock(addChunkMutex);
             chunkResultQueue.push({ move(newChunk), coord });
-            //world.chunkData.emplace(newChunk->coord, move(newChunk));
         }
-        
-            //world.addChunk(newChunk, newChunk->coord);
-            //chunkResultQueue.push(move(newChunk));
     }
 }////////////
 
@@ -1810,92 +1539,14 @@ void cloudWorker() {
 
 void updateChunkJob() {
     while (!stopChunkUpdaters) {
-        //vec2 chPos;
 		chNeighPack chNeigh;
         {
             unique_lock<mutex> lock(chunkUpdateRequestMutex);
             chunkUpdateCV.wait(lock, [] { return !chunkCleanupQueue.empty() || stopChunkUpdaters; });
-            //chPos = chunkUpdateRequestQueue.front();
-            //chunkUpdateRequestQueue.pop();
             chNeigh = move(chunkCleanupQueue.front());
             chunkCleanupQueue.pop();
         }
 
-        //unique_ptr<Chunk>& ch = world.chunkData.at(pack(chPos));
-        //if (!ch) continue;
-
         updateChunk(chNeigh, vec3(0), vec3(0));
     }
 }/////////////
-
-//void updateChunkJob() {
-//    while (!stopChunkUpdaters) {
-//        //vec2 chPos;
-//        chNeighPack chNeigh;
-//        {
-//            unique_lock<mutex> lock(chunkUpdateRequestMutex);
-//            chunkUpdateCV.wait(lock, [] { return !chunkUpdateRequestQueue.empty() || stopChunkUpdaters; });
-//            //chPos = chunkUpdateRequestQueue.front();
-//            //chunkUpdateRequestQueue.pop();
-//            chNeigh = chunkCleanupVector.back();
-//            chunkCleanupVector.pop_back();
-//        }
-//
-//        //unique_ptr<Chunk>& ch = world.chunkData.at(pack(chPos));
-//        //if (!ch) continue;
-//
-//        //world.updateChunk(chPos, vec3(0), vec3(0));
-//    }
-//}/////////////
-
-void updateNeighbourJob() {
-    //int count = 0;
-    //while (!stopChunkNeighCheck) {
-    //    if(!(count % 32))
-    //        for (auto it = world.chunkData.begin(); it != world.chunkData.end(); it++) {
-    //            //cout << "Yay!!" << endl;
-    //            if (!it->second) {
-    //            
-    //                //it = world.chunkData.erase(it);
-    //                //it++;
-    //                continue;
-    //            }
-    //            auto& chunk = it->second;
-    //            ivec2 coords = chunk->coords();
-
-    //            if (!(chunk->neighboursPresent & 1)) {
-    //                if ((chunk->neighboursPresent & 0x1E) != 0x1E) {
-    //                    int dirsX[] = { -1, 0, 0, 1 }, dirsY[] = { 0, -1, 1, 0 };
-    //                    for (int i = 0; i < 4; i++) {
-    //                        if (world.chunkData.count(pack(coords + ivec2(dirsX[i], dirsY[i]))) > 0) {
-    //                            chunk->neighboursPresent |= (1 << (i + 1));
-    //                        }
-    //                    }
-    //                }
-    //                if (chunk->neighboursPresent == 0x1E) { // 1 1110
-    //                    {
-    //                        std::lock_guard<std::mutex> lock(chunkUpdateRequestMutex);
-    //                        chunkUpdateRequestQueue.push(coords);
-    //                    }
-    //                    chunkUpdateCV.notify_one();
-    //                    chunk->neighboursPresent |= 1;
-    //                    //cout << "Yay!!" << endl;
-    //                }
-    //            }
-    //        }
-    //    count++;
-    //}
-}
-
-//std::thread chunkUpdateThread([&]() {
-//    while (chunkUpdateGenRunning) {
-//        {
-//            if (!chunkUpdateRequestQueue.empty()) {
-//                std::lock_guard<std::mutex> lock(chunkUpdateRequestMutex);
-//                vec2 chunkToUpdate = (chunkUpdateRequestQueue.front());
-//                world.updateChunk(chunkToUpdate, vec3(0), vec3(0));
-//                chunkUpdateRequestQueue.pop();
-//            }
-//        }
-//    }
-//});

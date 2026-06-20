@@ -15,16 +15,6 @@ unsigned int pointLightCount = 0;
 #include "gameRenderer.h"
 #include "startRenderer.h"
 
-//vec2 oords(uint coord) {
-//	return vec2(int16_t((coord >> 16)), int16_t(coord));
-//}
-//uint tooords(ivec2 chunkCoord) {
-//	return ((uint16_t(chunkCoord.x)) << 16) | (uint16_t(chunkCoord.y));
-//}
-//
-//int main() {
-//	cout << to_string(oords(4294049806));// << " " << to_string(oords((tooords(vec2(-3, -3)))));
-//}
 int main(){
 	startMenu startMenu;
 	startMenu.launch();
