@@ -47,8 +47,8 @@ std::queue<Block> placeResQueue;
 std::mutex placeResMutex;
 std::mutex worldChunkDataMutex;
 
-std::queue<chNeighPack> chunkCleanupQueue;
-std::queue<chNeighResult> chunkMeshResult;
+std::queue<chNeighPack*> chunkCleanupQueue;
+std::queue<chNeighResult*> chunkMeshResult;
 
 std::atomic<bool> chunkGenRunning = true;
 std::atomic<bool> chunkGenRunning2 = true;
@@ -661,8 +661,9 @@ void buildMaskX(BlockData* bData, BlockData* neighData, int planeDirVal, int fac
             uint8_t neighItem = neighbour[nextPos].blockType.id;
             if (items[neighItem].isUncullable()) {
                 int index = at(posx, posy, posz);
-                if (localInBounds(posx, posy, posz)) maskItem = bData[index].blockType.id;
-                else { maskItem = neighData[index + xnorm].blockType.id; }
+                //if (localInBounds(posx, posy, posz)) 
+                    maskItem = bData[index].blockType.id;
+                //else { maskItem = neighData[index + xnorm].blockType.id; }
             }
         }
     }
@@ -676,8 +677,7 @@ void buildMaskZ(BlockData* bData, BlockData* neighData, int planeDirVal, int fac
         for (int b = 0; b < W; b++) {
             int idx = b + l * W;
             uint8_t& maskItem = mask[idx]; maskItem = 0;
-            posx = b, posy = l; //(dir == 0) ? ivec3(planeDirVal + minX, l, minZ + b) : (dir == 1) ? ivec3(minX + b, l, planeDirVal + minZ) : ivec3(minX + b, planeDirVal, minZ + l);            
-            //if (posy >= CHUNK_HEIGHT) continue;
+            posx = b, posy = l;
 
             BlockData* neighbour = nullptr; int nextPos = at(posx, posy, checkposz);
             if (localInBounds(posx, posy, checkposz)) { neighbour = bData; }
@@ -685,8 +685,9 @@ void buildMaskZ(BlockData* bData, BlockData* neighData, int planeDirVal, int fac
             uint8_t neighItem = neighbour[nextPos].blockType.id;
             if (items[neighItem].isUncullable()) {
                 int index = at(posx, posy, posz);
-                if (localInBounds(posx, posy, posz)) maskItem = bData[index].blockType.id;
-                else { maskItem = neighData[index + znorm].blockType.id; }
+                //if (localInBounds(posx, posy, posz)) 
+                    maskItem = bData[index].blockType.id;
+                //else { maskItem = neighData[index + znorm].blockType.id; }
             }
         }
     }
@@ -1218,15 +1219,15 @@ void meshChunk(vec2 xyChunk, unique_ptr<Chunk>& ch){//, int subChunkH) {
     }
 }
 
-void meshChunk(chNeighPack& chNeigh) {
-	vec2 xyChunk = unpack(chNeigh.coords);
-    chNeighResult chNeighRes;
-    unique_ptr<Mesh>& mesh = chNeighRes.mesh;
-    chNeighRes.coords = toCoords(xyChunk);
+void meshChunk(chNeighPack* chNeigh) {
+	vec2 xyChunk = unpack(chNeigh->coords);
+    chNeighResult* chNeighRes = new chNeighResult();
+    unique_ptr<Mesh>& mesh = chNeighRes->mesh;
+    chNeighRes->coords = toCoords(xyChunk);
 
     Mesh& m = *mesh;
-    m.vertices.reserve(m.vertices.size() + 7000 * 7);
-    m.indices.reserve(m.indices.size() + 7000 * 6);
+    m.vertices.reserve(m.vertices.size() + 8000 * 7);
+    m.indices.reserve(m.indices.size() + 8000 * 6);
     int base = m.vertices.size();
 
     uint8_t maskY[CHUNK_SIZE * CHUNK_SIZE];
@@ -1235,31 +1236,31 @@ void meshChunk(chNeighPack& chNeigh) {
 
     int minX = xyChunk.x * CHUNK_SIZE, minY = 0, minZ = xyChunk.y * CHUNK_SIZE;
 
-    for (int x = minX; x < minX + CHUNK_SIZE + 1; ++x) {
-        buildMaskX(chNeigh.block_data.data(), chNeigh.neighbour_data[0].data(), (x + 0) - minX, 0, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskX, -normX0, nextNormX0);
+    for (int x = minX; x < minX + CHUNK_SIZE; ++x) {
+        buildMaskX(chNeigh->block_data.data(), chNeigh->neighbour_data[1].data(), (x + 0) - minX, 0, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskX, -normX0, nextNormX0);
         greedyMerge(maskX, m, xyChunk, x + 0, CHUNK_SIZE, CHUNK_HEIGHT - 1, 0, normX0, base);
 
-        buildMaskX(chNeigh.block_data.data(), chNeigh.neighbour_data[1].data(), (x + 1) - minX, 1, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskX, -normX1, nextNormX1);
+        buildMaskX(chNeigh->block_data.data(), chNeigh->neighbour_data[0].data(), (x + 1) - minX, 1, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskX, -normX1, nextNormX1);
         greedyMerge(maskX, m, xyChunk, x + 1, CHUNK_SIZE, CHUNK_HEIGHT - 1, 1, normX1, base);
     }
-    for (int z = minZ; z < minZ + CHUNK_SIZE - 1; ++z) {
-        buildMaskZ(chNeigh.block_data.data(), chNeigh.neighbour_data[2].data(), (z + 0) - minZ, 2, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskZ, -normZ0, nextNormZ0);
+    for (int z = minZ; z < minZ + CHUNK_SIZE; ++z) {
+        buildMaskZ(chNeigh->block_data.data(), chNeigh->neighbour_data[3].data(), (z + 0) - minZ, 2, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskZ, -normZ0, nextNormZ0);
         greedyMerge(maskZ, m, xyChunk, z + 0, CHUNK_SIZE, CHUNK_HEIGHT - 1, 2, normZ0, base);
         
-        buildMaskZ(chNeigh.block_data.data(), chNeigh.neighbour_data[3].data(), (z + 1) - minZ, 3, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskZ, -normZ1, nextNormZ1);
+        buildMaskZ(chNeigh->block_data.data(), chNeigh->neighbour_data[2].data(), (z + 1) - minZ, 3, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskZ, -normZ1, nextNormZ1);
         greedyMerge(maskZ, m, xyChunk, z + 1, CHUNK_SIZE, CHUNK_HEIGHT - 1, 3, normZ1, base);
     }
     for (int y = minY; y < minY + CHUNK_HEIGHT; ++y) {
-        buildMaskY(chNeigh.block_data.data(), y + 0, 4, CHUNK_SIZE, CHUNK_SIZE, maskY, -normY0);
+        buildMaskY(chNeigh->block_data.data(), y + 0, 4, CHUNK_SIZE, CHUNK_SIZE, maskY, -normY0);
         greedyMerge(maskY, m, xyChunk, y + 0, CHUNK_SIZE, CHUNK_SIZE, 4, normY0, base);
 
-        buildMaskY(chNeigh.block_data.data(), y + 1, 5, CHUNK_SIZE, CHUNK_SIZE, maskY, -normY1);
+        buildMaskY(chNeigh->block_data.data(), y + 1, 5, CHUNK_SIZE, CHUNK_SIZE, maskY, -normY1);
         greedyMerge(maskY, m, xyChunk, y + 1, CHUNK_SIZE, CHUNK_SIZE, 5, normY1, base);
     }
     
     {
         std::lock_guard<std::mutex> lock(chunkMeshQueueMutex);
-        chunkMeshResult.push(move(chNeighRes));
+        chunkMeshResult.push((chNeighRes));
     }
 }
 
@@ -1374,14 +1375,15 @@ void cloudWorker() {
 
 void updateChunkJob() {
     while (!stopChunkUpdaters) {
-		chNeighPack chNeigh;
+		chNeighPack* chNeigh;
         {
             unique_lock<mutex> lock(chunkUpdateRequestMutex);
             chunkUpdateCV.wait(lock, [] { return !chunkCleanupQueue.empty() || stopChunkUpdaters; });
-            chNeigh = move(chunkCleanupQueue.front());
+            chNeigh = chunkCleanupQueue.front();
             chunkCleanupQueue.pop();
         }
 
         updateChunk(chNeigh, vec3(0), vec3(0));
+        delete chNeigh;
     }
 }/////////////

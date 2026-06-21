@@ -210,15 +210,15 @@ public:
             }
 
             while (!chunkMeshResult.empty()) {
-                chNeighResult chNeighRes;
+                chNeighResult* chNeighRes;
                 {
                     std::lock_guard<std::mutex> lock(chunkMeshQueueMutex);
-                    chNeighRes = move(chunkMeshResult.front());
+                    chNeighRes = chunkMeshResult.front();
                     chunkMeshResult.pop();                    
                 }
-                if (!world.chunkData.count(chNeighRes.coords)) continue;
-                world.chunkData[chNeighRes.coords]->mesh->createMesh(chNeighRes.mesh->vertices, chNeighRes.mesh->indices);
-
+                if (!world.chunkData.count(chNeighRes->coords)) continue;
+                world.chunkData[chNeighRes->coords]->mesh->createMesh(chNeighRes->mesh->vertices, chNeighRes->mesh->indices);
+                delete chNeighRes;
                 if(!(count++ % 3)) break;
             }
 
@@ -858,29 +858,29 @@ public:
                     }
                 } 
                 if (chunk->neighboursPresent == 0x1E) { // 1 1110 
-                    chNeighPack chunkochunks;
-                    chunkochunks.coords = chunk->coord;
-                    memcpy(chunkochunks.block_data.data(), chunk->block_data.data(), CHUNK_VOLUME);
+                    chNeighPack* chunkochunks = new chNeighPack();
+                    chunkochunks->coords = chunk->coord;
+                    memcpy(chunkochunks->block_data.data(), chunk->block_data.data(), CHUNK_VOLUME);
                     for (int i = 0; i < 4; i++) {
                         ivec2 chcrds = coords + ivec2(dirs[i], dirs[i + 4]);
                         uint idxcrds = pack(chcrds);
                         if (world.chunkData.count(idxcrds)) {
                             unique_ptr<Chunk>& ch = world.chunkData.at(idxcrds);
-                            for (int j = 0; j < CHUNK_HEIGHT - 1; j++) {
-                                for (int k = 0; k < CHUNK_SIZE; k++) {
-                                    int x = ((dirs[i + 0] < 0) ? CHUNK_SIZE - 1 : 0) + ((dirs[i + 0] == 0) ? k : 0),
-                                        z = ((dirs[i + 4] < 0) ? CHUNK_SIZE - 1 : 0) + ((dirs[i + 4] == 0) ? k : 0);
-                            
-                                    int idx = at(x, j, z);
-                                    chunkochunks.neighbour_data[i][idx] = ch->block_data[idx];
-                                }
-                            } 
-                            //memcpy(chunkochunks.neighbour_data[i].data(), ch->block_data.data(), CHUNK_VOLUME);
+                            //for (int j = 0; j < CHUNK_HEIGHT - 1; j++) {
+                            //    for (int k = 0; k < CHUNK_SIZE; k++) {
+                            //        int x = ((dirs[i + 0] < 0) ? CHUNK_SIZE - 1 : 0) + ((dirs[i + 0] == 0) ? k : 0),
+                            //            z = ((dirs[i + 4] < 0) ? CHUNK_SIZE - 1 : 0) + ((dirs[i + 4] == 0) ? k : 0);
+                            //
+                            //        int idx = at(x, j, z);
+                            //        chunkochunks->neighbour_data[i][idx] = ch->block_data[idx];
+                            //    }
+                            //}
+                            memcpy(chunkochunks->neighbour_data[i].data(), ch->block_data.data(), CHUNK_VOLUME);
                         }
                     }
                     {
                         std::lock_guard<std::mutex> lock(chunkUpdateRequestMutex);
-                        chunkCleanupQueue.push(move(chunkochunks));
+                        chunkCleanupQueue.push(chunkochunks);
                     }
                     chunkUpdateCV.notify_one();
                     chunk->neighboursPresent |= 1;
