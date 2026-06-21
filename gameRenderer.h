@@ -874,7 +874,8 @@ public:
                                     int idx = at(x, j, z);
                                     chunkochunks.neighbour_data[i][idx] = ch->block_data[idx];
                                 }
-                            } //memcpy(chunkochunks.neighbour_data[i].data(), ch->block_data.data(), CHUNK_VOLUME);
+                            } 
+                            //memcpy(chunkochunks.neighbour_data[i].data(), ch->block_data.data(), CHUNK_VOLUME);
                         }
                     }
                     {

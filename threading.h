@@ -648,7 +648,7 @@ void buildMask(Chunk* ch, BlockData* bData, BlockData* neighData, int planeDirVa
 void buildMaskX(BlockData* bData, BlockData* neighData, int planeDirVal, int faceDir, int W, int H, uint8_t* mask, ivec3 realnorm, ivec3 normal) {
     int posz, posy, posx = planeDirVal;
     int checkposx = planeDirVal + realnorm.x;
-    int xnorm = normal.x;
+    int xnorm = normal.x * CHUNK_SIZE; // indexing adds CHUNK_SIZE for each unit step in the x axis
     for (int l = 0; l < H; l++) {
         for (int b = 0; b < W; b++) {
             int idx = b + l * W;
@@ -1235,14 +1235,14 @@ void meshChunk(chNeighPack& chNeigh) {
 
     int minX = xyChunk.x * CHUNK_SIZE, minY = 0, minZ = xyChunk.y * CHUNK_SIZE;
 
-    for (int x = minX; x < minX + CHUNK_SIZE; ++x) {
+    for (int x = minX; x < minX + CHUNK_SIZE + 1; ++x) {
         buildMaskX(chNeigh.block_data.data(), chNeigh.neighbour_data[0].data(), (x + 0) - minX, 0, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskX, -normX0, nextNormX0);
         greedyMerge(maskX, m, xyChunk, x + 0, CHUNK_SIZE, CHUNK_HEIGHT - 1, 0, normX0, base);
 
         buildMaskX(chNeigh.block_data.data(), chNeigh.neighbour_data[1].data(), (x + 1) - minX, 1, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskX, -normX1, nextNormX1);
         greedyMerge(maskX, m, xyChunk, x + 1, CHUNK_SIZE, CHUNK_HEIGHT - 1, 1, normX1, base);
     }
-    for (int z = minZ; z < minZ + CHUNK_SIZE; ++z) {
+    for (int z = minZ; z < minZ + CHUNK_SIZE - 1; ++z) {
         buildMaskZ(chNeigh.block_data.data(), chNeigh.neighbour_data[2].data(), (z + 0) - minZ, 2, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskZ, -normZ0, nextNormZ0);
         greedyMerge(maskZ, m, xyChunk, z + 0, CHUNK_SIZE, CHUNK_HEIGHT - 1, 2, normZ0, base);
         
