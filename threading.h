@@ -661,9 +661,8 @@ void buildMaskX(BlockData* bData, BlockData* neighData, int planeDirVal, int fac
             uint8_t neighItem = neighbour[nextPos].blockType.id;
             if (items[neighItem].isUncullable()) {
                 int index = at(posx, posy, posz);
-                //if (localInBounds(posx, posy, posz)) 
-                    maskItem = bData[index].blockType.id;
-                //else { maskItem = neighData[index + xnorm].blockType.id; }
+                if (localInBounds(posx, posy, posz)) maskItem = bData[index].blockType.id;
+                else { maskItem = neighData[index + xnorm].blockType.id; }
             }
         }
     }
@@ -685,9 +684,8 @@ void buildMaskZ(BlockData* bData, BlockData* neighData, int planeDirVal, int fac
             uint8_t neighItem = neighbour[nextPos].blockType.id;
             if (items[neighItem].isUncullable()) {
                 int index = at(posx, posy, posz);
-                //if (localInBounds(posx, posy, posz)) 
-                    maskItem = bData[index].blockType.id;
-                //else { maskItem = neighData[index + znorm].blockType.id; }
+                if (localInBounds(posx, posy, posz)) maskItem = bData[index].blockType.id;
+                else { maskItem = neighData[index + znorm].blockType.id; }
             }
         }
     }
@@ -1237,17 +1235,17 @@ void meshChunk(chNeighPack* chNeigh) {
     int minX = xyChunk.x * CHUNK_SIZE, minY = 0, minZ = xyChunk.y * CHUNK_SIZE;
 
     for (int x = minX; x < minX + CHUNK_SIZE; ++x) {
-        buildMaskX(chNeigh->block_data.data(), chNeigh->neighbour_data[1].data(), (x + 0) - minX, 0, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskX, -normX0, nextNormX0);
+        buildMaskX(chNeigh->block_data.data(), chNeigh->neighbour_data[0].data(), (x + 0) - minX, 0, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskX, -normX0, nextNormX0);
         greedyMerge(maskX, m, xyChunk, x + 0, CHUNK_SIZE, CHUNK_HEIGHT - 1, 0, normX0, base);
 
-        buildMaskX(chNeigh->block_data.data(), chNeigh->neighbour_data[0].data(), (x + 1) - minX, 1, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskX, -normX1, nextNormX1);
+        buildMaskX(chNeigh->block_data.data(), chNeigh->neighbour_data[1].data(), (x + 1) - minX, 1, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskX, -normX1, nextNormX1);
         greedyMerge(maskX, m, xyChunk, x + 1, CHUNK_SIZE, CHUNK_HEIGHT - 1, 1, normX1, base);
     }
     for (int z = minZ; z < minZ + CHUNK_SIZE; ++z) {
-        buildMaskZ(chNeigh->block_data.data(), chNeigh->neighbour_data[3].data(), (z + 0) - minZ, 2, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskZ, -normZ0, nextNormZ0);
+        buildMaskZ(chNeigh->block_data.data(), chNeigh->neighbour_data[2].data(), (z + 0) - minZ, 2, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskZ, -normZ0, nextNormZ0);
         greedyMerge(maskZ, m, xyChunk, z + 0, CHUNK_SIZE, CHUNK_HEIGHT - 1, 2, normZ0, base);
         
-        buildMaskZ(chNeigh->block_data.data(), chNeigh->neighbour_data[2].data(), (z + 1) - minZ, 3, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskZ, -normZ1, nextNormZ1);
+        buildMaskZ(chNeigh->block_data.data(), chNeigh->neighbour_data[3].data(), (z + 1) - minZ, 3, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskZ, -normZ1, nextNormZ1);
         greedyMerge(maskZ, m, xyChunk, z + 1, CHUNK_SIZE, CHUNK_HEIGHT - 1, 3, normZ1, base);
     }
     for (int y = minY; y < minY + CHUNK_HEIGHT; ++y) {

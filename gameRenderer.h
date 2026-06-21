@@ -866,15 +866,6 @@ public:
                         uint idxcrds = pack(chcrds);
                         if (world.chunkData.count(idxcrds)) {
                             unique_ptr<Chunk>& ch = world.chunkData.at(idxcrds);
-                            //for (int j = 0; j < CHUNK_HEIGHT - 1; j++) {
-                            //    for (int k = 0; k < CHUNK_SIZE; k++) {
-                            //        int x = ((dirs[i + 0] < 0) ? CHUNK_SIZE - 1 : 0) + ((dirs[i + 0] == 0) ? k : 0),
-                            //            z = ((dirs[i + 4] < 0) ? CHUNK_SIZE - 1 : 0) + ((dirs[i + 4] == 0) ? k : 0);
-                            //
-                            //        int idx = at(x, j, z);
-                            //        chunkochunks->neighbour_data[i][idx] = ch->block_data[idx];
-                            //    }
-                            //}
                             memcpy(chunkochunks->neighbour_data[i].data(), ch->block_data.data(), CHUNK_VOLUME);
                         }
                     }
