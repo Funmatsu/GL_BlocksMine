@@ -649,6 +649,7 @@ void buildMaskX(BlockData* bData, BlockData* neighData, int planeDirVal, int fac
     int posz, posy, posx = planeDirVal;
     int checkposx = planeDirVal + realnorm.x;
     int xnorm = normal.x * CHUNK_SIZE; // indexing adds CHUNK_SIZE for each unit step in the x axis
+
     for (int l = 0; l < H; l++) {
         for (int b = 0; b < W; b++) {
             int idx = b + l * W;

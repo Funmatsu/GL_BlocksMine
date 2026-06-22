@@ -217,7 +217,7 @@ public:
                     chunkMeshResult.pop();                    
                 }
                 if (!world.chunkData.count(chNeighRes->coords)) continue;
-                world.chunkData[chNeighRes->coords]->mesh->createMesh(chNeighRes->mesh->vertices, chNeighRes->mesh->indices);
+                world.chunkData.at(chNeighRes->coords)->mesh->createMesh(chNeighRes->mesh->vertices, chNeighRes->mesh->indices);
                 delete chNeighRes;
                 if(!(count++ % 3)) break;
             }
