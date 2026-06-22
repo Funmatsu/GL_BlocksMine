@@ -55,7 +55,7 @@ class Item {
 private:
 	//uint8_t attrs = 0;
 public:
-	uint8_t id;
+	uint8_t id : 5;
 	Item() {
 		id = 0;
 		//attrs = 0;

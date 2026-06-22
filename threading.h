@@ -785,7 +785,6 @@ void emitFace(Mesh& m, int face, uint8_t blockType, ivec3 blockPos, ivec3 dims, 
         clipYX = 0.0f, clipYY = !flat ? ((dir == 2) ? dims.z : dims.y) : 1.0f;
     int   offsetX = 0, offsetY = 0;
     // Simple tile UV (replace with atlas lookup per block/face but now is length of tile based in greedy meshing)
-    //if (blockType == TORCH) { clipX = 0.4375; clipY = 0.5625; }
 
     if (!flat) {
         switch (face) {
@@ -875,7 +874,6 @@ void emitFace(Mesh& m, int face, uint8_t blockType, uint8_t blight, ivec3 blockP
         clipYX = 0.0f, clipYY = !flat ? ((dir == 2) ? dims.z : dims.y) : 1.0f;
     int   offsetX = 0, offsetY = 0;
     // Simple tile UV (replace with atlas lookup per block/face but now is length of tile based in greedy meshing)
-    //if (blockType == TORCH) { clipX = 0.4375; clipY = 0.5625; }
 
     if (!flat) {
         switch (face) {
@@ -1234,6 +1232,13 @@ void meshChunk(chNeighPack* chNeigh) {
 
     int minX = xyChunk.x * CHUNK_SIZE, minY = 0, minZ = xyChunk.y * CHUNK_SIZE;
 
+    for (int y = minY; y < minY + CHUNK_HEIGHT; ++y) {
+        buildMaskY(chNeigh->block_data.data(), y + 0, 4, CHUNK_SIZE, CHUNK_SIZE, maskY, -normY0);
+        greedyMerge(maskY, m, xyChunk, y + 0, CHUNK_SIZE, CHUNK_SIZE, 4, normY0, base);
+
+        buildMaskY(chNeigh->block_data.data(), y + 1, 5, CHUNK_SIZE, CHUNK_SIZE, maskY, -normY1);
+        greedyMerge(maskY, m, xyChunk, y + 1, CHUNK_SIZE, CHUNK_SIZE, 5, normY1, base);
+    }
     for (int x = minX; x < minX + CHUNK_SIZE; ++x) {
         buildMaskX(chNeigh->block_data.data(), chNeigh->neighbour_data[0].data(), (x + 0) - minX, 0, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskX, -normX0, nextNormX0);
         greedyMerge(maskX, m, xyChunk, x + 0, CHUNK_SIZE, CHUNK_HEIGHT - 1, 0, normX0, base);
@@ -1247,13 +1252,6 @@ void meshChunk(chNeighPack* chNeigh) {
         
         buildMaskZ(chNeigh->block_data.data(), chNeigh->neighbour_data[3].data(), (z + 1) - minZ, 3, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskZ, -normZ1, nextNormZ1);
         greedyMerge(maskZ, m, xyChunk, z + 1, CHUNK_SIZE, CHUNK_HEIGHT - 1, 3, normZ1, base);
-    }
-    for (int y = minY; y < minY + CHUNK_HEIGHT; ++y) {
-        buildMaskY(chNeigh->block_data.data(), y + 0, 4, CHUNK_SIZE, CHUNK_SIZE, maskY, -normY0);
-        greedyMerge(maskY, m, xyChunk, y + 0, CHUNK_SIZE, CHUNK_SIZE, 4, normY0, base);
-
-        buildMaskY(chNeigh->block_data.data(), y + 1, 5, CHUNK_SIZE, CHUNK_SIZE, maskY, -normY1);
-        greedyMerge(maskY, m, xyChunk, y + 1, CHUNK_SIZE, CHUNK_SIZE, 5, normY1, base);
     }
     
     {

@@ -167,7 +167,7 @@ public:
     
     uint32_t coord;
     //abyte needUpdate, unloaded;
-    abyte neighboursPresent;
+    abyte neighboursPresent : 5;
     void setDirty() { neighboursPresent |= (1 << 7); }
     bool getDirty() { return (neighboursPresent >> 7) & 1; }
     //bool updateCloud() { return (needUpdate >> 7) & 1; }
