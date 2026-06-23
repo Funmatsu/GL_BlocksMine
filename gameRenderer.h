@@ -834,7 +834,8 @@ public:
 		vec2 _2dPlPosHi = vec2(playerPos.x, playerPos.z) + float(renderDistance),
              _2dPlPosLo = vec2(playerPos.x, playerPos.z) - float(renderDistance);
 
-        for (auto it = world.chunkData.begin(); it != world.chunkData.end(); ) {
+        auto it = world.chunkData.begin();
+        while (it != world.chunkData.end()) {
             auto& chunk = it->second;
             ivec2 coords = chunk->coords();
 
@@ -865,7 +866,7 @@ public:
                         ivec2 chcrds = coords + ivec2(dirs[i], dirs[i + 4]);
                         uint idxcrds = pack(chcrds);
                         if (world.chunkData.count(idxcrds)) {
-                            unique_ptr<Chunk>& ch = world.chunkData.at(idxcrds);
+                            auto& ch = world.chunkData.at(idxcrds);
                             memcpy(chunkochunks->neighbour_data[i].data(), ch->block_data.data(), CHUNK_VOLUME);
                         }
                     }
@@ -875,13 +876,13 @@ public:
                     }
                     chunkUpdateCV.notify_one();
                     chunk->neighboursPresent |= 1;
+                    //chunk->setAsClean();
                 }
             }
             
             vec3 center = vec3((coords.x + 0.5) * CHUNK_SIZE, playerPos.y, (coords.y + 0.5) * CHUNK_SIZE);
-            if (sphereInFrustum(center, CHUNK_SIZE * 2)) {
+            if (sphereInFrustum(center, CHUNK_SIZE * 2))
                 chunk->mesh->renderMesh();
-            }
 
             it++;
         }
@@ -894,14 +895,13 @@ public:
 
         for (auto& chunks : world.chunkData) {
             ivec2 coords = chunks.second->coords();
-            unique_ptr<Chunk>& chunk = chunks.second;
+            auto& chunk = chunks.second;
 
             if ((coords.x >= _2dPlPosLo.x && coords.x <= _2dPlPosHi.x) &&
                 (coords.y >= _2dPlPosLo.y && coords.y <= _2dPlPosHi.y)) {
                 vec3 center = vec3((coords.x + 0.5) * CHUNK_SIZE, playerpos.y, (coords.y + 0.5) * CHUNK_SIZE);
-                if(sphereInFrustum(center, CHUNK_SIZE)) {
+                if(sphereInFrustum(center, CHUNK_SIZE)) 
                     chunk->mesh->renderMesh();
-                }
             }
         }
     }

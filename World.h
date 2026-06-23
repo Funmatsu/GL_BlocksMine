@@ -406,7 +406,7 @@ Block World::deleteBlockFromWorld(vec3 blockPos) {
         returnBlock = Block(blockPos, blockType);
         blockType.deassignLight(pointLights, blockPos);
         blockType = AIR;
-        chunk->setDirty();
+        chunk->setAsDirty();
     }
     return returnBlock;
 }
@@ -572,9 +572,9 @@ LightMesh createCompassVertsOnlyMesh(ivec3 xyz) {
 
     vector<GLfloat> vertices;
 
-    vector<GLfloat> lineX = makeLine(xyz, 0.05f, 0.05f, 2, 0.005f);
+    vector<GLfloat> lineX = makeLine(xyz, 0.05f , 0.05f , 2, 0.005f);
     vector<GLfloat> lineY = makeLine(xyz, 0.005f, 0.005f, 2, 0.05f);
-    vector<GLfloat> lineZ = makeLine(xyz, 0.005f, 0.05f, 0, 0.005f);
+    vector<GLfloat> lineZ = makeLine(xyz, 0.005f, 0.05f , 0, 0.005f);
 
     push(lineX, vertices); push(lineY, vertices); push(lineZ, vertices);
 
@@ -783,59 +783,6 @@ void World::updateChunk(const ivec2& chunkCoord, vec3 direction, ivec3 position)
     //std::cout << chunk->mesh->vertices.size() << " verts. chunk n_" << chunkCount++ << " updating, Elapsed: " << std::chrono::duration<double>(end - start).count() << " s\n";
 }
 
-//void World::updateSubChunk(const ivec2& chunkCoord, int subCh, vec3 direction, ivec3 position) {
-//    //auto start = std::chrono::high_resolution_clock::now();
-//
-//    auto it = chunkData.find(pack(chunkCoord));
-//    if (it == chunkData.end()) return; // Chunk doesn't exist, painful null ptr risk
-//
-//    auto& chunk = it->second;
-//    if (!chunk) return;
-//    // Rebuild mesh from current blockData
-//    meshSubChunk(chunkCoord, chunk.get(), subCh//, i
-//        //, direction, position
-//    );
-//    //auto end = std::chrono::high_resolution_clock::now();
-//    //std::cout << chunk->mesh->vertices.size() << " verts. chunk n_" << chunkCount++ << " updating, Elapsed: " << std::chrono::duration<double>(end - start).count() << " s\n";
-//}
-//
-//void World::updateWholeChunk(const ivec2& chunkCoord, vec3 direction, ivec3 position) {
-//    //auto start = std::chrono::high_resolution_clock::now();
-//
-//    auto it = chunkData.find(pack(chunkCoord));
-//    if (it == chunkData.end()) return; // Chunk doesn't exist, painful null ptr risk
-//
-//    auto& chunk = it->second;
-//    if (!chunk) return;
-//
-//    meshSubChunks(chunkCoord, chunk.get()
-//        //, direction, position
-//    );
-//    //auto end = std::chrono::high_resolution_clock::now();
-//    //std::cout << chunk->mesh->vertices.size() << " verts. chunk n_" << chunkCount++ << " updating, Elapsed: " << std::chrono::duration<double>(end - start).count() << " s\n";
-//}
-
-
-//void World::updateChunk(Chunk& chunk) {
-//    //auto start = std::chrono::high_resolution_clock::now();
-//
-//    //// Clear old mesh data
-//    Mesh& m = *(chunk.mesh);
-//    if (m.vertices.size() > 0) {
-//        m.vertices.clear();
-//        m.vertices.shrink_to_fit();
-//        m.indices.clear();
-//        m.indices.shrink_to_fit();
-//    }
-//
-//    // Rebuild mesh from current blockData
-//    meshChunk(chunk.coords(), &chunk, m, vec3(0, 1, 0), vec3(0));
-//    chunk.needUpdate = true;
-//
-//    //    auto end = std::chrono::high_resolution_clock::now();
-//    //    std::cout << chunk.mesh.vertices.size() << " updates : Elapsed: " << std::chrono::duration<double>(end - start).count() << " s\n";
-//}
-
 Block World::delBlocklook_at() {
     ivec3 blockPos = lookingAtBlock();
     ivec2 chunkPos = ivec2(floorDiv(blockPos.x, CHUNK_SIZE), floorDiv(blockPos.z, CHUNK_SIZE));
@@ -866,7 +813,7 @@ Block World::addBlocklook_at(Item blockType) {
             chunk->block_data[index].blockType != AIR &&
             blockType.isPlaceable()) {
             createItem(floor(point - rayDir * stepSize), blockType, point);
-            chunk->setDirty();
+            chunk->setAsDirty();
             return Block(floor(point - rayDir * stepSize), blockType);
         }
     }

@@ -88,87 +88,23 @@ struct BlockData {
 class SubChunk {
 public:
     unique_ptr<LightMesh> mesh;
-    //uint32_t coord = 0;
-    abyte needUpdate;// , unloaded;
- //   abyte neighboursPresent;
- //   void setDirty() { neighboursPresent |= (1 << 7); }
- //   bool getDirty() { return (neighboursPresent >> 7) & 1; }
- //   bool updateCloud() { return (needUpdate >> 7) & 1; }
- //   void setCloud() { needUpdate |= (1 << 7); }
- //   void stopCloud() { needUpdate &= ~(1 << 7); }
- //   vec3 coords() {
- //       return vec3(int16_t((coord >> 18) & 0x3FFF), int16_t((coord >> 14) & 0xF), int16_t(coord & 0x3FFF));
- //   }
- //   int height() {
- //       return (coord >> 14) & 0xF;
-	//}
- //   void toCoords(ivec3 chunkCoord) {
- //       coord = ((uint16_t(chunkCoord.x) & 0x3FFF) << 18) | ((uint16_t(chunkCoord.y) & 0xF) << 14) | (uint16_t(chunkCoord.z) & 0x3FFF);
- //   }
- //   int at(vec3 position) {
- //       ivec3 thisCoord = coords();
- //       return ((position.y) * (CHUNK_SIZE*CHUNK_SIZE) +
- //               (position.x - thisCoord.x * (CHUNK_SIZE)) * (CHUNK_SIZE)+
- //               (position.z - thisCoord.z * (CHUNK_SIZE)));
- //   }
-
- //   int at(int x, int y, int z) {
- //       ivec3 coord = coords();
- //       return ((y) * (CHUNK_HEIGHT)+
- //           (x - coord.x * CHUNK_SIZE) * (CHUNK_SIZE)+
- //           (z - coord.y * CHUNK_SIZE));
- //   }
-
- //   bool inBounds(vec3 position) {
- //       ivec3 thisCoord = coords();
- //       return position.x >= (thisCoord.x) * (CHUNK_SIZE) && position.x < (thisCoord.x + 1) * (CHUNK_SIZE) &&
- //           position.y >= 0 && position.y < CHUNK_SIZE &&
- //           position.z >= (thisCoord.z) * (CHUNK_SIZE) && position.z < (thisCoord.z + 1) * (CHUNK_SIZE);
- //   }
-
- //   bool inBounds(int x, int y, int z) {
- //       ivec3 thisCoord = coords();
- //       float chunkx = (thisCoord.x) * (CHUNK_SIZE), chunkz = (thisCoord.y) * (CHUNK_SIZE);
- //       return x >= chunkx + 0 && x < chunkx + CHUNK_SIZE &&
- //           y >= 0 && y < CHUNK_SIZE &&
- //           z >= chunkz + 0 && z < chunkz + CHUNK_SIZE;
- //   }
-
- //   bool localInBounds(vec3 position) {
- //       return position.x >= 0 && position.x < CHUNK_SIZE &&
- //           position.y >= 0 && position.y < CHUNK_SIZE &&
- //           position.z >= 0 && position.z < CHUNK_SIZE;
- //   }
-
- //   bool localInBounds(int x, int y, int z) {
- //       return x >= 0 && x < CHUNK_SIZE &&
- //           y >= 0 && y < CHUNK_SIZE &&
- //           z >= 0 && z < CHUNK_SIZE;
- //   }
-
+    abyte needUpdate;
     SubChunk() {
         mesh = make_unique<LightMesh>();
-        //cloudmesh = make_unique<CloudMesh>();
-        //coord = uint32_t(-1);
-        //neighboursPresent = 0;
-        //block_data.resize(CHUNK_VOLUME);
-        needUpdate = true; //unloaded = false;
+        needUpdate = true;
     }
 };
 
 class Chunk {
 public:
-    //unique_ptr<LightMesh> mesh;
-    //unique_ptr<CloudMesh> cloudmesh;
-    //BlockData block_data[CHUNK_VOLUME];
-	//array<SubChunk, CHUNK_SIZE> subchunks;
     array<BlockData, CHUNK_VOLUME> block_data;
 	unique_ptr<LightMesh> mesh;
     
     uint32_t coord;
     //abyte needUpdate, unloaded;
     abyte neighboursPresent : 5;
-    void setDirty() { neighboursPresent |= (1 << 7); }
+    void setAsDirty() { neighboursPresent |= (1 << 7); }
+	void setAsClean() { neighboursPresent &= ~(1 << 7); }
     bool getDirty() { return (neighboursPresent >> 7) & 1; }
     //bool updateCloud() { return (needUpdate >> 7) & 1; }
     //void setCloud() { needUpdate |= (1 << 7); }

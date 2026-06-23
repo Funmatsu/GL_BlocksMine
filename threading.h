@@ -1224,7 +1224,7 @@ void meshChunk(chNeighPack* chNeigh) {
 
     Mesh& m = *mesh;
     m.vertices.reserve(m.vertices.size() + 8000 * 7);
-    m.indices.reserve(m.indices.size() + 8000 * 6);
+    m.indices.reserve(m.indices.size() + 8000 * 2);
     int base = m.vertices.size();
 
     uint8_t maskY[CHUNK_SIZE * CHUNK_SIZE];
@@ -1232,14 +1232,7 @@ void meshChunk(chNeighPack* chNeigh) {
     uint8_t maskZ[CHUNK_SIZE * CHUNK_HEIGHT];
 
     int minX = xyChunk.x * CHUNK_SIZE, minY = 0, minZ = xyChunk.y * CHUNK_SIZE;
-
-    for (int y = minY; y < minY + CHUNK_HEIGHT; ++y) {
-        buildMaskY(chNeigh->block_data.data(), y + 0, 4, CHUNK_SIZE, CHUNK_SIZE, maskY, -normY0);
-        greedyMerge(maskY, m, xyChunk, y + 0, CHUNK_SIZE, CHUNK_SIZE, 4, normY0, base);
-
-        buildMaskY(chNeigh->block_data.data(), y + 1, 5, CHUNK_SIZE, CHUNK_SIZE, maskY, -normY1);
-        greedyMerge(maskY, m, xyChunk, y + 1, CHUNK_SIZE, CHUNK_SIZE, 5, normY1, base);
-    }
+    
     for (int x = minX; x < minX + CHUNK_SIZE; ++x) {
         buildMaskX(chNeigh->block_data.data(), chNeigh->neighbour_data[0].data(), (x + 0) - minX, 0, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskX, -normX0, nextNormX0);
         greedyMerge(maskX, m, xyChunk, x + 0, CHUNK_SIZE, CHUNK_HEIGHT - 1, 0, normX0, base);
@@ -1253,6 +1246,13 @@ void meshChunk(chNeighPack* chNeigh) {
         
         buildMaskZ(chNeigh->block_data.data(), chNeigh->neighbour_data[3].data(), (z + 1) - minZ, 3, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskZ, -normZ1, nextNormZ1);
         greedyMerge(maskZ, m, xyChunk, z + 1, CHUNK_SIZE, CHUNK_HEIGHT - 1, 3, normZ1, base);
+    }
+    for (int y = minY; y < minY + CHUNK_HEIGHT - 1; ++y) {
+        buildMaskY(chNeigh->block_data.data(), y + 0, 4, CHUNK_SIZE, CHUNK_SIZE, maskY, -normY0);
+        greedyMerge(maskY, m, xyChunk, y + 0, CHUNK_SIZE, CHUNK_SIZE, 4, normY0, base);
+
+        buildMaskY(chNeigh->block_data.data(), y + 1, 5, CHUNK_SIZE, CHUNK_SIZE, maskY, -normY1);
+        greedyMerge(maskY, m, xyChunk, y + 1, CHUNK_SIZE, CHUNK_SIZE, 5, normY1, base);
     }
     
     {
@@ -1300,7 +1300,7 @@ void breakThread() {
             Block block = world.delBlocklook_at();
             //this_thread::sleep_for(chrono::milliseconds(100));
             ivec2 chunkPos = ivec2(floorDiv(block.position.x, CHUNK_SIZE), floorDiv(block.position.z, CHUNK_SIZE));
-            world.updateChunk(chunkPos, vec3(0), vec3(0));
+            //world.updateChunk(chunkPos, vec3(0), vec3(0));
             blockBreakingOut = false;
             breakResQueue.push(block);
         }
