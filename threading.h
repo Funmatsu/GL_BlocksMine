@@ -692,53 +692,6 @@ void buildMaskZ(BlockData* bData, BlockData* neighData, int planeDirVal, int fac
     }
 }
 
-
-
-bool buildSubMaskY(BlockData* bData, int planeDirVal, int faceDir, int W, int H, uint8_t* mask, ivec3 normal) {
-    bool allAir = true;
-    //ivec3 pos = ivec3(0, planeDirVal, 0);
-    int posx, posy = planeDirVal, posz;
-    int checkposy = posy + normal.y;
-    for (int l = 0; l < H; l++) {
-        for (int b = 0; b < W; b++) {
-            int idx = b + l * W;
-            uint8_t& maskItem = mask[idx]; maskItem = 0;
-            posx = b, posz = l; //(dir == 0) ? ivec3(planeDirVal + minX, l, minZ + b) : (dir == 1) ? ivec3(minX + b, l, planeDirVal + minZ) : ivec3(minX + b, planeDirVal, minZ + l);            
-            if (posy == -1 || checkposy == -1 || checkposy >= CHUNK_HEIGHT) continue;
-            uint8_t neighItem = bData[at(posx, checkposy, posz)].blockType.id;
-            if (items[neighItem].isUncullable())
-                maskItem = bData[at(posx, posy, posz)].blockType.id;
-        }
-    }
-    return allAir;
-}
-
-void buildSubMask(shared_ptr<Chunk> ch, BlockData* bData, BlockData* neighData, int planeDirVal, int faceDir, int W, int H, uint8_t* mask, ivec3 realnorm, ivec3 normal) {
-    for (int l = 0; l < H; l++) {
-        for (int b = 0; b < W; b++) {
-            int idx = b + l * W;
-            uint8_t& maskItem = mask[idx];
-            ivec3 pos = getMaskCellPos(planeDirVal, l, b, faceDir / 2); //(dir == 0) ? ivec3(planeDirVal + minX, l, minZ + b) : (dir == 1) ? ivec3(minX + b, l, planeDirVal + minZ) : ivec3(minX + b, planeDirVal, minZ + l);            
-            if (pos.y == -1) continue;
-            ivec3 checkPos = pos + realnorm;
-            if (checkPos.y == -1 || checkPos.y >= CHUNK_HEIGHT) continue;
-
-            BlockData* neighbour = nullptr; int nextPos;
-            if (ch->localInBounds(checkPos)) { neighbour = bData;  nextPos = at(checkPos); }
-            else { neighbour = neighData; nextPos = at(checkPos + normal); }
-            Item neighItem = neighbour[nextPos].blockType;
-            uint8_t neighType = neighItem.id;
-            if (neighType == 0 || neighItem.isFlat() || neighType == 8) {
-                if (ch->localInBounds(pos)) maskItem = bData[at(pos)].blockType.id;
-                else {
-                    int index = at(pos + normal);
-                    maskItem = neighData[index].blockType.id;
-                }
-            }
-        }
-    }
-}
-
 #define absl(n) n >= 0 ? n : -n
 
 void feed(float* uv, float w, float h, float packed, int direction) { // direction = 0 ? clockwise : counterclockwise
@@ -841,96 +794,6 @@ void emitFace(Mesh& m, int face, uint8_t blockType, ivec3 blockPos, ivec3 dims, 
 
     m.vertices.insert(m.vertices.end(), finalVerts, finalVerts + 28);
     m.indices.insert(m.indices.end(), finalInds, finalInds + 6);
-    // Two triangles (0,1,2) (2,3,0)
-    base += 4;
-}
-
-void emitFace(Mesh& m, int face, uint8_t blockType, uint8_t blight, ivec3 blockPos, ivec3 dims, ivec3 normals, int& base) {
-    float v[12];
-    float uv[12];
-    vec3 cMask(1.0);
-    const int bottomDir = 4;
-    const int topDir = 5;
-    float tintr, tintg, tintb;
-    if ((blockType == GRASS.id || blockType == OAK_LEAVES.id) || (blockType == GRASS_BLOCK.id && face != 4)) {
-        tintr = 0.1f, tintg = 0.75f, tintb = 0.1f;
-        cMask = { tintr, tintg, tintb };
-        if (isFlat(blockType)) { normals = vec3(0,-1, 0); }
-    }
-    bool flat = items[(blockType)].isFlat();
-
-    float* UVs;
-    UVs = getUVs(blockType);
-    float xoffset = UVs[0],
-        yoffset = UVs[1],
-        xoffsetTop = UVs[2],
-        yoffsetTop = UVs[3],
-        xoffsetBottom = UVs[4],
-        yoffsetBottom = UVs[5],
-        transparency = UVs[6];
-
-    int dir = face / 2;
-    float clipX = 0.0f, clipY = 1.0f;
-    float clipXX = 0.0f, clipXY = !flat ? ((dir == 0) ? dims.z : dims.x) : 1.0f,
-        clipYX = 0.0f, clipYY = !flat ? ((dir == 2) ? dims.z : dims.y) : 1.0f;
-    int   offsetX = 0, offsetY = 0;
-    // Simple tile UV (replace with atlas lookup per block/face but now is length of tile based in greedy meshing)
-
-    if (!flat) {
-        switch (face) {
-            case 0: v[0] = blockPos.x + -0.5f         , v[1] = blockPos.y + -0.5f         , v[2] = blockPos.z + -0.5f ;             v[3] = blockPos.x + -0.5f         , v[4] = blockPos.y + -0.5f + dims.y, v[5] = blockPos.z + -0.5f ;           v[6] = blockPos.x + -0.5f         , v[7] = blockPos.y + -0.5f + dims.y, v[8] = blockPos.z + -0.5f + dims.z; v[9] = blockPos.x + -0.5f         , v[10] = blockPos.y + -0.5f         , v[11] = blockPos.z + -0.5f + dims.z ; break; // -X
-            case 1: v[0] = blockPos.x + -0.5f + dims.x, v[1] = blockPos.y + -0.5f         , v[2] = blockPos.z + -0.5f ;             v[3] = blockPos.x + -0.5f + dims.x, v[4] = blockPos.y + -0.5f         , v[5] = blockPos.z + -0.5f + dims.z ;  v[6] = blockPos.x + -0.5f + dims.x, v[7] = blockPos.y + -0.5f + dims.y, v[8] = blockPos.z + -0.5f + dims.z; v[9] = blockPos.x + -0.5f + dims.x, v[10] = blockPos.y + -0.5f + dims.y, v[11] = blockPos.z + -0.5f ; break; // +X
-            case 2: v[0] = blockPos.x + -0.5f         , v[1] = blockPos.y + -0.5f         , v[2] = blockPos.z + -0.5f ;             v[3] = blockPos.x + -0.5f + dims.x, v[4] = blockPos.y + -0.5f         , v[5] = blockPos.z + -0.5f ;           v[6] = blockPos.x + -0.5f + dims.x, v[7] = blockPos.y + -0.5f + dims.y, v[8] = blockPos.z + -0.5f         ; v[9] = blockPos.x + -0.5f         , v[10] = blockPos.y + -0.5f + dims.y, v[11] = blockPos.z + -0.5f ; break; // -Z
-            case 3: v[0] = blockPos.x + -0.5f         , v[1] = blockPos.y + -0.5f         , v[2] = blockPos.z + -0.5f + dims.z ;    v[3] = blockPos.x + -0.5f         , v[4] = blockPos.y + -0.5f + dims.y, v[5] = blockPos.z + -0.5f + dims.z ;  v[6] = blockPos.x + -0.5f + dims.x, v[7] = blockPos.y + -0.5f + dims.y, v[8] = blockPos.z + -0.5f + dims.z; v[9] = blockPos.x + -0.5f + dims.x, v[10] = blockPos.y + -0.5f         , v[11] = blockPos.z + -0.5f + dims.z ; break; // +Z
-            case 4: v[0] = blockPos.x + -0.5f         , v[1] = blockPos.y + -0.5f         , v[2] = blockPos.z + -0.5f ;             v[3] = blockPos.x + -0.5f         , v[4] = blockPos.y + -0.5f         , v[5] = blockPos.z + -0.5f + dims.z ;  v[6] = blockPos.x + -0.5f + dims.x, v[7] = blockPos.y + -0.5f         , v[8] = blockPos.z + -0.5f + dims.z; v[9] = blockPos.x + -0.5f + dims.x, v[10] = blockPos.y + -0.5f         , v[11] = blockPos.z + -0.5f ; break; // -Y
-            case 5: v[0] = blockPos.x + -0.5f         , v[1] = blockPos.y + -0.5f + dims.y, v[2] = blockPos.z + -0.5f ;             v[3] = blockPos.x + -0.5f + dims.x, v[4] = blockPos.y + -0.5f + dims.y, v[5] = blockPos.z + -0.5f ;           v[6] = blockPos.x + -0.5f + dims.x, v[7] = blockPos.y + -0.5f + dims.y, v[8] = blockPos.z + -0.5f + dims.z; v[9] = blockPos.x + -0.5f         , v[10] = blockPos.y + -0.5f + dims.y, v[11] = blockPos.z + -0.5f + dims.z ; break; // +Y
-        }
-    }
-    else {
-        switch (face) {
-            case 0: v[0] = blockPos.x + -0.5f, v[1] = blockPos.y + -0.5f, v[2] = blockPos.z + -0.5f;   v[3] = blockPos.x + -0.5f, v[4] = blockPos.y + -0.5f + dims.y, v[5] = blockPos.z + -0.5f ; v[6] = blockPos.x +  0.5f, v[7] = blockPos.y + -0.5f + dims.y, v[8] = blockPos.z +  0.5f ; v[9] = blockPos.x +  0.5f, v[10] = blockPos.y + -0.5f, v[11] = blockPos.z +  0.5f;  break; // -X disgonal
-            case 1: v[0] = blockPos.x + -0.5f, v[1] = blockPos.y + -0.5f, v[2] = blockPos.z +  0.5f;   v[3] = blockPos.x + -0.5f, v[4] = blockPos.y + -0.5f + dims.y, v[5] = blockPos.z +  0.5f ; v[6] = blockPos.x +  0.5f, v[7] = blockPos.y + -0.5f + dims.y, v[8] = blockPos.z + -0.5f ; v[9] = blockPos.x +  0.5f, v[10] = blockPos.y + -0.5f, v[11] = blockPos.z + -0.5f;  break; // +X diagonal
-            case 2: v[0] = blockPos.x +  0.5f, v[1] = blockPos.y + -0.5f, v[2] = blockPos.z +  0.5f;   v[3] = blockPos.x +  0.5f, v[4] = blockPos.y + -0.5f + dims.y, v[5] = blockPos.z +  0.5f ; v[6] = blockPos.x + -0.5f, v[7] = blockPos.y + -0.5f + dims.y, v[8] = blockPos.z + -0.5f ; v[9] = blockPos.x + -0.5f, v[10] = blockPos.y + -0.5f, v[11] = blockPos.z + -0.5f;  break; // -X disgonal
-            case 3: v[0] = blockPos.x +  0.5f, v[1] = blockPos.y + -0.5f, v[2] = blockPos.z + -0.5f;   v[3] = blockPos.x +  0.5f, v[4] = blockPos.y + -0.5f + dims.y, v[5] = blockPos.z + -0.5f ; v[6] = blockPos.x + -0.5f, v[7] = blockPos.y + -0.5f + dims.y, v[8] = blockPos.z +  0.5f ; v[9] = blockPos.x + -0.5f, v[10] = blockPos.y + -0.5f, v[11] = blockPos.z +  0.5f;  break; // +X diagonal
-        }
-    }
-
-    if (face == bottomDir) { offsetX = xoffsetBottom; offsetY = yoffsetBottom; }
-    else if (face == topDir) { offsetX = xoffsetTop;  offsetY = yoffsetTop; }
-    uint8_t light = blight;
-
-    uint32_t uintUVs = ((blockPos.y+100) << 24) | ((uint8_t)(xdimens) << 16) | ((uint8_t)(yoffset + offsetY) << 8) | (uint8_t)(xoffset + offsetX); // Packaging floats into one integer
-    float startUvs;
-    memcpy(&startUvs, &uintUVs, sizeof(float));
-    uint32_t norm_color = ((abyte(normals.x < 0 ? 1 : 0) & 0x1) << 5) | ((abyte(absl(normals.x)) & 0x1) << 4)
-        | ((abyte(normals.y < 0 ? 1 : 0) & 0x1) << 3) | ((abyte(absl(normals.y)) & 0x1) << 2)
-        | ((abyte(normals.z < 0 ? 1 : 0) & 0x1) << 1) | ((abyte(absl(normals.z)) & 0x1) << 0)
-        | ((abyte(cMask.x * 100) & 0x7F) << 20)
-        | ((abyte(cMask.y * 100) & 0x7F) << 13)
-        | ((abyte(cMask.z * 100) & 0x7F) << 6 );
-    float normcolor;
-    memcpy(&normcolor, &norm_color, sizeof(float));
-
-    int direction = (face == 0 || face == 3 || face == 4) ? 0 : !flat;
-    feed(uv, clipXY, clipYY, startUvs, direction);
-
-    float finalVerts[28], finalInds[6];
-
-    for (int i = 0; i < 4; i++) {
-        int idx = 7 * i, uvidx = 3 * i;
-        finalVerts[idx + 0] = v [uvidx + 0]   ;
-        finalVerts[idx + 1] = v [uvidx + 1]   ;
-        finalVerts[idx + 2] = v [uvidx + 2]   ;
-        finalVerts[idx + 3] = uv[uvidx + 0]  ;
-        finalVerts[idx + 4] = uv[uvidx + 1]  ;
-        finalVerts[idx + 5] = uv[uvidx + 2]  ;
-        finalVerts[idx + 6] = normcolor;
-    }
-    finalInds[0] = base + 0; finalInds[1] = base + 1; finalInds[2] = base + 2;
-    finalInds[3] = base + 2; finalInds[4] = base + 3; finalInds[5] = base + 0;
-
-    m.vertices.insert(m.vertices.end(), finalVerts, finalVerts + 28);
-    m.indices. insert(m.indices.end(), finalInds, finalInds + 6);
     // Two triangles (0,1,2) (2,3,0)
     base += 4;
 }
@@ -1052,7 +915,7 @@ void greedyMerge(uint8_t* mask, Mesh& m, vec2& xyChunk, int planeDirVal, int W, 
 }
 
 void greedyMergeX(uint8_t* mask, Mesh& m, vec2& xyChunk, int planeDirVal, int W, int H, int faceDir, ivec3 normals, int& base) {
-    int minX = xyChunk.x * CHUNK_SIZE, minZ = xyChunk.y * CHUNK_SIZE;
+    int minZ = xyChunk.y * CHUNK_SIZE;
     for (int l = 0; l < H; l++) {
         for (int b = 0; b < W;) {
             int idx = b + l * W;
@@ -1072,9 +935,9 @@ void greedyMergeX(uint8_t* mask, Mesh& m, vec2& xyChunk, int planeDirVal, int W,
             }
 
         not_type:
-            //ivec3 dims = vec3(1, h, w);
+            ivec3 dims = vec3(1, h, w);
             ivec3 blockPos = ivec3(planeDirVal, l, minZ + b);
-            emitFaceX(m, faceDir, type, planeDirVal, l, minZ + b, 1, h, w, normals, base);
+            emitFace(m, faceDir, type, blockPos, dims, normals, base);
 
             for (int i = 0; i < h; i++) {
                 for (int j = 0; j < w; j++) {
@@ -1087,7 +950,7 @@ void greedyMergeX(uint8_t* mask, Mesh& m, vec2& xyChunk, int planeDirVal, int W,
 }
 
 void greedyMergeZ(uint8_t* mask, Mesh& m, vec2& xyChunk, int planeDirVal, int W, int H, int faceDir, ivec3 normals, int& base) {
-    int minX = xyChunk.x * CHUNK_SIZE, minZ = xyChunk.y * CHUNK_SIZE;
+    int minX = xyChunk.x * CHUNK_SIZE;
     for (int l = 0; l < H; l++) {
         for (int b = 0; b < W;) {
             int idx = b + l * W;
@@ -1121,7 +984,8 @@ void greedyMergeZ(uint8_t* mask, Mesh& m, vec2& xyChunk, int planeDirVal, int W,
     }
 }
 
-void greedyMergeY(uint8_t* mask, Mesh& m, vec2& xyChunk, int planeDirVal, int W, int H, int minX, int minZ, int faceDir, ivec3 normals, int& base) {
+void greedyMergeY(uint8_t* mask, Mesh& m, vec2& xyChunk, int planeDirVal, int W, int H, int faceDir, ivec3 normals, int& base) {
+    int minX = xyChunk.x * CHUNK_SIZE, minZ = xyChunk.y * CHUNK_SIZE;
     for (int l = 0; l < H; l++) {
         for (int b = 0; b < W;) {
             int idx = b + l * W;
@@ -1190,21 +1054,21 @@ void meshChunk(vec2 xyChunk, unique_ptr<Chunk>& ch){//, int subChunkH) {
 
     for (int x = (xyChunk.x) * CHUNK_SIZE; x < (xyChunk.x + 1) * CHUNK_SIZE; ++x) {
         buildMaskX(mainData, blockDatas[0], (x + 0) - minX, 0, CHUNK_SIZE, CHUNK_HEIGHT-1, maskX, -normX0, nextNormX0);
-        greedyMerge(maskX, m, xyChunk, x + 0, CHUNK_SIZE, CHUNK_HEIGHT, 0, normX0, base);
+        greedyMergeX(maskX, m, xyChunk, x + 0, CHUNK_SIZE, CHUNK_HEIGHT, 0, normX0, base);
 
         buildMaskX(mainData, blockDatas[1], (x + 1) - minX, 1, CHUNK_SIZE, CHUNK_HEIGHT-1, maskX, -normX1, nextNormX1);
-        greedyMerge(maskX, m, xyChunk, x + 1, CHUNK_SIZE, CHUNK_HEIGHT, 1, normX1, base);
+        greedyMergeX(maskX, m, xyChunk, x + 1, CHUNK_SIZE, CHUNK_HEIGHT, 1, normX1, base);
     }
     for (int z = (xyChunk.y) * CHUNK_SIZE; z < (xyChunk.y + 1) * CHUNK_SIZE; ++z) {
         buildMaskZ(mainData, blockDatas[2], (z + 0) - minZ, 2, CHUNK_SIZE, CHUNK_HEIGHT-1, maskZ, -normZ0, nextNormZ0);
-        greedyMerge(maskZ, m, xyChunk, z + 0, CHUNK_SIZE, CHUNK_HEIGHT, 2, normZ0, base);
+        greedyMergeZ(maskZ, m, xyChunk, z + 0, CHUNK_SIZE, CHUNK_HEIGHT, 2, normZ0, base);
 
         buildMaskZ(mainData, blockDatas[3], (z + 1) - minZ, 3, CHUNK_SIZE, CHUNK_HEIGHT-1, maskZ, -normZ1, nextNormZ1);
-        greedyMerge(maskZ, m, xyChunk, z + 1, CHUNK_SIZE, CHUNK_HEIGHT, 3, normZ1, base);
+        greedyMergeZ(maskZ, m, xyChunk, z + 1, CHUNK_SIZE, CHUNK_HEIGHT, 3, normZ1, base);
     }
     for (int y = 0; y < CHUNK_HEIGHT; ++y) { //CHUNK_SIZE*(CHUNK_SIZE + 2) + 5
         buildMaskY(mainData, y + 0, 4, CHUNK_SIZE, CHUNK_SIZE, maskY, -normY0);
-        greedyMerge(maskY, m, xyChunk, y + 0, CHUNK_SIZE, CHUNK_SIZE, 4, normY0, base);
+        greedyMergeY(maskY, m, xyChunk, y + 0, CHUNK_SIZE, CHUNK_SIZE, 4, normY0, base);
 
         buildMaskY(mainData, y + 1, 5, CHUNK_SIZE, CHUNK_SIZE, maskY, -normY1);
         greedyMerge(maskY, m, xyChunk, y + 1, CHUNK_SIZE, CHUNK_SIZE, 5, normY1, base);
@@ -1224,7 +1088,7 @@ void meshChunk(chNeighPack* chNeigh) {
 
     Mesh& m = *mesh;
     m.vertices.reserve(5000 * 8);
-    m.indices.reserve(5000 * 3);
+    m.indices.reserve(5000 * 2);
     int base = m.vertices.size();
 
     uint8_t maskY[CHUNK_SIZE * CHUNK_SIZE];
