@@ -1223,7 +1223,7 @@ void meshChunk(chNeighPack* chNeigh) {
     chNeighRes->coords = toCoords(xyChunk);
 
     Mesh& m = *mesh;
-    m.vertices.reserve(5000 * 8);
+    m.vertices.reserve(5000 * 9);
     m.indices.reserve(5000 * 3);
     int base = m.vertices.size();
 
