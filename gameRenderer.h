@@ -201,7 +201,7 @@ public:
                     chunkCoords.insert(to(chunkPos));
                     {
                         std::lock_guard<std::mutex> lock(queueMutex);
-                        chunkRequestQueue.push(chunkPos);
+                        chunkRequestQueue.push(pack(chunkPos));
                         queueCV.notify_one();
                     }
                     count++;
@@ -223,14 +223,13 @@ public:
             }
 
             while (!chunkResultQueue.empty()) {
-                pair<unique_ptr<Chunk>, ivec2> ch;
+                chPack ch;
                 {
                     lock_guard<mutex> lock(addChunkMutex);
-                    auto& it = chunkResultQueue.front();
-                    ch.first = move(it.first); ch.second = it.second;
+                    ch = chunkResultQueue.front();
                     chunkResultQueue.pop();
                 }
-                world.chunkData.emplace(toCoords(ch.second), move(ch.first));
+                world.chunkData.emplace(ch.coords, move(ch.chPtr));
                 if (!(count++ % 9)) break;
             }
 
@@ -796,7 +795,7 @@ public:
             }
 
             bool onGround = playerCollides();
-            if (!onGround && spawn > 511) {
+            if (!onGround && spawn-- > 511) {
                 firstCamera.initial_velocity.y -= 0.5;
             }
             else if (onGround) {
@@ -818,8 +817,6 @@ public:
         lastPlayer["player"]["z"] = firstCamera.getPosition().z;
         ofstream outplayerJSON("player.json");
         outplayerJSON << lastPlayer.dump(4);
-
-        
     }////
 
     template <typename T>
@@ -839,7 +836,7 @@ public:
             auto& chunk = it->second;
             ivec2 coords = chunk->coords();
 
-            int dirs[]    = { -1, 1, 0, 0,   0, 0, -1, 1 };
+            int dirs[] = { -1, 1, 0, 0,   0, 0, -1, 1 };
 
             if ((coords.x <= _2dPlPosLo.x || coords.x >= _2dPlPosHi.x) ||
                 (coords.y <= _2dPlPosLo.y || coords.y >= _2dPlPosHi.y))
@@ -848,8 +845,8 @@ public:
                 it = world.chunkData.erase(it);
                 continue;
             }
-               
-            if (!(chunk->neighboursPresent & 1)) {
+            
+            if (chunk->getDirty()) {
                 if ((chunk->neighboursPresent & 0x1E) != 0x1E) {
                     for (int i = 0; i < 4; i++) {
                         ivec2 chcrds = coords + ivec2(dirs[i], dirs[i + 4]);
@@ -875,8 +872,7 @@ public:
                         chunkCleanupQueue.push(chunkochunks);
                     }
                     chunkUpdateCV.notify_one();
-                    chunk->neighboursPresent |= 1;
-                    //chunk->setAsClean();
+                    chunk->setAsClean();
                 }
             }
             
@@ -894,8 +890,8 @@ public:
              _2dPlPosLo = vec2(playerpos.x, playerpos.z) - float(renderDistance) * 0.5f;
 
         for (auto& chunks : world.chunkData) {
-            ivec2 coords = chunks.second->coords();
             auto& chunk = chunks.second;
+            ivec2 coords = chunk->coords();            
 
             if ((coords.x >= _2dPlPosLo.x && coords.x <= _2dPlPosHi.x) &&
                 (coords.y >= _2dPlPosLo.y && coords.y <= _2dPlPosHi.y)) {

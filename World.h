@@ -731,7 +731,8 @@ void World::createItem(vec3 blockPos, Item blockType, vec3 direction) {
 
     blockData = BlockData(blockType);
     ivec3 trueDir = floor(blockPos - direction) + vec3(1.0);
-    updateChunk(chunkPos, trueDir, blockPos);
+    chunk->setAsDirty();
+    //updateChunk(chunkPos, trueDir, blockPos);
     inventory.deassignInvSlot(slot, 3);
     blockData.blockType.assignLight(pointLights, blockPos);
 }
@@ -761,8 +762,12 @@ void generateChunkAt(vec2 xyChunk, Chunk* repChunk);
 void updateChunk(chNeighPack* chNeigh, vec3 direction, ivec3 position) {
     //unique_ptr<Mesh> m = make_unique<Mesh>();
     // Rebuild mesh from current blockData
-
+ //   static int vi = 0;
+	//auto start = std::chrono::high_resolution_clock::now();
     meshChunk(chNeigh);
+	//auto end = std::chrono::high_resolution_clock::now();
+	//if (vi++ % 10 == 0)
+ //     cout << "Chunk updating, Elapsed: " << std::chrono::duration<double>(end - start).count() << " s\n";
 }
 
 void World::updateChunk(const ivec2& chunkCoord, vec3 direction, ivec3 position) {

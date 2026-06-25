@@ -10,13 +10,13 @@ uint32_t to(ivec2 vec) {
     return (x << 16) ^ y;
 }
 
-std::queue<vec2> chunkRequestQueue;
+std::queue<uint> chunkRequestQueue;
 std::queue<vec2> cloudRequestQueue;
 std::mutex queueMutex;
 std::mutex cloudqMutex;
 std::condition_variable queueCV, cloudqCV;
 
-std::queue<pair<unique_ptr<Chunk>, ivec2>> chunkResultQueue;
+std::queue<chPack> chunkResultQueue;
 std::queue<pair<unique_ptr<CloudMesh>, ivec2>> cloudResultQueue;
 std::mutex resultMutex;
 std::mutex cloudrMutex;
@@ -889,17 +889,17 @@ void greedyMerge(uint8_t* mask, Mesh& m, vec2& xyChunk, int planeDirVal, int W, 
                 b++; continue;
             }
 
-            int w = 1, h = 1;
+            int w = 1, h = 1; int stop = 0;
             while (b + w < W && mask[idx + w] == type) { w++; }
             while (l + h < H) {
                 int row = (l + h) * W + b;
                 for (int d = 0; d < w; d++) {
-                    if (mask[row + d] != type) goto not_type;
+                    if (mask[row + d] != type) { stop = 1; break; }
                 }
+				if (stop) break;
                 h++;
             }
 
-        not_type:
             ivec3 dims = (dir == 0) ? vec3(1, h, w) : (dir == 1) ? vec3(w, h, 1) : vec3(w, 1, h);
             ivec3 blockPos = (dir == 0) ? ivec3(planeDirVal, l, minZ + b) : (dir == 1) ? ivec3(minX + b, l, planeDirVal) : ivec3(minX + b, planeDirVal, minZ + l);
             emitFace(m, faceDir, type, blockPos, dims, normals, base);
@@ -1019,67 +1019,6 @@ void greedyMergeY(uint8_t* mask, Mesh& m, vec2& xyChunk, int planeDirVal, int W,
     }
 }
 
-void meshChunk(vec2 xyChunk, unique_ptr<Chunk>& ch){//, int subChunkH) {
-    //auto start = chrono::high_resolution_clock::now();
-
-	unique_ptr<Mesh> mesh = make_unique<Mesh>();
-	Mesh& m = *mesh;
-    m.vertices.reserve(m.vertices.size() + 7000 * 7);
-    m.indices.reserve(m.indices.size() + 7000 * 6);
-    int base = m.vertices.size();
-    
-    uint8_t maskY[CHUNK_SIZE * CHUNK_SIZE];
-    uint8_t maskX[CHUNK_SIZE * CHUNK_HEIGHT];
-    uint8_t maskZ[CHUNK_SIZE * CHUNK_HEIGHT];
-    //span<uint8_t> msk(maskX); good just with raw pointers
-    //lock_guard<mutex> lock(meshMutex);
-    BlockData* mainData = ch->block_data.data();
-    BlockData* blockDatas[4];
-
-    int dirsX[] = { -1, 1, 0, 0 }, dirsY[] = { 0, 0, -1, 1 };
-    for (int i = 0; i < 4; i++) {
-        ivec2 crds = xyChunk;
-        uint idxcrds = pack(crds + ivec2(dirsX[i], dirsY[i]));
-        blockDatas[i] = nullptr;
-        {
-            //lock_guard<mutex> lock(worldChunkDataMutex);
-            unique_ptr<Chunk>& chunk = world.chunkData[idxcrds];
-            if (chunk) {
-                blockDatas[i] = chunk->block_data.data();
-            }
-        }
-    }
-
-    int minX = xyChunk.x * CHUNK_SIZE, minZ = xyChunk.y * CHUNK_SIZE;
-
-    for (int x = (xyChunk.x) * CHUNK_SIZE; x < (xyChunk.x + 1) * CHUNK_SIZE; ++x) {
-        buildMaskX(mainData, blockDatas[0], (x + 0) - minX, 0, CHUNK_SIZE, CHUNK_HEIGHT-1, maskX, -normX0, nextNormX0);
-        greedyMergeX(maskX, m, xyChunk, x + 0, CHUNK_SIZE, CHUNK_HEIGHT, 0, normX0, base);
-
-        buildMaskX(mainData, blockDatas[1], (x + 1) - minX, 1, CHUNK_SIZE, CHUNK_HEIGHT-1, maskX, -normX1, nextNormX1);
-        greedyMergeX(maskX, m, xyChunk, x + 1, CHUNK_SIZE, CHUNK_HEIGHT, 1, normX1, base);
-    }
-    for (int z = (xyChunk.y) * CHUNK_SIZE; z < (xyChunk.y + 1) * CHUNK_SIZE; ++z) {
-        buildMaskZ(mainData, blockDatas[2], (z + 0) - minZ, 2, CHUNK_SIZE, CHUNK_HEIGHT-1, maskZ, -normZ0, nextNormZ0);
-        greedyMergeZ(maskZ, m, xyChunk, z + 0, CHUNK_SIZE, CHUNK_HEIGHT, 2, normZ0, base);
-
-        buildMaskZ(mainData, blockDatas[3], (z + 1) - minZ, 3, CHUNK_SIZE, CHUNK_HEIGHT-1, maskZ, -normZ1, nextNormZ1);
-        greedyMergeZ(maskZ, m, xyChunk, z + 1, CHUNK_SIZE, CHUNK_HEIGHT, 3, normZ1, base);
-    }
-    for (int y = 0; y < CHUNK_HEIGHT; ++y) { //CHUNK_SIZE*(CHUNK_SIZE + 2) + 5
-        buildMaskY(mainData, y + 0, 4, CHUNK_SIZE, CHUNK_SIZE, maskY, -normY0);
-        greedyMergeY(maskY, m, xyChunk, y + 0, CHUNK_SIZE, CHUNK_SIZE, 4, normY0, base);
-
-        buildMaskY(mainData, y + 1, 5, CHUNK_SIZE, CHUNK_SIZE, maskY, -normY1);
-        greedyMerge(maskY, m, xyChunk, y + 1, CHUNK_SIZE, CHUNK_SIZE, 5, normY1, base);
-    }
-
-    {
-        std::lock_guard<std::mutex> lock(chunkMeshQueueMutex);
-        chunkMeshQueue.push({ move(mesh), ch->mesh.get() });// , xyChunk });
-    }
-}
-
 void meshChunk(chNeighPack* chNeigh) {
 	vec2 xyChunk = unpack(chNeigh->coords);
     chNeighResult* chNeighRes = new chNeighResult();
@@ -1087,8 +1026,8 @@ void meshChunk(chNeighPack* chNeigh) {
     chNeighRes->coords = toCoords(xyChunk);
 
     Mesh& m = *mesh;
-    m.vertices.reserve(5000 * 8);
-    m.indices.reserve(5000 * 2);
+    m.vertices.reserve(5000 * 8.5);
+    m.indices.reserve(5000 * 2.5);
     int base = m.vertices.size();
 
     uint8_t maskY[CHUNK_SIZE * CHUNK_SIZE];
@@ -1118,43 +1057,9 @@ void meshChunk(chNeighPack* chNeigh) {
         buildMaskY(chNeigh->block_data.data(), y + 1, 5, CHUNK_SIZE, CHUNK_SIZE, maskY, -normY1);
         greedyMerge(maskY, m, xyChunk, y + 1, CHUNK_SIZE, CHUNK_SIZE, 5, normY1, base);
     }
-    
-    {
-        std::lock_guard<std::mutex> lock(chunkMeshQueueMutex);
-        chunkMeshResult.push((chNeighRes));
-    }
-}
-
-bool buildMaskY(CloudMesh& chm, int planeDirVal, int W, int H, uint8_t* mask, ivec3 normal) {
-    bool allAir = true;
-    for (int l = 0; l < H; l++) {
-        for (int b = 0; b < W; b++) {
-            int idx = b + l * W;
-            uint8_t& maskItem = mask[idx]; maskItem = 0;
-            maskItem = 7;
-        }
-    }
-    return allAir;
-}
-
-void meshClouds(CloudMesh& cloudmesh, vec2 xyChunk) {
-    Mesh& m = (*cloudmesh.mesh);
-    m.vertices.reserve(m.vertices.size() + 5000 * 7);
-    m.indices.reserve(m.indices.size() + 5000 * 6);
-    int base = m.vertices.size();
-
-    uint8_t maskY[CHUNK_SIZE * CHUNK_SIZE];
-
-    ivec3 normY0 = ivec3(0, 1, 0),
-          normY1 = ivec3(0, -1, 0);
-
-    ivec3 nextNormY0 = normY0 * CHUNK_SIZE,
-          nextNormY1 = normY1 * CHUNK_SIZE;
-
-    for (int y = CHUNK_HEIGHT - 1; y < CHUNK_HEIGHT; ++y) {
-        buildMaskY(cloudmesh, y + 0, CHUNK_SIZE, CHUNK_SIZE, maskY, -normY0);
-        greedyMerge(maskY, m, xyChunk, y + 0, CHUNK_SIZE, CHUNK_SIZE, 4, normY0, base);
-    }
+ 
+    std::lock_guard<std::mutex> lock(chunkMeshQueueMutex);
+    chunkMeshResult.push((chNeighRes));
 }
 
 void breakThread() {
@@ -1190,7 +1095,7 @@ std::thread blockPlaceThread([&]() {
 
 void chunkWorker() {
     while (chunkGenRunning) {
-        ivec2 coord;
+        uint coord;
         {
             std::unique_lock<std::mutex> lock(queueMutex);
             queueCV.wait(lock, [] { return !chunkRequestQueue.empty(); });
@@ -1198,14 +1103,14 @@ void chunkWorker() {
             chunkRequestQueue.pop();
         }
 
-        unique_ptr<Chunk> newChunk = make_unique<Chunk>();
-        newChunk->toCoords(coord);
+        Chunk* newChunk = new Chunk();
+        newChunk->coord = (coord);
 
-        generateBlocks(coord, newChunk.get());
+        generateBlocks(unpack(coord), newChunk);
         
         {
             lock_guard<mutex> lock(addChunkMutex);
-            chunkResultQueue.push({ move(newChunk), coord });
+            chunkResultQueue.push({ newChunk, coord });
         }
     }
 }////////////
