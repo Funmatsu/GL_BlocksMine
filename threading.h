@@ -1028,7 +1028,7 @@ void meshChunk(chNeighPack* chNeigh) {
     Mesh& m = *mesh;
     m.vertices.reserve(5000 * 8.5);
     m.indices.reserve(5000 * 2.5);
-    int base = m.vertices.size();
+    int base = 0;
 
     uint8_t maskY[CHUNK_SIZE * CHUNK_SIZE];
     uint8_t maskX[CHUNK_SIZE * CHUNK_HEIGHT];
@@ -1059,7 +1059,7 @@ void meshChunk(chNeighPack* chNeigh) {
     }
  
     std::lock_guard<std::mutex> lock(chunkMeshQueueMutex);
-    chunkMeshResult.push((chNeighRes));
+    chunkMeshResult.push(chNeighRes);
 }
 
 void breakThread() {
