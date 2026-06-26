@@ -205,7 +205,7 @@ public:
                         queueCV.notify_one();
                     }
                     count++;
-                    if (!(count % 8)) { break; }
+                    if (!(count % 7)) { break; }
                 }
             }
 
@@ -219,7 +219,7 @@ public:
                 if (!world.chunkData.count(chNeighRes->coords)) continue;
                 world.chunkData.at(chNeighRes->coords)->mesh->createMesh(chNeighRes->mesh->vertices, chNeighRes->mesh->indices);
                 delete chNeighRes;
-                if(!(count++ % 3)) break;
+                if(!(count++ % 7)) break;
             }
 
             while (!chunkResultQueue.empty()) {
@@ -230,7 +230,7 @@ public:
                     chunkResultQueue.pop();
                 }
                 world.chunkData.emplace(ch.coords, move(ch.chPtr));
-                if (!(count++ % 9)) break;
+                if (!(count++ % 7)) break;
             }
 
             VP = projection * firstCamera.calcViewMatrix();

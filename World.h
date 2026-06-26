@@ -743,17 +743,17 @@ bool shouldEmitFace(vec2 xyChunk, Chunk* cd, int x, int y, int z, int dx, int dy
 
 void emitFace(Mesh& m, int face, Item blockType, float x, float y, float z);
 
-void meshChunk(vec2 xyChunk, unique_ptr<Chunk>& ch);// , int subChunky);
+//void meshChunk(vec2 xyChunk, unique_ptr<Chunk>& ch);// , int subChunky);
 
 void meshChunk(chNeighPack*);
 
-
-void meshSubChunks(vec2 xyChunk, Chunk* ch);// , Mesh& m, int subChunky);
-
-void meshSubChunk(vec2 xyChunk, Chunk* ch, int subChunky);
-
-
-void meshClouds(CloudMesh& cloudmesh, vec2 xyChunk);
+//
+//void meshSubChunks(vec2 xyChunk, Chunk* ch);// , Mesh& m, int subChunky);
+//
+//void meshSubChunk(vec2 xyChunk, Chunk* ch, int subChunky);
+//
+//
+//void meshClouds(CloudMesh& cloudmesh, vec2 xyChunk);
 
 void meshChunk(vec2 xyChunk, Chunk* cd, Mesh& out, vec3 direction, ivec3 position);
 
@@ -770,23 +770,23 @@ void updateChunk(chNeighPack* chNeigh, vec3 direction, ivec3 position) {
  //     cout << "Chunk updating, Elapsed: " << std::chrono::duration<double>(end - start).count() << " s\n";
 }
 
-void World::updateChunk(const ivec2& chunkCoord, vec3 direction, ivec3 position) {
-    //auto start = std::chrono::high_resolution_clock::now();
-
-    auto it = chunkData.find(pack(chunkCoord));
-    if (it == chunkData.end()) return; // Chunk doesn't exist, painful null ptr risk
-
-    auto& chunk = it->second;
-
-    //if (!chunk) return;
-	unique_ptr<Mesh> m = make_unique<Mesh>();
-    // Rebuild mesh from current blockData
-    meshChunk(chunkCoord, chunk//, i
-        //, direction, position
-    );
-    //auto end = std::chrono::high_resolution_clock::now();
-    //std::cout << chunk->mesh->vertices.size() << " verts. chunk n_" << chunkCount++ << " updating, Elapsed: " << std::chrono::duration<double>(end - start).count() << " s\n";
-}
+//void World::updateChunk(const ivec2& chunkCoord, vec3 direction, ivec3 position) {
+//    //auto start = std::chrono::high_resolution_clock::now();
+//
+//    auto it = chunkData.find(pack(chunkCoord));
+//    if (it == chunkData.end()) return; // Chunk doesn't exist, painful null ptr risk
+//
+//    auto& chunk = it->second;
+//
+//    //if (!chunk) return;
+//	unique_ptr<Mesh> m = make_unique<Mesh>();
+//    // Rebuild mesh from current blockData
+//    meshChunk(chunkCoord, chunk//, i
+//        //, direction, position
+//    );
+//    //auto end = std::chrono::high_resolution_clock::now();
+//    //std::cout << chunk->mesh->vertices.size() << " verts. chunk n_" << chunkCount++ << " updating, Elapsed: " << std::chrono::duration<double>(end - start).count() << " s\n";
+//}
 
 Block World::delBlocklook_at() {
     ivec3 blockPos = lookingAtBlock();
