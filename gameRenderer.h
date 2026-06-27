@@ -197,8 +197,8 @@ public:
             for (auto chunkOff : spiral) {
                 ivec2 camChunkPos = ivec2(floorDiv(firstCamera.getPosition().x, CHUNK_SIZE), floorDiv(firstCamera.getPosition().z, CHUNK_SIZE));
                 ivec2 chunkPos = camChunkPos + chunkOff;
-                if (chunkCoords.count(pack(chunkPos)) == 0) {
-                    chunkCoords.insert(pack(chunkPos));
+                if (world.chunkData.count(pack(chunkPos)) == 0) {
+                    //chunkCoords.insert(pack(chunkPos));
                     {
                         std::lock_guard<std::mutex> lock(queueMutex);
                         chunkRequestQueue.push(pack(chunkPos));
@@ -229,7 +229,7 @@ public:
                     ch = chunkResultQueue.front();
                     chunkResultQueue.pop();
                 }
-                world.chunkData.emplace(ch.coords, move(ch.chPtr));
+                world.chunkData.try_emplace(ch.coords, move(ch.chPtr));
                 if (!(count++ % 7)) break;
             }
 
