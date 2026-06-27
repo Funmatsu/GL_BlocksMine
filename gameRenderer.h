@@ -197,8 +197,8 @@ public:
             for (auto chunkOff : spiral) {
                 ivec2 camChunkPos = ivec2(floorDiv(firstCamera.getPosition().x, CHUNK_SIZE), floorDiv(firstCamera.getPosition().z, CHUNK_SIZE));
                 ivec2 chunkPos = camChunkPos + chunkOff;
-                if (world.chunkData.count(pack(chunkPos)) == 0) {
-                    //chunkCoords.insert(pack(chunkPos));
+                if (chunkCoords.count(pack(chunkPos)) == 0) {
+                    chunkCoords.insert(pack(chunkPos));
                     {
                         std::lock_guard<std::mutex> lock(queueMutex);
                         chunkRequestQueue.push(pack(chunkPos));
@@ -795,7 +795,7 @@ public:
             }
 
             bool onGround = playerCollides();
-            if (!onGround && spawn-- > 511) {
+            if (!onGround && spawn > 511) {
                 firstCamera.initial_velocity.y -= 0.5;
             }
             else if (onGround) {
@@ -854,7 +854,7 @@ public:
                             chunk->neighboursPresent |= (1 << (i + 1));
                         }
                     }
-                } 
+                }
                 if (chunk->neighboursPresent == 0x1E) { // 1 1110 
                     chNeighPack* chunkochunks = new chNeighPack();
                     chunkochunks->coords = chunk->coord;
@@ -864,7 +864,7 @@ public:
                         uint idxcrds = pack(chcrds);
                         if (world.chunkData.count(idxcrds)) {
                             auto& ch = world.chunkData.at(idxcrds);
-                            memcpy(chunkochunks->neighbour_data[i].data(), ch->block_data.data(), CHUNK_VOLUME);
+                            memset(chunkochunks->neighbour_data[i].data(), 0x9, CHUNK_VOLUME);
                         }
                     }
                     {
@@ -957,6 +957,7 @@ public:
             position += right * movementSpeed * deltaTime;
         }
         if (mainWindow.getKeys()[GLFW_KEY_SPACE]) {
+			//position += vec3(0, movementSpeed * deltaTime, 0);
             initial_velocity.y = 100 * 3 * movementSpeed;
         }
         if (mainWindow.getKeys()[GLFW_KEY_LEFT_SHIFT]) {
