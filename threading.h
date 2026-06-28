@@ -14,7 +14,7 @@ std::queue<uint> chunkRequestQueue;
 std::queue<vec2> cloudRequestQueue;
 std::mutex queueMutex;
 std::mutex cloudqMutex;
-std::condition_variable queueCV, cloudqCV;
+std::condition_variable queueCV, cloudqCV, meshSchedCV;
 
 std::queue<chPack> chunkResultQueue;
 std::queue<pair<unique_ptr<CloudMesh>, ivec2>> cloudResultQueue;
@@ -56,6 +56,7 @@ std::atomic<bool> chunkUpdateGenRunning = true;
 std::atomic<bool> blockBreaking = true;
 std::atomic<bool> blockPlacing = true;
 std::atomic<bool> stopChunkUpdaters = false;
+std::atomic<bool> stopMeshing = false;
 std::atomic<bool> stopChunkNeighCheck = false;
 bool blockBreakingOut = false;
 bool blockPlacingOut = false;
@@ -756,8 +757,7 @@ void emitFace(Mesh& m, int face, uint8_t blockType, ivec3 blockPos, ivec3 dims, 
         case 1: v[0] = blockPos.x + -0.5f,          v[1] = blockPos.y + -0.5f,          v[2] = blockPos.z +  0.5f;          v[3] = blockPos.x + -0.5f,          v[4] = blockPos.y + -0.5f + dims.y, v[5] = blockPos.z +  0.5f;          v[6] = blockPos.x +  0.5f,          v[7] = blockPos.y + -0.5f + dims.y, v[8] = blockPos.z + -0.5f;          v[9] = blockPos.x +  0.5f,          v[10] = blockPos.y + -0.5f,          v[11] = blockPos.z + -0.5f; break; // +X diagonal
         case 2: v[0] = blockPos.x +  0.5f,          v[1] = blockPos.y + -0.5f,          v[2] = blockPos.z +  0.5f;          v[3] = blockPos.x +  0.5f,          v[4] = blockPos.y + -0.5f + dims.y, v[5] = blockPos.z +  0.5f;          v[6] = blockPos.x + -0.5f,          v[7] = blockPos.y + -0.5f + dims.y, v[8] = blockPos.z + -0.5f;          v[9] = blockPos.x + -0.5f,          v[10] = blockPos.y + -0.5f,          v[11] = blockPos.z + -0.5f; break; // -X disgonal
         case 3: v[0] = blockPos.x +  0.5f,          v[1] = blockPos.y + -0.5f,          v[2] = blockPos.z + -0.5f;          v[3] = blockPos.x +  0.5f,          v[4] = blockPos.y + -0.5f + dims.y, v[5] = blockPos.z + -0.5f;          v[6] = blockPos.x + -0.5f,          v[7] = blockPos.y + -0.5f + dims.y, v[8] = blockPos.z +  0.5f;          v[9] = blockPos.x + -0.5f,          v[10] = blockPos.y + -0.5f,          v[11] = blockPos.z +  0.5f; break; // +X diagonal
-        case 4: v[0] = 0,                           v[1] = 0,                           v[2] = 0;                           v[3] = 0,                           v[4] = 0,                           v[5] = 0;                           v[6] = 0,                           v[7] = 0,                           v[8] = 0;                           v[9] = 0,                           v[10] = 0,                           v[11] = 0;                  break; // -Y
-        case 5: v[0] = 0,                           v[1] = 0,                           v[2] = 0;                           v[3] = 0,                           v[4] = 0,                           v[5] = 0;                           v[6] = 0,                           v[7] = 0,                           v[8] = 0;                           v[9] = 0,                           v[10] = 0,                           v[11] = 0;                  break; // +Y
+		default:memset(v, 0, sizeof(float) * 12); break;
         }
     }
 
@@ -1094,7 +1094,6 @@ std::thread blockPlaceThread([&]() {
     }
     });
 
-
 void chunkWorker() {
     while (chunkGenRunning) {
         uint coord;
@@ -1136,6 +1135,51 @@ void cloudWorker() {
                 //meshClouds(*chm, coord);
                 //cloudResultQueue.push({ move(chm), coord });
                 //sky.addCloud(chm, coord);
+            }
+        }
+    }
+}
+
+void meshScheduleWorker() {
+    {
+        unique_lock<mutex> lock(cloudrMutex);
+        meshSchedCV.wait(lock, [] { return chunkResultQueue.empty(); });
+    }
+    while (!stopMeshing) {
+        int dirs[] = { -1, 0, 1, 0, 0, -1, 0, 1 };
+
+        for (auto it = world.chunkData.begin(); it != world.chunkData.end(); ++it) {
+            auto& chunk = it->second;
+            ivec2 coords = chunk->coords();
+
+            if (chunk->getDirty()) {
+                if ((chunk->neighboursPresent & 0x1E) != 0x1E) {
+                    for (int i = 0; i < 4; i++) {
+                        ivec2 chcrds = coords + ivec2(dirs[i], dirs[i + 4]);
+                        if (world.chunkData.count(pack(chcrds)) > 0) {
+                            chunk->neighboursPresent |= (1 << (i + 1));
+                        }
+                    }
+                }
+                if (chunk->neighboursPresent == 0x1E) { // 1 1110 
+                    chNeighPack* chunkochunks = new chNeighPack();
+                    chunkochunks->coords = chunk->coord;
+                    memcpy(chunkochunks->block_data.data(), chunk->block_data.data(), CHUNK_VOLUME);
+                    for (int i = 0; i < 4; i++) {
+                        ivec2 chcrds = coords + ivec2(dirs[i], dirs[i + 4]);
+                        uint idxcrds = pack(chcrds);
+                        if (world.chunkData.count(idxcrds)) {
+                            auto& ch = world.chunkData.at(idxcrds);
+                            memcpy(chunkochunks->neighbour_data[i].data(), ch->block_data.data(), CHUNK_VOLUME);
+                        }
+                    }
+                    {
+                        std::lock_guard<std::mutex> lock(chunkUpdateRequestMutex);
+                        chunkCleanupQueue.push(chunkochunks);
+                    }
+                    chunkUpdateCV.notify_one();
+                    chunk->setAsClean();
+                }
             }
         }
     }

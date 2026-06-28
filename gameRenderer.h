@@ -148,6 +148,8 @@ public:
             workers.push_back(thread(updateChunkJob));
             if (i < 2)
                 workers.push_back(thread(chunkWorker)); // worker thread is somewhere in threading.h
+			if (i < 1)
+				workers.push_back(thread(meshScheduleWorker));
         }
 
         mainLight = DirectionalLight(mainWindow.getBufferWidth(), mainWindow.getBufferHeight(),
@@ -165,6 +167,7 @@ public:
         mainLight.setShadowPos(firstCamera.getPosition());
 
         glClearColor(1, 1, 1, 0);
+        meshSchedCV.notify_all();
     }
 
     void run() {
@@ -255,9 +258,9 @@ public:
 
             //isolateWorld();
 			//scheduleMeshWorld();
-			//renderWorld();
+			renderWorld();
 
-            render();
+            //render();
 
             headPos = firstCamera.getPosition(), headFront = firstCamera.getFront();
             lookBlock = getBlockAt(lookingAtBlock());
@@ -780,9 +783,6 @@ public:
                 chunkGenRunning = false;
                 queueCV.notify_all(); // wake up sleeping threads
 
-                for (auto& t : workers)
-                    t.join();
-
                 chunkGenRunning = false;
                 chunkGenRunning2 = false;
                 chunkUpdateGenRunning = false;
@@ -791,6 +791,12 @@ public:
                 blockBreaking = false;//chunkGenThread.join(); //chunkGenThread2.join(); //chunkGenThread3.join();
                 blockBreakThread1.join();
                 blockPlaceThread.join();
+                stopMeshing = false;
+                chunkUpdateCV.notify_all();
+
+                for (auto& t : workers)
+                    t.join();
+                
                 return;
             }
 
@@ -831,49 +837,30 @@ public:
 
     void renderWorld() {
         vec3 playerPos = firstCamera.getPosition() / vec3(CHUNK_SIZE, 1, CHUNK_SIZE);
-        int dirs[] = { -1, 1, 0, 0,   0, 0, -1, 1 };
+        vec2 _2dPlPosHi = vec2(playerPos.x, playerPos.z) + float(renderDistance),
+            _2dPlPosLo = vec2(playerPos.x, playerPos.z) - float(renderDistance);
 
-        for (auto it = world.chunkData.begin(); it != world.chunkData.end(); it++) {
+        for (auto it = world.chunkData.begin(); it != world.chunkData.end();) {
             auto& chunk = it->second;
             ivec2 coords = chunk->coords();
-            
-            if (chunk->getDirty()) {
-                if ((chunk->neighboursPresent & 0x1E) != 0x1E) {
-                    for (int i = 0; i < 4; i++) {
-                        ivec2 chcrds = coords + ivec2(dirs[i], dirs[i + 4]);
-                        if (world.chunkData.count(pack(chcrds)) > 0) {
-                            chunk->neighboursPresent |= (1 << (i + 1));
-                        }
-                    }
-                }
-                if (chunk->neighboursPresent == 0x1E) { // 1 1110 
-                    chNeighPack* chunkochunks = new chNeighPack();
-                    chunkochunks->coords = chunk->coord;
-                    memcpy(chunkochunks->block_data.data(), chunk->block_data.data(), CHUNK_VOLUME);
-                    for (int i = 0; i < 4; i++) {
-                        ivec2 chcrds = coords + ivec2(dirs[i], dirs[i + 4]);
-                        uint idxcrds = pack(chcrds);
-                        if (world.chunkData.count(idxcrds)) {
-                            auto& ch = world.chunkData.at(idxcrds);
-                            memcpy(chunkochunks->neighbour_data[i].data(), ch->block_data.data(), CHUNK_VOLUME);
-                        }
-                    }
-                    {
-                        std::lock_guard<std::mutex> lock(chunkUpdateRequestMutex);
-                        chunkCleanupQueue.push(chunkochunks);
-                    }
-                    chunkUpdateCV.notify_one();
-                    chunk->setAsClean();
-                }
+
+            if ((coords.x <= _2dPlPosLo.x || coords.x >= _2dPlPosHi.x) ||
+                (coords.y <= _2dPlPosLo.y || coords.y >= _2dPlPosHi.y))
+            {
+                chunkCoords.erase((chunk->coord));
+                it = world.chunkData.erase(it);
+                continue;
             }
 
             vec3 center = vec3((coords.x + 0.5) * CHUNK_SIZE, playerPos.y, (coords.y + 0.5) * CHUNK_SIZE);
             if (sphereInFrustum(center, CHUNK_SIZE * 2))
                 chunk->mesh->renderMesh();
+
+            it++;
         }
     }
 
-    void render(){
+    void render() {
         static int tps = 0; //tick per sec
         vec3 playerPos = firstCamera.getPosition() / vec3(CHUNK_SIZE, 1, CHUNK_SIZE);
         vec2 _2dPlPosHi = vec2(playerPos.x, playerPos.z) + float(renderDistance),
