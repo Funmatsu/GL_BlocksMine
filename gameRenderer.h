@@ -253,6 +253,8 @@ public:
             Textures[FOLL_TEX]->useTexture(GL_TEXTURE4);
             glUniform1i(glGetUniformLocation(shaders[0]->getShaderId(), "grassColorTexture"), 4);
 
+            isolateWorld();
+			scheduleMeshWorld();
 			renderWorld();
 
             headPos = firstCamera.getPosition(), headFront = firstCamera.getFront();
@@ -826,18 +828,45 @@ public:
     }
 
     void renderWorld() {
-        static int tps = 0; //tick per sec
-        vec3 playerPos = firstCamera.getPosition()/vec3(CHUNK_SIZE, 1, CHUNK_SIZE);
-		vec2 _2dPlPosHi = vec2(playerPos.x, playerPos.z) + float(renderDistance),
-             _2dPlPosLo = vec2(playerPos.x, playerPos.z) - float(renderDistance);
+        vec3 playerPos = firstCamera.getPosition() / vec3(CHUNK_SIZE, 1, CHUNK_SIZE);
 
-        auto it = world.chunkData.begin();
-        while (it != world.chunkData.end()) {
+        for (auto it = world.chunkData.begin(); it != world.chunkData.end(); it++) {
             auto& chunk = it->second;
             ivec2 coords = chunk->coords();
+                        
+            vec3 center = vec3((coords.x + 0.5) * CHUNK_SIZE, playerPos.y, (coords.y + 0.5) * CHUNK_SIZE);
+            if (sphereInFrustum(center, CHUNK_SIZE * 2))
+                chunk->mesh->renderMesh();
+        }
+    }
 
-            int dirs[] = { -1, 1, 0, 0,   0, 0, -1, 1 };
+    void renderShadowWorld() {
+        vec3 playerpos = firstCamera.getPosition() / vec3(CHUNK_SIZE, 1, CHUNK_SIZE);
+        vec2 _2dPlPosHi = vec2(playerpos.x, playerpos.z) + float(renderDistance) * 0.5f,
+             _2dPlPosLo = vec2(playerpos.x, playerpos.z) - float(renderDistance) * 0.5f;
 
+        for (auto& chunks : world.chunkData) {
+            auto& chunk = chunks.second;
+            ivec2 coords = chunk->coords();  
+
+            if ((coords.x >= _2dPlPosLo.x && coords.x <= _2dPlPosHi.x) &&
+                (coords.y >= _2dPlPosLo.y && coords.y <= _2dPlPosHi.y)) {
+                vec3 center = vec3((coords.x + 0.5) * CHUNK_SIZE, playerpos.y, (coords.y + 0.5) * CHUNK_SIZE);
+                if (sphereInFrustum(center, CHUNK_SIZE))
+                    chunk->mesh->renderMesh();
+            }
+        }
+    }
+
+    void isolateWorld() {
+        vec3 playerPos = firstCamera.getPosition() / vec3(CHUNK_SIZE, 1, CHUNK_SIZE);
+        vec2 _2dPlPosHi = vec2(playerPos.x, playerPos.z) + float(renderDistance),
+            _2dPlPosLo  = vec2(playerPos.x, playerPos.z) - float(renderDistance);
+
+        for (auto it = world.chunkData.begin(); it != world.chunkData.end();) {
+			auto& chunk = it->second;
+			ivec2 coords = chunk->coords();
+                       
             if ((coords.x <= _2dPlPosLo.x || coords.x >= _2dPlPosHi.x) ||
                 (coords.y <= _2dPlPosLo.y || coords.y >= _2dPlPosHi.y))
             {
@@ -845,7 +874,21 @@ public:
                 it = world.chunkData.erase(it);
                 continue;
             }
-            
+
+            it++;
+		}
+    }
+
+    void scheduleMeshWorld() {
+        //static int tps = 0; //tick per sec
+        vec3 playerPos = firstCamera.getPosition() / vec3(CHUNK_SIZE, 1, CHUNK_SIZE);
+
+        int dirs[] = { -1, 1, 0, 0,   0, 0, -1, 1 };
+
+        for (auto it = world.chunkData.begin(); it != world.chunkData.end(); it++) {
+            auto& chunk = it->second;
+            ivec2 coords = chunk->coords();
+                        
             if (chunk->getDirty()) {
                 if ((chunk->neighboursPresent & 0x1E) != 0x1E) {
                     for (int i = 0; i < 4; i++) {
@@ -864,7 +907,7 @@ public:
                         uint idxcrds = pack(chcrds);
                         if (world.chunkData.count(idxcrds)) {
                             auto& ch = world.chunkData.at(idxcrds);
-                            memset(chunkochunks->neighbour_data[i].data(), 0x9, CHUNK_VOLUME);
+                            memcpy(chunkochunks->neighbour_data[i].data(), ch->block_data.data(), CHUNK_VOLUME);
                         }
                     }
                     {
@@ -874,30 +917,6 @@ public:
                     chunkUpdateCV.notify_one();
                     chunk->setAsClean();
                 }
-            }
-            
-            vec3 center = vec3((coords.x + 0.5) * CHUNK_SIZE, playerPos.y, (coords.y + 0.5) * CHUNK_SIZE);
-            if (sphereInFrustum(center, CHUNK_SIZE * 2))
-                chunk->mesh->renderMesh();
-
-            it++;
-        }
-    }
-
-    void renderShadowWorld() {
-        vec3 playerpos = firstCamera.getPosition() / vec3(CHUNK_SIZE, 1, CHUNK_SIZE);
-        vec2 _2dPlPosHi = vec2(playerpos.x, playerpos.z) + float(renderDistance) * 0.5f,
-             _2dPlPosLo = vec2(playerpos.x, playerpos.z) - float(renderDistance) * 0.5f;
-
-        for (auto& chunks : world.chunkData) {
-            auto& chunk = chunks.second;
-            ivec2 coords = chunk->coords();            
-
-            if ((coords.x >= _2dPlPosLo.x && coords.x <= _2dPlPosHi.x) &&
-                (coords.y >= _2dPlPosLo.y && coords.y <= _2dPlPosHi.y)) {
-                vec3 center = vec3((coords.x + 0.5) * CHUNK_SIZE, playerpos.y, (coords.y + 0.5) * CHUNK_SIZE);
-                if(sphereInFrustum(center, CHUNK_SIZE)) 
-                    chunk->mesh->renderMesh();
             }
         }
     }
