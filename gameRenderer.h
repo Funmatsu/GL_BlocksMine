@@ -148,8 +148,8 @@ public:
             workers.push_back(thread(updateChunkJob));
             if (i < 2)
                 workers.push_back(thread(chunkWorker)); // worker thread is somewhere in threading.h
-			if (i < 1)
-				workers.push_back(thread(meshScheduleWorker));
+			//if (i < 1)
+			//	workers.push_back(thread(meshScheduleWorker));
         }
 
         mainLight = DirectionalLight(mainWindow.getBufferWidth(), mainWindow.getBufferHeight(),
@@ -258,9 +258,9 @@ public:
 
             //isolateWorld();
 			//scheduleMeshWorld();
-			renderWorld();
+			//renderWorld();
 
-            //render();
+            render();
 
             headPos = firstCamera.getPosition(), headFront = firstCamera.getFront();
             lookBlock = getBlockAt(lookingAtBlock());
