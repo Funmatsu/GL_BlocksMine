@@ -886,7 +886,7 @@ public:
                     for (int i = 0; i < 4; i++) {
                         ivec2 chcrds = coords + ivec2(dirs[i], dirs[i + 4]);
                         if (world.chunkData.count(pack(chcrds)) > 0) {
-                            chunk->neighboursPresent |= (1 << (i + 1));
+                            chunk->neighboursPresent |= (1 << (i + 1)); 
                         }
                     }
                 }
