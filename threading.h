@@ -61,19 +61,19 @@ std::atomic<bool> stopChunkNeighCheck = false;
 bool blockBreakingOut = false;
 bool blockPlacingOut = false;
 
-ivec3   normX0 = ivec3( 1, 0, 0),
-        normX1 = ivec3(-1, 0, 0),
-        normZ0 = ivec3( 0, 0, 1),
-        normZ1 = ivec3( 0, 0,-1),
-        normY0 = ivec3( 0, 1, 0),
-        normY1 = ivec3( 0,-1, 0);
+ivec3   unitNormalX0 = ivec3( 1, 0, 0),
+        unitNormalX1 = ivec3(-1, 0, 0),
+        unitNormalZ0 = ivec3( 0, 0, 1),
+        unitNormalZ1 = ivec3( 0, 0,-1),
+        unitNormalY0 = ivec3( 0, 1, 0),
+        unitNormalY1 = ivec3( 0,-1, 0);
 
-ivec3   nextNormX0 = normX0 * CHUNK_SIZE,
-        nextNormX1 = normX1 * CHUNK_SIZE,
-        nextNormZ0 = normZ0 * CHUNK_SIZE,
-        nextNormZ1 = normZ1 * CHUNK_SIZE,
-        nextNormY0 = normY0 * CHUNK_SIZE,
-        nextNormY1 = normY1 * CHUNK_SIZE;
+ivec3   nextChunkNormalX0 = unitNormalX0 * CHUNK_SIZE,
+        nextChunkNormalX1 = unitNormalX1 * CHUNK_SIZE,
+        nextChunkNormalZ0 = unitNormalZ0 * CHUNK_SIZE,
+        nextChunkNormalZ1 = unitNormalZ1 * CHUNK_SIZE,
+        nextChunkNormalY0 = unitNormalY0 * CHUNK_SIZE,
+        nextChunkNormalY1 = unitNormalY1 * CHUNK_SIZE;
 
 std::random_device rd;
 std::mt19937 gen(rd()); // Mersenne Twister engine
@@ -599,11 +599,11 @@ bool buildMask(Chunk* ch, BlockData* bData, int planeDirVal, int faceDir, int W,
     return allAir;
 }
 
-bool buildMaskY(BlockData* bData, int planeDirVal, int faceDir, int W, int H, uint8_t* mask, ivec3 normal) {
+bool buildMaskY(BlockData* bData, int planeDirVal, int faceDir, int W, int H, uint8_t* mask, int normal) {
     bool allAir = true;
     //ivec3 pos = ivec3(0, planeDirVal, 0);
     int posx, posy = planeDirVal, posz;
-    int checkposy = posy + normal.y;
+    int checkposy = posy + normal;
 
     if (posy < 0 || checkposy < 0 || checkposy >= CHUNK_HEIGHT) return allAir;
     for (int l = 0; l < H; l++) {
@@ -646,10 +646,10 @@ void buildMask(Chunk* ch, BlockData* bData, BlockData* neighData, int planeDirVa
     }
 }
 
-void buildMaskX(BlockData* bData, BlockData* neighData, int planeDirVal, int faceDir, int W, int H, uint8_t* mask, ivec3 realnorm, ivec3 normal) {
+void buildMaskX(BlockData* bData, BlockData* neighData, int planeDirVal, int faceDir, int W, int H, uint8_t* mask, int normal) {
     int posz, posy, posx = planeDirVal;
-    int checkposx = planeDirVal + realnorm.x;
-    int xnorm = normal.x * CHUNK_SIZE; // indexing adds CHUNK_SIZE for each unit step in the x axis
+    int checkposx = planeDirVal + normal;
+    int xnorm = -normal * CHUNK_HEIGHT; // indexing adds CHUNK_SIZE for each unit step in the x axis
 
     for (int l = 0; l < H; l++) {
         for (int b = 0; b < W; b++) {
@@ -670,10 +670,10 @@ void buildMaskX(BlockData* bData, BlockData* neighData, int planeDirVal, int fac
     }
 }
 
-void buildMaskZ(BlockData* bData, BlockData* neighData, int planeDirVal, int faceDir, int W, int H, uint8_t* mask, ivec3 realnorm, ivec3 normal) {
+void buildMaskZ(BlockData* bData, BlockData* neighData, int planeDirVal, int faceDir, int W, int H, uint8_t* mask, int normal) {
     int posx, posy, posz = planeDirVal;
-    int checkposz = planeDirVal + realnorm.z;
-	int znorm = normal.z;
+    int checkposz = planeDirVal + normal;
+	int znorm = -normal * CHUNK_SIZE;
     for (int l = 0; l < H; l++) {
         for (int b = 0; b < W; b++) {
             int idx = b + l * W;
@@ -1039,29 +1039,30 @@ void meshChunk(chNeighPack* chNeigh) {
     int minX = xyChunk.x * CHUNK_SIZE, minY = 0, minZ = xyChunk.y * CHUNK_SIZE;
     
     for (int x = minX; x < minX + CHUNK_SIZE; ++x) {
-        buildMaskX(chNeigh->block_data.data(), chNeigh->neighbour_data[0].data(), (x + 0) - minX, 0, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskX, -normX0, nextNormX0);
-        greedyMerge(maskX, m, xyChunk, x + 0, CHUNK_SIZE, CHUNK_HEIGHT - 1, 0, normX0, base);
+        buildMaskX(chNeigh->block_data.data(), chNeigh->neighbour_data[0].data(), (x + 0) - minX, 0, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskX, -1);
+        greedyMerge(maskX, m, xyChunk, x + 0, CHUNK_SIZE, CHUNK_HEIGHT - 1, 0, unitNormalX0, base);
 
-        buildMaskX(chNeigh->block_data.data(), chNeigh->neighbour_data[1].data(), (x + 1) - minX, 1, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskX, -normX1, nextNormX1);
-        greedyMerge(maskX, m, xyChunk, x + 1, CHUNK_SIZE, CHUNK_HEIGHT - 1, 1, normX1, base);
+        buildMaskX(chNeigh->block_data.data(), chNeigh->neighbour_data[1].data(), (x + 1) - minX, 1, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskX,  1);
+        greedyMerge(maskX, m, xyChunk, x + 1, CHUNK_SIZE, CHUNK_HEIGHT - 1, 1, unitNormalX1, base);
     }
     for (int z = minZ; z < minZ + CHUNK_SIZE; ++z) {
-        buildMaskZ(chNeigh->block_data.data(), chNeigh->neighbour_data[2].data(), (z + 0) - minZ, 2, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskZ, -normZ0, nextNormZ0);
-        greedyMerge(maskZ, m, xyChunk, z + 0, CHUNK_SIZE, CHUNK_HEIGHT - 1, 2, normZ0, base);
+        buildMaskZ(chNeigh->block_data.data(), chNeigh->neighbour_data[2].data(), (z + 0) - minZ, 2, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskZ, -1);
+        greedyMerge(maskZ, m, xyChunk, z + 0, CHUNK_SIZE, CHUNK_HEIGHT - 1, 2, unitNormalZ0, base);
         
-        buildMaskZ(chNeigh->block_data.data(), chNeigh->neighbour_data[3].data(), (z + 1) - minZ, 3, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskZ, -normZ1, nextNormZ1);
-        greedyMerge(maskZ, m, xyChunk, z + 1, CHUNK_SIZE, CHUNK_HEIGHT - 1, 3, normZ1, base);
+        buildMaskZ(chNeigh->block_data.data(), chNeigh->neighbour_data[3].data(), (z + 1) - minZ, 3, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskZ,  1);
+        greedyMerge(maskZ, m, xyChunk, z + 1, CHUNK_SIZE, CHUNK_HEIGHT - 1, 3, unitNormalZ1, base);
     }
     for (int y = minY; y < minY + CHUNK_HEIGHT - 1; ++y) {
-        buildMaskY(chNeigh->block_data.data(), y + 0, 4, CHUNK_SIZE, CHUNK_SIZE, maskY, -normY0);
-        greedyMerge(maskY, m, xyChunk, y + 0, CHUNK_SIZE, CHUNK_SIZE, 4, normY0, base);
+        buildMaskY(chNeigh->block_data.data(), y + 0, 4, CHUNK_SIZE, CHUNK_SIZE, maskY, -1);
+        greedyMerge(maskY, m, xyChunk, y + 0, CHUNK_SIZE, CHUNK_SIZE, 4, unitNormalY0, base);
 
-        buildMaskY(chNeigh->block_data.data(), y + 1, 5, CHUNK_SIZE, CHUNK_SIZE, maskY, -normY1);
-        greedyMerge(maskY, m, xyChunk, y + 1, CHUNK_SIZE, CHUNK_SIZE, 5, normY1, base);
+        buildMaskY(chNeigh->block_data.data(), y + 1, 5, CHUNK_SIZE, CHUNK_SIZE, maskY,  1);
+        greedyMerge(maskY, m, xyChunk, y + 1, CHUNK_SIZE, CHUNK_SIZE, 5, unitNormalY1, base);
     }
  
     std::lock_guard<std::mutex> lock(chunkMeshQueueMutex);
     chunkMeshResult.push(chNeighRes);
+    delete chNeigh;
 }
 
 void breakThread() {
@@ -1196,6 +1197,5 @@ void updateChunkJob() {
         }
 
         updateChunk(chNeigh, vec3(0), vec3(0));
-        delete chNeigh;
     }
 }/////////////

@@ -141,6 +141,7 @@ public:
 
         breakModel = mat4(1.0f);
 
+        loadInventory();
         inventory.initInventorySlots();
         sky.buildSky();
 
@@ -773,6 +774,7 @@ public:
             if (inventory.invChange()) { inventory.updateInventory(); }
 
             if (mainWindow.getShouldClose()) {
+                storeInventory();
                 json lastPlayer;
                 lastPlayer["player"]["x"] = firstCamera.getPosition().x;
                 lastPlayer["player"]["y"] = firstCamera.getPosition().y;
@@ -1097,5 +1099,41 @@ public:
             x += dx;
             y += dy;
         }
+    }
+
+    void loadInventory() {
+        json inventoryData;
+		ifstream ifs("inventory.json");
+
+        ifs >> inventoryData;
+        for (int i = 0; i < 9; i++) {
+            inventory.hotbarSlots[i].item.id = inventoryData["hotbar"][i]["id"];
+            inventory.hotbarSlots[i].count   = inventoryData["hotbar"][i]["count"];
+        }
+        for (int i = 0; i < 4; i++)
+            for (int j = 0; j < 9; j++) {
+                inventory.mainInventorySlots[i][j].item.id = inventoryData["mainInventory"][i][j]["id"];
+                inventory.mainInventorySlots[i][j].count   = inventoryData["mainInventory"][i][j]["count"];
+            }
+
+        inventory.invDidChange(1);
+    }
+
+    void storeInventory() {
+		json inventoryData;
+		for (int i = 0; i < 9; i++) {
+			inventoryData["hotbar"][i]["item"]    = itemTypeString[inventory.hotbarSlots[i].item.id];
+			inventoryData["hotbar"][i]["count"]   = inventory.hotbarSlots[i].count;
+            inventoryData["hotbar"][i]["id"] = (int)inventory.hotbarSlots[i].item.id;
+		}
+		for (int i = 0; i < 4; i++) {
+			for (int j = 0; j < 9; j++) {
+				inventoryData["mainInventory"][i][j]["item"]  = itemTypeString[inventory.mainInventorySlots[i][j].item.id];
+				inventoryData["mainInventory"][i][j]["count"] = inventory.mainInventorySlots[i][j].count;
+                inventoryData["mainInventory"][i][j]["id"]  = (int)inventory.mainInventorySlots[i][j].item.id;
+			}
+		}
+		ofstream outFile("inventory.json");
+		outFile << inventoryData.dump(4);
     }
 };
