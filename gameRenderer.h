@@ -875,11 +875,15 @@ public:
 
             int dirs[] = { -1, 1, 0, 0,   0, 0, -1, 1 };
 
-            if ((coords.x <= _2dPlPosLo.x || coords.x >= _2dPlPosHi.x) ||
-                (coords.y <= _2dPlPosLo.y || coords.y >= _2dPlPosHi.y))
+            if (((coords.x <= _2dPlPosLo.x || coords.x >= _2dPlPosHi.x) ||
+                 (coords.y <= _2dPlPosLo.y || coords.y >= _2dPlPosHi.y) )) 
+                 //&& !chunk->safe_unload))
             {
-                chunkCoords.erase((chunk->coord));
-                it = world.chunkData.erase(it);
+                if (!chunk->safe_unload) {
+                    chunkCoords.erase((chunk->coord));
+                    it = world.chunkData.erase(it);
+                }
+                else it++;
                 continue;
             }
 
@@ -1119,7 +1123,7 @@ public:
         inventory.invDidChange(1);
     }
 
-    void storeInventory() {
+    void storeInventory() { 
 		json inventoryData;
 		for (int i = 0; i < 9; i++) {
 			inventoryData["hotbar"][i]["item"]    = itemTypeString[inventory.hotbarSlots[i].item.id];

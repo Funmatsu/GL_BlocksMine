@@ -407,6 +407,7 @@ Block World::deleteBlockFromWorld(vec3 blockPos) {
         blockType.deassignLight(pointLights, blockPos);
         blockType = AIR;
         chunk->setAsDirty();
+        chunk->safe_unload = 1;
     }
     return returnBlock;
 }
@@ -819,6 +820,7 @@ Block World::addBlocklook_at(Item blockType) {
             blockType.isPlaceable()) {
             createItem(floor(point - rayDir * stepSize), blockType, point);
             chunk->setAsDirty();
+            chunk->safe_unload = 1;
             return Block(floor(point - rayDir * stepSize), blockType);
         }
     }

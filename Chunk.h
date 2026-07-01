@@ -102,6 +102,14 @@ public:
     
     uint32_t coord;
     abyte neighboursPresent : 5;
+
+    // Still got the space for 16 more bits
+    // 
+	//abyte randbool0 : 4;
+    //abyte randbool1 : 4;
+	//abyte randbool2 : 7;
+    abyte safe_unload : 1;
+
     void setAsDirty() { neighboursPresent &= ~(1 << 0); }
 	void setAsClean() { neighboursPresent |=  (1 << 0); }
     bool getDirty() { return !((neighboursPresent >> 0) & 1); }
