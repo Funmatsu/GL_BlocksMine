@@ -877,7 +877,6 @@ public:
 
             if (((coords.x <= _2dPlPosLo.x || coords.x >= _2dPlPosHi.x) ||
                  (coords.y <= _2dPlPosLo.y || coords.y >= _2dPlPosHi.y) )) 
-                 //&& !chunk->safe_unload))
             {
                 if (!chunk->safe_unload) {
                     chunkCoords.erase((chunk->coord));

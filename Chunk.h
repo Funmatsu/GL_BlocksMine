@@ -107,7 +107,7 @@ public:
     // 
 	//abyte randbool0 : 4;
     //abyte randbool1 : 4;
-	//abyte randbool2 : 7;
+	abyte needUpdate : 7;
     abyte safe_unload : 1;
 
     void setAsDirty() { neighboursPresent &= ~(1 << 0); }

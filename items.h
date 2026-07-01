@@ -29,7 +29,7 @@ std::condition_variable chunkUpdateCV;
 //#define WOODEN_PICKAXE 101
 //#define STICK 102
 
-uint8 attrs[19] = { // block attributes : bool unculled, bool placeable, bool useable, bool toolable, bool breakable, bool flatable, int luminable
+uint8 attrs[19] = { // block attributes : {bool unculled | bool placeable | bool useable | bool toolable | bool breakable | bool flatable | int luminable}
 	0x44,
 	0x24,
 	0x24,
@@ -49,50 +49,30 @@ uint8 attrs[19] = { // block attributes : bool unculled, bool placeable, bool us
 	0x2E,
 	0x2E,
 	0x2E
-};
+}; // 0x0111 1111
 
 class Item {
 private:
-	//uint8_t attrs = 0;
 public:
 	uint8_t id : 5;
-	Item() {
-		id = 0;
-		//attrs = 0;
-	}
+
+	Item() { id = 0; }
 	Item(int itemid) { id = itemid; }
-	~Item() {
-		id = 0;
-		//attrs = 0;
-	}
+	~Item() { id = 0; }
 
-	bool isUncullable() {
-		return ((attrs[id] >> 6) & 1);
-	}
+	bool isUncullable()			{ return ((attrs[id] >> 6) & 1); }
 
-	bool isPlaceable() {
-		return ((attrs[id] >> 5) & 1);
-	}
+	bool isPlaceable()			{ return ((attrs[id] >> 5) & 1); }
 
-	bool isUsable() {
-		return ((attrs[id] >> 4) & 1);
-	}
+	bool isUsable()				{ return ((attrs[id] >> 4) & 1); }
 
-	bool isTool() {
-		return ((attrs[id] >> 3) & 1);
-	}
+	bool isTool()				{ return ((attrs[id] >> 3) & 1); }
 
-	bool isBreakable() {
-		return ((attrs[id] >> 2) & 1);
-	}
+	bool isBreakable()			{ return ((attrs[id] >> 2) & 1); }
 
-	bool isFlat() {
-		return ((attrs[id] >> 1) & 1);
-	}
+	bool isFlat()				{ return ((attrs[id] >> 1) & 1); }
 
-	bool isLuninous() {
-		return (attrs[id] & 1);
-	}     
+	bool isLuninous()			{ return ((attrs[id] >> 0) & 1); }     
 
 	void assignLight(PointLight* pLight, vec3 position) {		
 		if (isLuninous()) {
@@ -111,33 +91,17 @@ public:
 		}
 	}
 
-	Item(const Item& item) {
-		id = item.id;
-	}
+	Item(const Item& item)				{ id = item.id; }
 
-	void operator=(Item item) {
-		id = item.id;
-	}
+	void operator=(Item item)			{ id = item.id; }
 
-	bool operator==(Item item) {
-		return(id == item.id);
-	}
+	bool operator==(Item item)			{ return(id == item.id); }
 
-	bool operator!=(Item item) {
-		return(id != item.id);
-	}
+	bool operator!=(Item item)			{ return(id != item.id); }
 
 	friend ostream& operator<<(ostream& os, Item& item);
 
-	Item(int item_id, bool placeable, bool useable, bool toolable, bool breakable, bool flatable, int luminable) {
-		id = item_id;
-		//attrs |= luminable;
-		//attrs |= (flatable  << 1);
-		//attrs |= (breakable << 2);
-		//attrs |= (toolable  << 3);
-		//attrs |= (useable   << 4);
-		//attrs |= (placeable << 5);
-	}
+	Item(int item_id, bool placeable, bool useable, bool toolable, bool breakable, bool flatable, int luminable) { id = item_id; }
 };
 
 ostream& operator<<(ostream& os, Item& item) {
