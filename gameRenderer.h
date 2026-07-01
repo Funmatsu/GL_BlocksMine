@@ -73,10 +73,10 @@ public:
     Game() {
         ifstream playerJSON("player.json");
         if (!playerJSON) {
-            ofstream outJSON("player.json");
+            ofstream outJSON("player.json", ios::app);
             json emptyPlayer;
             emptyPlayer["player"]["x"] = 0;
-            emptyPlayer["player"]["y"] = 104;
+            emptyPlayer["player"]["y"] = 128;
             emptyPlayer["player"]["z"] = 0;
             outJSON << emptyPlayer.dump(4);
             outJSON.close();
@@ -881,8 +881,7 @@ public:
                 if (!chunk->safe_unload) {
                     chunkCoords.erase((chunk->coord));
                     it = world.chunkData.erase(it);
-                }
-                else it++;
+                } else it++;
                 continue;
             }
 
@@ -1110,8 +1109,8 @@ public:
 
         ifs >> inventoryData;
         for (int i = 0; i < 9; i++) {
-            inventory.hotbarSlots[i].item.id = inventoryData["hotbar"][i]["id"];
-            inventory.hotbarSlots[i].count   = inventoryData["hotbar"][i]["count"];
+            inventory.hotbarSlots[i].item.id = inventoryData["mainInventory"][3][i]["id"];
+            inventory.hotbarSlots[i].count   = inventoryData["mainInventory"][3][i]["count"];
         }
         for (int i = 0; i < 4; i++)
             for (int j = 0; j < 9; j++) {
@@ -1125,9 +1124,9 @@ public:
     void storeInventory() { 
 		json inventoryData;
 		for (int i = 0; i < 9; i++) {
-			inventoryData["hotbar"][i]["item"]    = itemTypeString[inventory.hotbarSlots[i].item.id];
-			inventoryData["hotbar"][i]["count"]   = inventory.hotbarSlots[i].count;
-            inventoryData["hotbar"][i]["id"] = (int)inventory.hotbarSlots[i].item.id;
+			inventoryData["mainInventory"][3][i]["item"]    = itemTypeString[inventory.hotbarSlots[i].item.id];
+			inventoryData["mainInventory"][3][i]["count"]   = inventory.hotbarSlots[i].count;
+            inventoryData["mainInventory"][3][i]["id"] = (int)inventory.hotbarSlots[i].item.id;
 		}
 		for (int i = 0; i < 4; i++) {
 			for (int j = 0; j < 9; j++) {

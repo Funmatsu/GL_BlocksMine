@@ -1,51 +1,4 @@
 {
-    "hotbar": [
-        {
-            "count": 2500,
-            "id": 7,
-            "item": "cloud"
-        },
-        {
-            "count": 3,
-            "id": 6,
-            "item": "oak_wood"
-        },
-        {
-            "count": 1,
-            "id": 11,
-            "item": "blue_orchid"
-        },
-        {
-            "count": 7,
-            "id": 2,
-            "item": "grass_block"
-        },
-        {
-            "count": 1,
-            "id": 10,
-            "item": "poppy"
-        },
-        {
-            "count": 1,
-            "id": 4,
-            "item": "stone_block"
-        },
-        {
-            "count": 3,
-            "id": 9,
-            "item": "oak_plank"
-        },
-        {
-            "count": 2,
-            "id": 16,
-            "item": "stick"
-        },
-        {
-            "count": 0,
-            "id": 0,
-            "item": "air"
-        }
-    ],
     "mainInventory": [
         [
             {
@@ -143,14 +96,14 @@
         ],
         [
             {
-                "count": 0,
-                "id": 0,
-                "item": "air"
+                "count": 3,
+                "id": 9,
+                "item": "oak_plank"
             },
             {
-                "count": 0,
-                "id": 0,
-                "item": "air"
+                "count": 2,
+                "id": 8,
+                "item": "oak_leaves"
             },
             {
                 "count": 0,
@@ -190,12 +143,12 @@
         ],
         [
             {
-                "count": 2500,
-                "id":  7,
+                "count": 2354,
+                "id": 7,
                 "item": "cloud"
             },
             {
-                "count": 3,
+                "count": 5,
                 "id": 6,
                 "item": "oak_wood"
             },
@@ -205,7 +158,7 @@
                 "item": "blue_orchid"
             },
             {
-                "count": 7,
+                "count": 9,
                 "id": 2,
                 "item": "grass_block"
             },
@@ -220,9 +173,9 @@
                 "item": "stone_block"
             },
             {
-                "count": 3,
-                "id": 9,
-                "item": "oak_plank"
+                "count": 0,
+                "id": 0,
+                "item": "air"
             },
             {
                 "count": 2,
