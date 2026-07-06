@@ -106,21 +106,21 @@ void initChunksNoise() {
     baseNoise.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
     baseNoise.SetFractalType(FastNoiseLite::FractalType_FBm);
     baseNoise.SetFrequency(0.001f);      // low frequency = broad features
-    baseNoise.SetFractalOctaves(3);
+    baseNoise.SetFractalOctaves(6);
     baseNoise.SetFractalLacunarity(2.0f);
     baseNoise.SetFractalGain(0.5f);
 
     ridgedNoise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
     ridgedNoise.SetFractalType(FastNoiseLite::FractalType_Ridged);
     ridgedNoise.SetFrequency(0.001f);     // higher frequency = more detail
-    ridgedNoise.SetFractalOctaves(4);
+    ridgedNoise.SetFractalOctaves(6);
     ridgedNoise.SetFractalLacunarity(2.0f);
     ridgedNoise.SetFractalGain(0.5f);
 
     //maskNoise.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
     maskNoise.SetFractalType(FastNoiseLite::FractalType_FBm);
-    maskNoise.SetFrequency(0.01f);      // very low frequency = large biome regions
-    maskNoise.SetFractalOctaves(4);
+    maskNoise.SetFrequency(0.005f);      // very low frequency = large biome regions
+    maskNoise.SetFractalOctaves(6);
     maskNoise.SetFractalGain(0.5f);
 
     //FastNoiseLite noise;   
@@ -1100,7 +1100,8 @@ void chunkWorker() {
         uint coord;
         {
             std::unique_lock<std::mutex> lock(queueMutex);
-            queueCV.wait(lock, [] { return !chunkRequestQueue.empty(); });
+            queueCV.wait(lock, [] { return !chunkRequestQueue.empty() || !chunkGenRunning; });
+            if (chunkRequestQueue.empty()) continue;
             coord = chunkRequestQueue.front();
             chunkRequestQueue.pop();
         }
@@ -1192,6 +1193,7 @@ void updateChunkJob() {
         {
             unique_lock<mutex> lock(chunkUpdateRequestMutex);
             chunkUpdateCV.wait(lock, [] { return !chunkCleanupQueue.empty() || stopChunkUpdaters; });
+            if (chunkCleanupQueue.empty()) continue;
             chNeigh = chunkCleanupQueue.front();
             chunkCleanupQueue.pop();
         }

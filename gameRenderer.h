@@ -145,14 +145,12 @@ public:
         inventory.initInventorySlots();
         sky.buildSky();
 
+        workers.push_back(thread(updateChunkJob));
         for (int i = 0; i < 3; ++i) {
-            workers.push_back(thread(updateChunkJob));
             if (i < 2)
                 workers.push_back(thread(chunkWorker)); // worker thread is somewhere in threading.h
-			//if (i < 1)
-			//	workers.push_back(thread(meshScheduleWorker));
         }
-
+        
         mainLight = DirectionalLight(mainWindow.getBufferWidth(), mainWindow.getBufferHeight(),
             1.0f, 1.0f, 1.0f,
             0.8f, 0.5f,
@@ -780,24 +778,25 @@ public:
                 lastPlayer["player"]["y"] = firstCamera.getPosition().y;
                 lastPlayer["player"]["z"] = firstCamera.getPosition().z;
                 ofstream playerJSON("player.json");
-                playerJSON << lastPlayer.dump(4);
-
+                playerJSON << lastPlayer.dump(4);         
+                            
                 chunkGenRunning = false;
-                queueCV.notify_all(); // wake up sleeping threads
-
-                chunkGenRunning = false;
-                chunkGenRunning2 = false;
-                chunkUpdateGenRunning = false;
+                chunkUpdateCV.notify_all();
                 stopChunkUpdaters = true;
+                queueCV.notify_all(); // wake up sleeping threads
                 blockPlacing = false;
                 blockBreaking = false;//chunkGenThread.join(); //chunkGenThread2.join(); //chunkGenThread3.join();
                 blockBreakThread1.join();
                 blockPlaceThread.join();
+                stopChunkUpdaters = true;
+                chunkGenRunning2 = false;
+                chunkUpdateGenRunning = false;
                 stopMeshing = false;
-                chunkUpdateCV.notify_all();
 
-                for (auto& t : workers)
+                for (auto& t : workers) {
+					cout << "Joining thread " << workers.size() << endl;
                     t.join();
+                }                                                                                         
                 
                 return;
             }
@@ -823,12 +822,12 @@ public:
             frame_duration_calc = (chrono::duration<double>(endframe - startframe).count());
         }
 
-        json lastPlayer;
-        lastPlayer["player"]["x"] = firstCamera.getPosition().x;
-        lastPlayer["player"]["y"] = firstCamera.getPosition().y;
-        lastPlayer["player"]["z"] = firstCamera.getPosition().z;
-        ofstream outplayerJSON("player.json");
-        outplayerJSON << lastPlayer.dump(4);
+        //json lastPlayer;
+        //lastPlayer["player"]["x"] = firstCamera.getPosition().x;
+        //lastPlayer["player"]["y"] = firstCamera.getPosition().y;
+        //lastPlayer["player"]["z"] = firstCamera.getPosition().z;
+        //ofstream outplayerJSON("player.json");
+        //outplayerJSON << lastPlayer.dump(4);
     }////
 
     template <typename T>
@@ -910,7 +909,7 @@ public:
                         std::lock_guard<std::mutex> lock(chunkUpdateRequestMutex);
                         chunkCleanupQueue.push(chunkochunks);
                     }
-                    chunkUpdateCV.notify_one();
+                    chunkUpdateCV.notify_all();
                     chunk->setAsClean();
                 }
             }
