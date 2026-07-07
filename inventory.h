@@ -715,7 +715,7 @@ void Inventory::updateInventory() {
     cursor.textCount.model = cursor.model;
     if (cursor.count <= 0) {
         cursor.item = AIR;
-        //cursor.mesh.clearMesh();
+        cursor.mesh = LightMesh();
     }
 
     inv_change = false;
@@ -847,9 +847,10 @@ void handleInvSlotClicks() {
                             (cursor.y >= inventory.craftingTableSlots[i][j].y - inventory.craftingTableSlots[i][j].h / 2 && cursor.y <= inventory.craftingTableSlots[i][j].y + inventory.craftingTableSlots[i][j].h / 2)
                             ) inventory.craftingTableSlots[i][j].onClick();
                 }
+
                 cursor.textCount.model = translate(mat4(1), vec3(centerX, centerY, 0));
                 inventory.invDidChange(1);
-                this_thread::sleep_for(chrono::milliseconds(200));
+                this_thread::sleep_for(chrono::milliseconds(400));
             }
             //this_thread::sleep_for(chrono::milliseconds(200));
         }

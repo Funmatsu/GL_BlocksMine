@@ -54,9 +54,9 @@
                 "item": "air"
             },
             {
-                "count": 0,
-                "id": 0,
-                "item": "air"
+                "count": 4,
+                "id": 9,
+                "item": "oak_plank"
             },
             {
                 "count": 0,
@@ -96,19 +96,19 @@
         ],
         [
             {
-                "count": 3,
-                "id": 9,
-                "item": "oak_plank"
+                "count": 1,
+                "id": 13,
+                "item": "crafting_table"
+            },
+            {
+                "count": 1,
+                "id": 4,
+                "item": "stone_block"
             },
             {
                 "count": 2,
                 "id": 8,
                 "item": "oak_leaves"
-            },
-            {
-                "count": 0,
-                "id": 0,
-                "item": "air"
             },
             {
                 "count": 0,
@@ -148,17 +148,17 @@
                 "item": "cloud"
             },
             {
-                "count": 51,
+                "count": 56,
                 "id": 6,
                 "item": "oak_wood"
             },
             {
-                "count": 1,
-                "id": 11,
-                "item": "blue_orchid"
+                "count": 2,
+                "id": 12,
+                "item": "grass"
             },
             {
-                "count": 9,
+                "count": 11,
                 "id": 2,
                 "item": "grass_block"
             },
@@ -169,11 +169,11 @@
             },
             {
                 "count": 1,
-                "id": 4,
-                "item": "stone_block"
+                "id": 18,
+                "item": "wooden_axe"
             },
             {
-                "count": 4,
+                "count": 13,
                 "id": 8,
                 "item": "oak_leaves"
             },

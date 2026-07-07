@@ -342,7 +342,7 @@ public:
 	}
 
 	void onClick() override {
-		if (cursor.item != AIR && (item == AIR || mesh == LightMesh())) {
+		if (cursor.item != AIR && item == AIR) {
 			item = cursor.item;
 			mesh = cursor.mesh;
 			
@@ -353,10 +353,10 @@ public:
 			else {
 				count++;
 				if (cursor.count)
-					cursor.count--;
+					cursor.count--;	
 			}
 			
-			cout << "called" << endl;
+			//cout << "called" << endl;
 		}
 		else {
 			if (cursor.item == AIR && item != AIR) {
@@ -375,7 +375,7 @@ public:
 					}
 				}
 				if (cursor.count <= 0) { cursor.mesh.giveMesh(); }
-				cout << "called twice" << endl;
+				//cout << "called twice" << endl;
 			}
 			else {
 				if (cursor.item == item && item != AIR) {
@@ -393,7 +393,7 @@ public:
 						if (cursor.count)
 							cursor.count--;
 					}
-					cout << "called similarly" << endl;
+					//cout << "called similarly" << endl;q
 				}
 			}
 		}

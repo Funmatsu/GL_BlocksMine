@@ -783,9 +783,9 @@ public:
                 chunkGenRunning = false;
                 chunkUpdateCV.notify_all();
                 stopChunkUpdaters = true;
-                queueCV.notify_all(); // wake up sleeping threads
+                queueCV.notify_all();
                 blockPlacing = false;
-                blockBreaking = false;//chunkGenThread.join(); //chunkGenThread2.join(); //chunkGenThread3.join();
+                blockBreaking = false;
                 blockBreakThread1.join();
                 blockPlaceThread.join();
                 stopChunkUpdaters = true;
