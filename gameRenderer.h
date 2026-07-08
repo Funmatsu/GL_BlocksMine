@@ -171,6 +171,7 @@ public:
 
     void run() {
         while (!mainWindow.getShouldClose()) {
+			shaders[0]->useShader();
             auto startframe = chrono::high_resolution_clock::now();
             static bool breakblockdb = 0, placeblockdb = 0, invtoggledb = 0; // db = debounce
             static int angletest = 0;
@@ -514,6 +515,7 @@ public:
                 }
             }
 
+
             Textures[BLOCK_TEX]->useTexture();
             Textures[TOP_TEX]->useNextTexture();
             glUniform1i(glGetUniformLocation(shaders[0]->getShaderId(), "topTexture"), 2);
@@ -553,7 +555,7 @@ public:
                 it++;
             }
             glUniformMatrix4fv(shaders[0]->getModelLocation(), 1, GL_FALSE, value_ptr(model));
-            shaders[5]->useShader();
+/*            shaders[5]->useShader();
             view = activeCamera.calcViewMatrix();
 
             //For block highlighting
@@ -563,7 +565,7 @@ public:
                 glUniformMatrix4fv(shaders[5]->getModelLocation(), 1, GL_FALSE, value_ptr(modelLooking));
                 lookingMesh.renderMesh();
                 glUniformMatrix4fv(shaders[5]->getModelLocation(), 1, GL_FALSE, value_ptr(model));
-            }
+            }*/
 
             glDisable(GL_DEPTH_TEST); // so crosshair draws on top
             shaders[2]->useShader();

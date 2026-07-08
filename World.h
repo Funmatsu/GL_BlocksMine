@@ -233,7 +233,7 @@ LightMesh World::createProjectileMesh(vec3 blockPos, float scale, Item blockType
             xoffsetBottom   = UVs[4],
             yoffsetBottom   = UVs[5];
 
-    float clipX = -1.0f, clipY = 1.0f;
+    float clipX = 0.0f, clipY = 1.0f;
 
     auto absl = [](int n) { return n >= 0 ? n : -n; };
 
@@ -300,7 +300,7 @@ LightMesh World::createProjectileMesh(vec3 blockPos, float scale, Item blockType
 
                 -0.50f + blockPos.x + 0.1f * -scale,  -0.50f + blockPos.y + 0.1f * -scale,   -0.50f + blockPos.z + 0.1f * -scale,
                 -0.50f + blockPos.x + 0.1f * -scale,   0.50f + blockPos.y + 0.1f * scale,    -0.50f + blockPos.z + 0.1f * -scale,
-                 0.50f + blockPos.x + 0.1f * scale,    0.50f + blockPos.y + 0.1f * scale,    -0.50f + blockPos.z + 0.1f * -scale,
+                 0.50f + blockPos.x + 0.1f * scale,    0.50f + blockPos.y + 0.1f * scale,    -0.50f + blockPos.z + 0.1f * -scale,       
                  0.50f + blockPos.x + 0.1f * scale,   -0.50f + blockPos.y + 0.1f * -scale,   -0.50f + blockPos.z + 0.1f * -scale,
 
                 -0.50f + blockPos.x + 0.1f * -scale,  -0.50f + blockPos.y + 0.1f * -scale,    0.50f + blockPos.z + 0.1f * scale,
@@ -336,7 +336,7 @@ LightMesh World::createProjectileMesh(vec3 blockPos, float scale, Item blockType
             globalUVs = {
                 (clipX), (clipX), startUvs,
                 (clipX), (clipY), startUvs,
-                (clipY), (clipY), startUvs,
+                (clipY), (clipY), startUvs,     
                 (clipY), (clipX), startUvs,
 
                 (clipX), (clipX), startUvs,
@@ -368,7 +368,7 @@ LightMesh World::createProjectileMesh(vec3 blockPos, float scale, Item blockType
                 indices.push_back(base + 0); indices.push_back(base + 1); indices.push_back(base + 2);
                 indices.push_back(base + 2); indices.push_back(base + 3); indices.push_back(base + 0);
             }
-            uint32_t uintUVs = (((uint8_t)155 << 24)) | (((uint8_t)xdimens << 16)) | ((uint8_t)(yoffset) << 8) | ((uint8_t)(xoffset)); // Packaging floats into one integer
+            uint32_t uintUVs = (((uint8_t)155 << 24)) | (((uint8_t)xdimensItem << 16)) | ((uint8_t)(yoffset) << 8) | ((uint8_t)(xoffset)); // Packaging floats into one integer
             float startUvs;
             memcpy(&startUvs, &uintUVs, sizeof(float));
             //for (int i = 0; i < 6; i++) {
@@ -388,7 +388,7 @@ LightMesh World::createProjectileMesh(vec3 blockPos, float scale, Item blockType
             triangle = {
                     -0.50f + blockPos.x + 0.1f * -scale,   -0.50f + blockPos.y + 0.1f * -scale,    0.0f + blockPos.z,
                     -0.50f + blockPos.x + 0.1f * -scale,    0.50f + blockPos.y + 0.1f * scale,    0.0f + blockPos.z,
-                     0.50f + blockPos.x + 0.1f * scale,    0.50f + blockPos.y + 0.1f * scale,    0.0f + blockPos.z,
+                     0.50f + blockPos.x + 0.1f * scale,    0.50f + blockPos.y + 0.1f * scale,    0.0f + blockPos.z, 
                      0.50f + blockPos.x + 0.1f * scale,   -0.50f + blockPos.y + 0.1f * -scale,    0.0f + blockPos.z,
 
                     -0.50f + blockPos.x + 0.1f * -scale,   -0.50f + blockPos.y + 0.1f * -scale,    0.0f + blockPos.z,
@@ -423,7 +423,7 @@ LightMesh World::createProjectileMesh(vec3 blockPos, float scale, Item blockType
 
         finalvertices.push_back(normcolor);
 
-        //finalvertices.push_back(normals[i + 0]);
+        //finalvertices.push_back(normals[i + 0]);  
         finalvertices.push_back(normals[i + 1]);
         finalvertices.push_back(normals[i + 2]);
 

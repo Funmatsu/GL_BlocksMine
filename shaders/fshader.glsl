@@ -134,7 +134,7 @@ float calcDirectionalShadowFactor(){
 		for(int y = -var; y <= var; ++y) {
 			float pcfDepth = texture(directionalShadowMap,
 									 projCoords.xy + vec2(x,y) * texelSize).r;
-			shadow += current - bias > pcfDepth ? 0.75 : 0.25;
+			shadow += current - bias > pcfDepth ? 1 : 0;
 		}
 	}
 	shadow /= pow(2*var + 1, 2); // average
