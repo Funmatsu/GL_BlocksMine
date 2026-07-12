@@ -185,7 +185,7 @@ bool isUncullable(uint8_t id) {
 	return id < TORCH.id && items[id].isUncullable();
 }
 
-float uvTable[16][7] {
+float uvTable[19][7] {
 	{1, 0, 0, 0, 0, 0, 1   },
 	{4, 4, 0, 0, 0, 0, 1   },
 	{3, 2,-3,-2,-3, 1, 1   },
@@ -202,6 +202,9 @@ float uvTable[16][7] {
 	{2, 4, 1, 0, 1,-1, 1   },
 	{0, 4, 0, 0, 0, 0, 1   },
 	{1, 1, 0, 0, 0, 0, 1   },
+	{1, 1, 1, 0, 1,-1, 1   },
+	{0, 1, 0, 0, 0, 0, 1   },
+	{0, 0, 0, 0, 0, 0, 1   },
 };
 
 float* getUVs(Item blockType) {
@@ -320,7 +323,7 @@ struct InventorySlot : UIElement
 {
 public:
 	float angle = 0;
-	LightMesh mesh; 
+	LightMesh mesh;
 	Item item = AIR;
 	int count = 0;
 	Text textCount;
@@ -432,13 +435,13 @@ unsigned int itemFbo, itemColorTex, itemDepthTex;
 void initItemTextures() {
 	glGenTextures(1, &itemColorTex);
 	glBindTexture(GL_TEXTURE_2D, itemColorTex);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 1920, 1059, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 1600, 1600, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	glGenRenderbuffers(1, &itemDepthTex);
 	glBindRenderbuffer(GL_RENDERBUFFER, itemDepthTex);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, 1920, 1059);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, 1600, 1600);
 
 	glGenFramebuffers(1, &itemFbo);
 	glBindFramebuffer(GL_FRAMEBUFFER, itemFbo);

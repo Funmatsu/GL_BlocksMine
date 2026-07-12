@@ -204,7 +204,7 @@ LightMesh createMeshCube(vec3 xyz, float scale, Item blockType) {
     }
     float xoffset = 0, yoffset = 1, xoffsetTop = 0, yoffsetTop = 0, xoffsetBottom = 0, yoffsetBottom = 0, transparency = 255;
 
-    float yexponent = 1.5f;
+    float yexponent = (float)1920/(float)1080;
     vector<GLfloat> vertices;
     vector<GLfloat> globalUVs;
     vector<unsigned int> indices;
@@ -213,10 +213,10 @@ LightMesh createMeshCube(vec3 xyz, float scale, Item blockType) {
     float t = 1.f / 16.f, s = 2.0f;
      
     auto addPixelCubeAt = [](int x, int y, float t, float u, float v, float duv, float scale) { 
-        int s = 4;
-        float lx = (x) * s, hx = (1 + x) * s,
-              ly = (y) * s, hy = (1 + y) * s,
-              lz = 0, hz = t/2;
+        int s = 4; float spacing = .01f;
+        float lx = (float(x)) * s, hx = (float(1 + x) - spacing) * s,
+            ly = (float(y)) * s, hy = (float(1 + y) - spacing) * s,
+              lz = t*2, hz = t;
         vector<GLfloat> pixel = {
             lx, ly, lz,  u       ,v       , 1, 0, 0,
             lx, hy, lz,  u       ,v + duv , 1, 0, 0,
@@ -235,79 +235,18 @@ LightMesh createMeshCube(vec3 xyz, float scale, Item blockType) {
 
             lx, ly, hz,  u       ,v       , 0, 0,-1,
             lx, hy, hz,  u       ,v + duv , 0, 0,-1,
-            hx, hy, hz,  u + duv ,v + duv , 0, 0,-1,
+            hx, hy, hz,  u + duv ,v + duv , 0, 0,-1,            
             hx, ly, hz,  u + duv ,v       , 0, 0,-1,//+z
 
             lx, ly, lz,  u       ,v       , 0, 1, 0,
             lx, ly, hz,  u       ,v + duv , 0, 1, 0,
             hx, ly, hz,  u + duv ,v + duv , 0, 1, 0,
-            hx, ly, lz,  u + duv ,v       , 0, 1, 0,//+y
+            hx, ly, lz,  u + duv ,v       , 0, 1, 0,//-y
 
             lx, hy, lz,  u       ,v       , 0,-1, 0,
             hx, hy, lz,  u + duv ,v       , 0,-1, 0,
             hx, hy, hz,  u + duv ,v + duv , 0,-1, 0,
             lx, hy, hz,  u       ,v + duv , 0,-1, 0,//+y
-
-            lx, ly, hz, u       ,v       , 1, 0, 0,
-            lx, hy, hz, u       ,v + duv , 1, 0, 0,
-            lx, hy, lz, u + duv ,v + duv , 1, 0, 0,
-            lx, ly, lz, u + duv ,v       , 1, 0, 0,//-x
-
-            hx, hy, lz, u       ,v       ,-1, 0, 0,
-            hx, hy, hz, u + duv ,v       ,-1, 0, 0,
-            hx, ly, hz, u + duv ,v + duv ,-1, 0, 0,
-            hx, ly, lz, u       ,v + duv ,-1, 0, 0,//+x
-
-            lx, hy, lz, u       ,v       , 0, 0, 1,
-            hx, hy, lz, u + duv ,v       , 0, 0, 1,
-            hx, ly, lz, u + duv ,v + duv , 0, 0, 1,
-            lx, ly, lz, u       ,v + duv , 0, 0, 1,//-z
-
-            hx, ly, hz, u       ,v       , 0, 0,-1,
-            hx, hy, hz, u       ,v + duv , 0, 0,-1,
-            lx, hy, hz, u + duv ,v + duv , 0, 0,-1,
-            lx, ly, hz, u + duv ,v       , 0, 0,-1,//+z
-
-            hx, ly, lz, u       ,v       , 0, 1, 0,
-            hx, ly, hz, u       ,v + duv , 0, 1, 0,
-            lx, ly, hz, u + duv ,v + duv , 0, 1, 0,
-            lx, ly, lz, u + duv ,v       , 0, 1, 0,//+y
-
-            lx, hy, hz, u       ,v       , 0,-1, 0,
-            hx, hy, hz, u + duv ,v       , 0,-1, 0,
-            hx, hy, lz, u + duv ,v + duv , 0,-1, 0,
-            lx, hy, lz, u       ,v + duv , 0,-1, 0,//+y
-
-//            lx, ly, lz,  u       ,v       , 1, 0, 0,
-//            lx, ly, hz,  u       ,v + duv , 1, 0, 0,
-//            lx, hy, hz,  u + duv ,v + duv , 1, 0, 0,
-//            lx, hy, lz,  u + duv ,v       , 1, 0, 0,//-x
-//
-//            hx, ly, lz,  u       ,v       ,-1, 0, 0,
-//            hx, hy, lz,  u + duv ,v       ,-1, 0, 0,
-//            hx, hy, hz,  u + duv ,v + duv ,-1, 0, 0,
-//            hx, ly, hz,  u       ,v + duv ,-1, 0, 0,//+x
-//
-//            lx, ly, lz,  u       ,v       , 0, 0, 1,
-//            lx, hy, lz,  u + duv ,v       , 0, 0, 1,
-//            hx, hy, lz,  u + duv ,v + duv , 0, 0, 1,
-//            hx, ly, lz,  u       ,v + duv , 0, 0, 1,//-z
-//
-//            lx, ly, hz,  u       ,v       , 0, 0,-1,
-//            hx, ly, hz,  u       ,v + duv , 0, 0,-1,
-//            hx, hy, hz,  u + duv ,v + duv , 0, 0,-1,
-//            lx, hy, hz,  u + duv ,v       , 0, 0,-1,//+z
-//
-//            lx, ly, lz,  u       ,v       , 0, 1, 0,
-//            hx, ly, lz,  u       ,v + duv , 0, 1, 0,
-//            hx, ly, hz,  u + duv ,v + duv , 0, 1, 0,
-//            lx, ly, hz,  u + duv ,v       , 0, 1, 0,//+y
-//
-//            lx, hy, lz,  u       ,v       , 0,-1, 0,
-//            lx, hy, hz,  u + duv ,v       , 0,-1, 0,
-//            hx, hy, hz,  u + duv ,v + duv , 0,-1, 0,
-//            hx, hy, lz,  u       ,v + duv , 0,-1, 0//+y
-
         };
 
         return pixel;
@@ -335,110 +274,98 @@ LightMesh createMeshCube(vec3 xyz, float scale, Item blockType) {
         transparency  = UVs[6];
 
     float clipX = 0.0f, clipY = 1.0f;
-        if (!blockType.isFlat()) {
-
-            for (int i = 0; i < 6; i++) {
-                unsigned base = i * 4;
-                indices.push_back(base + 0); indices.push_back(base + 1); indices.push_back(base + 2);
-                indices.push_back(base + 2); indices.push_back(base + 3); indices.push_back(base + 0);
-            }
-            for (int i = 0; i < 6; i++) {
-                int offsetX = 0, offsetY = 0;
-                if (i == 4) { offsetX = xoffsetBottom; offsetY = yoffsetBottom; }
-                else if (i == 5) { offsetX = xoffsetTop;  offsetY = yoffsetTop; }
-                if (i % 3 == 0) {
-                    globalUVs.push_back((clipX + xoffset + offsetX) / xdimens); globalUVs.push_back((clipX + yoffset + offsetY) / ydimens); globalUVs.push_back(transparency);
-                    globalUVs.push_back((clipX + xoffset + offsetX) / xdimens); globalUVs.push_back((clipY + yoffset + offsetY) / ydimens); globalUVs.push_back(transparency);
-                    globalUVs.push_back((clipY + xoffset + offsetX) / xdimens); globalUVs.push_back((clipY + yoffset + offsetY) / ydimens); globalUVs.push_back(transparency);
-                    globalUVs.push_back((clipY + xoffset + offsetX) / xdimens); globalUVs.push_back((clipX + yoffset + offsetY) / ydimens); globalUVs.push_back(transparency);
-                }
-                else {
-                    globalUVs.push_back((clipX + xoffset + offsetX) / xdimens); globalUVs.push_back((clipX + yoffset + offsetY) / ydimens); globalUVs.push_back(transparency);
-                    globalUVs.push_back((clipY + xoffset + offsetX) / xdimens); globalUVs.push_back((clipX + yoffset + offsetY) / ydimens); globalUVs.push_back(transparency);
-                    globalUVs.push_back((clipY + xoffset + offsetX) / xdimens); globalUVs.push_back((clipY + yoffset + offsetY) / ydimens); globalUVs.push_back(transparency);
-                    globalUVs.push_back((clipX + xoffset + offsetX) / xdimens); globalUVs.push_back((clipY + yoffset + offsetY) / ydimens); globalUVs.push_back(transparency);
-                }
-            }
-
-            vertices = {
-                -0.5f * scale + xyz.x,  -0.5f * scale * yexponent + xyz.y,  -0.5f * scale + xyz.z,
-                -0.5f * scale + xyz.x,   0.5f * scale * yexponent + xyz.y,  -0.5f * scale + xyz.z,
-                -0.5f * scale + xyz.x,   0.5f * scale * yexponent + xyz.y,   0.5f * scale + xyz.z,
-                -0.5f * scale + xyz.x,  -0.5f * scale * yexponent + xyz.y,   0.5f * scale + xyz.z,
-
-                 0.5f * scale + xyz.x,  -0.5f * scale * yexponent + xyz.y,  -0.5f * scale + xyz.z,
-                 0.5f * scale + xyz.x,  -0.5f * scale * yexponent + xyz.y,   0.5f * scale + xyz.z,
-                 0.5f * scale + xyz.x,   0.5f * scale * yexponent + xyz.y,   0.5f * scale + xyz.z,
-                 0.5f * scale + xyz.x,   0.5f * scale * yexponent + xyz.y,  -0.5f * scale + xyz.z,
-
-                -0.5f * scale + xyz.x,  -0.5f * scale * yexponent + xyz.y,  -0.5f * scale + xyz.z,
-                 0.5f * scale + xyz.x,  -0.5f * scale * yexponent + xyz.y,  -0.5f * scale + xyz.z,
-                 0.5f * scale + xyz.x,   0.5f * scale * yexponent + xyz.y,  -0.5f * scale + xyz.z,
-                -0.5f * scale + xyz.x,   0.5f * scale * yexponent + xyz.y,  -0.5f * scale + xyz.z,
- 
-                -0.5f * scale + xyz.x,  -0.5f * scale * yexponent + xyz.y,   0.5f * scale + xyz.z,
-                -0.5f * scale + xyz.x,   0.5f * scale * yexponent + xyz.y,   0.5f * scale + xyz.z,
-                 0.5f * scale + xyz.x,   0.5f * scale * yexponent + xyz.y,   0.5f * scale + xyz.z,
-                 0.5f * scale + xyz.x,  -0.5f * scale * yexponent + xyz.y,   0.5f * scale + xyz.z,
-
-                -0.5f * scale + xyz.x,  -0.5f * scale * yexponent + xyz.y,  -0.5f * scale + xyz.z,
-                -0.5f * scale + xyz.x,  -0.5f * scale * yexponent + xyz.y,   0.5f * scale + xyz.z,
-                 0.5f * scale + xyz.x,  -0.5f * scale * yexponent + xyz.y,   0.5f * scale + xyz.z,
-                 0.5f * scale + xyz.x,  -0.5f * scale * yexponent + xyz.y,  -0.5f * scale + xyz.z,
-
-                -0.5f * scale + xyz.x,   0.5f * scale * yexponent + xyz.y,  -0.5f * scale + xyz.z,
-                 0.5f * scale + xyz.x,   0.5f * scale * yexponent + xyz.y,  -0.5f * scale + xyz.z,
-                 0.5f * scale + xyz.x,   0.5f * scale * yexponent + xyz.y,   0.5f * scale + xyz.z,
-                -0.5f * scale + xyz.x,   0.5f * scale * yexponent + xyz.y,   0.5f * scale + xyz.z,
-            };
-
-            normals = long_normals;
+    if (!blockType.isFlat()) {
+        for (int i = 0; i < 6; i++) {
+            unsigned base = i * 4;
+            indices.push_back(base + 0); indices.push_back(base + 1); indices.push_back(base + 2);
+            indices.push_back(base + 2); indices.push_back(base + 3); indices.push_back(base + 0);
         }
-
-        if (blockType.isFlat()) {
-            if (!recipe.isTool(blockType)) {
-                float baseU0 = (xoffset) / float(xdimens), baseV0 = (yoffset) / float(ydimens);
-                for (int y = 0; y < Textures[BLOCK_TEX]->getHeight() / ydimens; y++) {
-                    for (int x = 0; x < Textures[BLOCK_TEX]->getWidth() / xdimens; x++) {
-                        int pixelPosX = xoffset * (16) + x, pixelPosY = yoffset * (16) + y;
-                        if (!Textures[BLOCK_TEX]->pixelOpaque(pixelPosX, pixelPosY)) continue;
-                        float poff = float(t) * (1.f / float(xdimens));
-                        float pux = baseU0 + x * poff, pvx = baseV0 + y * poff;
-
-                        push(addPixelCubeAt(x - 8, y - 8, 4, pux, pvx, poff, scale), vertices, indices);
-                        //goto finish;
-                    }
-                }
-            //finish:;
+        for (int i = 0; i < 6; i++) {
+            int offsetX = 0, offsetY = 0;
+            if (i == 4) { offsetX = xoffsetBottom; offsetY = yoffsetBottom; }
+            else if (i == 5) { offsetX = xoffsetTop;  offsetY = yoffsetTop; }
+            if (i % 3 == 0) {
+                globalUVs.push_back((clipX + xoffset + offsetX) / xdimens); globalUVs.push_back((clipX + yoffset + offsetY) / ydimens); globalUVs.push_back(transparency);
+                globalUVs.push_back((clipX + xoffset + offsetX) / xdimens); globalUVs.push_back((clipY + yoffset + offsetY) / ydimens); globalUVs.push_back(transparency);
+                globalUVs.push_back((clipY + xoffset + offsetX) / xdimens); globalUVs.push_back((clipY + yoffset + offsetY) / ydimens); globalUVs.push_back(transparency);
+                globalUVs.push_back((clipY + xoffset + offsetX) / xdimens); globalUVs.push_back((clipX + yoffset + offsetY) / ydimens); globalUVs.push_back(transparency);
             }
             else {
-                if (blockType == WOODEN_PICKAXE) {
-                    xoffset = 0, yoffset = 1;
-                }
-
-                else if (blockType == STICK) {
-                    xoffset = 1, yoffset = 1;
-                }
-
-                else if (blockType == WOODEN_AXE) {
-                    xoffset = 0, yoffset = 0;
-                }
-                float baseU0 = (xoffset) / float(xdimensItem), baseV0 = (yoffset) / float(ydimensItem);
-                for (int y = 0; y < (Textures[TOOLS_TEX]->getHeight() / ydimensItem); y++) {
-                    for (int x = 0; x < (Textures[TOOLS_TEX]->getWidth() / xdimensItem); x++) {
-                        int pixelPosX = xoffset * (16) + x, pixelPosY = yoffset * (16) + y;
-                        if (!Textures[TOOLS_TEX]->pixelOpaque(pixelPosX, pixelPosY)) continue;
-                        float poff = float(t) * (1.f / float(xdimensItem));
-                        float pux = baseU0 + float(x) * poff, pvx = baseV0 + float(y) * poff;
-
-                        push(addPixelCubeAt(x - 8, y - 8, 4, pux, pvx, poff, scale), vertices, indices);
-                    }
-                }
+                globalUVs.push_back((clipX + xoffset + offsetX) / xdimens); globalUVs.push_back((clipX + yoffset + offsetY) / ydimens); globalUVs.push_back(transparency);
+                globalUVs.push_back((clipY + xoffset + offsetX) / xdimens); globalUVs.push_back((clipX + yoffset + offsetY) / ydimens); globalUVs.push_back(transparency);
+                globalUVs.push_back((clipY + xoffset + offsetX) / xdimens); globalUVs.push_back((clipY + yoffset + offsetY) / ydimens); globalUVs.push_back(transparency);
+                globalUVs.push_back((clipX + xoffset + offsetX) / xdimens); globalUVs.push_back((clipY + yoffset + offsetY) / ydimens); globalUVs.push_back(transparency);
             }
         }
 
-        normals.assign(vertices.size(), 1);
-        //globalUVs.assign(vertices.size(), 1);
+        vertices = {
+            -0.5f * scale + xyz.x,  -0.5f * scale * yexponent + xyz.y,  -0.5f * scale + xyz.z,
+            -0.5f * scale + xyz.x,   0.5f * scale * yexponent + xyz.y,  -0.5f * scale + xyz.z,
+            -0.5f * scale + xyz.x,   0.5f * scale * yexponent + xyz.y,   0.5f * scale + xyz.z,
+            -0.5f * scale + xyz.x,  -0.5f * scale * yexponent + xyz.y,   0.5f * scale + xyz.z,
+
+             0.5f * scale + xyz.x,  -0.5f * scale * yexponent + xyz.y,  -0.5f * scale + xyz.z,
+             0.5f * scale + xyz.x,  -0.5f * scale * yexponent + xyz.y,   0.5f * scale + xyz.z,
+             0.5f * scale + xyz.x,   0.5f * scale * yexponent + xyz.y,   0.5f * scale + xyz.z,
+             0.5f * scale + xyz.x,   0.5f * scale * yexponent + xyz.y,  -0.5f * scale + xyz.z,
+
+            -0.5f * scale + xyz.x,  -0.5f * scale * yexponent + xyz.y,  -0.5f * scale + xyz.z,
+             0.5f * scale + xyz.x,  -0.5f * scale * yexponent + xyz.y,  -0.5f * scale + xyz.z,
+             0.5f * scale + xyz.x,   0.5f * scale * yexponent + xyz.y,  -0.5f * scale + xyz.z,
+            -0.5f * scale + xyz.x,   0.5f * scale * yexponent + xyz.y,  -0.5f * scale + xyz.z,
+ 
+            -0.5f * scale + xyz.x,  -0.5f * scale * yexponent + xyz.y,   0.5f * scale + xyz.z,
+            -0.5f * scale + xyz.x,   0.5f * scale * yexponent + xyz.y,   0.5f * scale + xyz.z,
+             0.5f * scale + xyz.x,   0.5f * scale * yexponent + xyz.y,   0.5f * scale + xyz.z,
+             0.5f * scale + xyz.x,  -0.5f * scale * yexponent + xyz.y,   0.5f * scale + xyz.z,
+
+            -0.5f * scale + xyz.x,  -0.5f * scale * yexponent + xyz.y,  -0.5f * scale + xyz.z,
+            -0.5f * scale + xyz.x,  -0.5f * scale * yexponent + xyz.y,   0.5f * scale + xyz.z,
+             0.5f * scale + xyz.x,  -0.5f * scale * yexponent + xyz.y,   0.5f * scale + xyz.z,
+             0.5f * scale + xyz.x,  -0.5f * scale * yexponent + xyz.y,  -0.5f * scale + xyz.z,
+
+            -0.5f * scale + xyz.x,   0.5f * scale * yexponent + xyz.y,  -0.5f * scale + xyz.z,
+             0.5f * scale + xyz.x,   0.5f * scale * yexponent + xyz.y,  -0.5f * scale + xyz.z,
+             0.5f * scale + xyz.x,   0.5f * scale * yexponent + xyz.y,   0.5f * scale + xyz.z,
+            -0.5f * scale + xyz.x,   0.5f * scale * yexponent + xyz.y,   0.5f * scale + xyz.z,
+        };
+
+        normals = long_normals;
+    }
+
+    if (blockType.isFlat()) {
+        if (!recipe.isTool(blockType)) {
+            float baseU0 = (xoffset) / float(xdimens), baseV0 = (yoffset) / float(ydimens);
+            for (int y = 0; y < Textures[BLOCK_TEX]->getHeight() / ydimens; y++) {
+                for (int x = 0; x < Textures[BLOCK_TEX]->getWidth() / xdimens; x++) {
+                    int pixelPosX = xoffset * (16) + x, pixelPosY = yoffset * (16) + y;
+                    if (!Textures[BLOCK_TEX]->pixelOpaque(pixelPosX, pixelPosY)) continue;
+                    float poff = float(t) * (1.f / float(xdimens));
+                    float pux = baseU0 + x * poff, pvx = baseV0 + y * poff;
+
+                    push(addPixelCubeAt(x - 8, y - 8, 4, pux, pvx, poff, scale/16), vertices, indices);
+                    //goto finish;
+                }
+            }
+        //finish:;
+        }
+        else {
+            float baseU0 = (xoffset) / float(xdimensItem), baseV0 = (yoffset) / float(ydimensItem);
+            for (int y = (Textures[TOOLS_TEX]->getHeight() / ydimensItem)-1; y >= 0; y--) {
+                for (int x = (Textures[TOOLS_TEX]->getWidth() / xdimensItem)-1; x >= 0 ; x--) {
+                    int pixelPosX = xoffset * (16) + x, pixelPosY = yoffset * (16) + y;
+                    if (!Textures[TOOLS_TEX]->pixelOpaque(pixelPosX, pixelPosY)) continue;
+                    float poff = float(t) * (1.f / float(xdimensItem));
+                    float pux = baseU0 + float(x) * poff, pvx = baseV0 + float(y) * poff;
+
+                    push(addPixelCubeAt(x - 8, y - 8, 4, pux, pvx, poff, scale/16), vertices, indices);
+                }
+            }
+        }
+    }
+
+    normals.assign(vertices.size(), 1);
+    //globalUVs.assign(vertices.size(), 1);
     vector<GLfloat> colorMask;
     float tintr = 1.0f, tintg = 1.0f, tintb = 1.0f;
     if (blockType == GRASS) { tintr = 0.2f, tintg = 1.45f, tintb = 0.15f; }
@@ -554,7 +481,7 @@ void Inventory::initInventorySlots() {
         for (int j = 0; j < 9; j++) {
             int x = 273, x1 = 245, y = 700, y1 = (i == 3) ? 365 : 333;
             float posx = ((float(centerX - x1) + 61.5f * (float)j) / 1800) * 1905,
-                  posy = ((centerY - y1 + 93 * (3 - i)) / 1800) * 1059;
+                  posy = ((centerY - y1 + 93 * (3 - i)) / 1800) * 1080;
             mainInventorySlots[i][j].quadMesh = createMeshQuad(50.0f);
             mainInventorySlots[i][j].model    = translate(mat4(1.0f), vec3(float(centerX - x1) + 61.5f * (float)j, centerY - y1 + 93 * (3 - i), 0.0f));
             mainInventorySlots[i][j].x = posx; mainInventorySlots[i][j].y = posy; mainInventorySlots[i][j].w = 61.5; mainInventorySlots[i][j].h = 93;
@@ -602,7 +529,8 @@ void Inventory::initInventorySlots() {
 void Inventory::updateCurrentBlock() {
     if (currentBlock.item == mainInventorySlots[3][slot].item || mainInventorySlots[3][slot].item == AIR) return;
     else if (mainInventorySlots[3][slot].item != AIR && inv_change) {
-        currentBlock.mesh = createMeshCube(vec3(0.0f), 40.0f, mainInventorySlots[3][slot].item);
+        currentBlock.mesh  = createMeshCube(vec3(0.f), 1.0f, mainInventorySlots[3][slot].item);
+
         currentBlock.item = mainInventorySlots[3][slot].item;
     }
     else {
@@ -611,6 +539,7 @@ void Inventory::updateCurrentBlock() {
 }
 
 void Inventory::updateInventory() {
+    inventory.updateCurrentBlock();
     defineMainInventorySlotsGeometry();
     for (int j = 0; j < (sizeof(mainInventorySlots[0]) / sizeof(InventorySlot)); j++) {
         hotbarSlots[j].count = mainInventorySlots[3][j].count;
@@ -766,11 +695,11 @@ void Inventory::clearCraftingTableSlots() {
 }
 
 void render3Din2D(mat4 itemModel, LightMesh object3D, mat4 quadModel, LightMesh quad2D, mat4 itemOrtho, mat4 itemView, mat4 itemProj, Item item) {
-    glEnable(GL_DEPTH_TEST);
     glBindFramebuffer(GL_FRAMEBUFFER, itemFbo);
-    glViewport(0, 0, 1920, 1024);
-    //glEnable(GL_DEPTH_TEST);
-    //glDepthMask(GL_TRUE);
+    glEnable(GL_DEPTH_TEST);
+	glDepthMask(GL_TRUE);
+    glDepthFunc(GL_LESS);
+    glViewport(0, 0, 1600, 1600);
     //glDepthFunc(GL_LESS);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     //glClearColor(1, 1, 1, 0.5);
@@ -779,6 +708,7 @@ void render3Din2D(mat4 itemModel, LightMesh object3D, mat4 quadModel, LightMesh 
     glUniformMatrix4fv(shaders[3]->getViewLocation(), 1, GL_FALSE, value_ptr(itemView));
     glUniformMatrix4fv(shaders[3]->getProjectionLocation(), 1, GL_FALSE, value_ptr(itemProj));
     shaders[3]->setDirectionalLight(&auxLight);
+    glUniform1i(glGetUniformLocation(shaders[3]->getShaderId(), "topTexture"), 2);
 
     if (recipe.isTool(item)) {
         Textures[TOOLS_TEX]->useTexture();
@@ -787,13 +717,13 @@ void render3Din2D(mat4 itemModel, LightMesh object3D, mat4 quadModel, LightMesh 
         Textures[BLOCK_TEX]->useTexture();
     }
     Textures[TOP_TEX]->useNextTexture();
-    glUniform1i(glGetUniformLocation(shaders[3]->getShaderId(), "topTexture"), 2);
-
+    
     object3D.renderMesh();//<-
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glEnable(GL_DEPTH_TEST);
     glViewport(0, 0, mainWindow.getBufferWidth(), mainWindow.getBufferHeight());
-    glDisable(GL_DEPTH_TEST);
+    //glDisable(GL_DEPTH_TEST);
 
     shaders[4]->useShader();
     glUniformMatrix4fv(shaders[4]->getOrthoLocation(), 1, GL_FALSE, glm::value_ptr(itemOrtho));
@@ -826,6 +756,7 @@ void Inventory::drawMainInventorySlots(mat4 ortho, mat4 itemView, mat4 itemProj)
 
 void handleInvSlotClicks() {
         if (inventory.mainInventoryOn || inventory.craftingTableInventoryOn) {
+            bool clicked = false;
             if (mainWindow.leftClickButtonPressed()) {
                 for (int i = 0; i < 4; i++) {
                     for (int j = 0; j < 9; j++)
@@ -833,24 +764,32 @@ void handleInvSlotClicks() {
                             (cursor.y >= inventory.mainInventorySlots[i][j].y - inventory.mainInventorySlots[i][j].h / 2 && cursor.y <= inventory.mainInventorySlots[i][j].y + inventory.mainInventorySlots[i][j].h / 2)
                             ) {
                             inventory.mainInventorySlots[i][j].onClick();
+                            goto done;
                         }
                 }
                 for (int i = 0; i < 2; i++) {
                     for (int j = 0; j < 2; j++)
                         if ((cursor.x >= inventory.mainCraftingSlots[i][j].x - inventory.mainCraftingSlots[i][j].w / 2 && cursor.x <= inventory.mainCraftingSlots[i][j].x + inventory.mainCraftingSlots[i][j].w / 2) &&
                             (cursor.y >= inventory.mainCraftingSlots[i][j].y - inventory.mainCraftingSlots[i][j].h / 2 && cursor.y <= inventory.mainCraftingSlots[i][j].y + inventory.mainCraftingSlots[i][j].h / 2)
-                            ) inventory.mainCraftingSlots[i][j].onClick();
+                            ) {
+                            inventory.mainCraftingSlots[i][j].onClick();
+                            goto done;
+                        }
                 }
                 for (int i = 0; i < 3; i++) {
                     for (int j = 0; j < 3; j++)
                         if ((cursor.x >= inventory.craftingTableSlots[i][j].x - inventory.craftingTableSlots[i][j].w / 2 && cursor.x <= inventory.craftingTableSlots[i][j].x + inventory.craftingTableSlots[i][j].w / 2) &&
                             (cursor.y >= inventory.craftingTableSlots[i][j].y - inventory.craftingTableSlots[i][j].h / 2 && cursor.y <= inventory.craftingTableSlots[i][j].y + inventory.craftingTableSlots[i][j].h / 2)
-                            ) inventory.craftingTableSlots[i][j].onClick();
+                            ) {
+                            inventory.craftingTableSlots[i][j].onClick();
+                            goto done;
+                        }
                 }
 
-                cursor.textCount.model = translate(mat4(1), vec3(centerX, centerY, 0));
+                done:
+                //cursor.textCount.model = translate(mat4(1), vec3(centerX, centerY, 0));
                 inventory.invDidChange(1);
-                this_thread::sleep_for(chrono::milliseconds(400));
+                this_thread::sleep_for(chrono::milliseconds(200));
             }
             //this_thread::sleep_for(chrono::milliseconds(200));
         }

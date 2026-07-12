@@ -323,83 +323,43 @@ LightMesh World::createProjectileMesh(vec3 blockPos, float scale, Item blockType
         for (int i = 0; i < triangle.size() / 3; i++) { colorMask.push_back(tintr); colorMask.push_back(tintg); colorMask.push_back(tintb); }
     }
     else {
-        if (!blockType.isTool()) {
-            for (int e = 0; e < 2; e++) {
-                int base = e * 4;
-                indices.push_back(base + 0); indices.push_back(base + 1); indices.push_back(base + 2);
-                indices.push_back(base + 2); indices.push_back(base + 3); indices.push_back(base + 0);
-            }
-            uint32_t uintUVs = (((uint8_t)155 << 24)) | (((uint8_t)xdimens << 16)) | ((uint8_t)(yoffset) << 8) | ((uint8_t)(xoffset)); // Packaging floats into one integer
-            float startUvs;
-            memcpy(&startUvs, &uintUVs, sizeof(float));
-            //for (int i = 0; i < 6; i++) {
-            globalUVs = {
-                (clipX), (clipX), startUvs,
-                (clipX), (clipY), startUvs,
-                (clipY), (clipY), startUvs,     
-                (clipY), (clipX), startUvs,
-
-                (clipX), (clipX), startUvs,
-                (clipY), (clipX), startUvs,
-                (clipY), (clipY), startUvs,
-                (clipX), (clipY), startUvs,
-            };
-            //}
-
-            triangle = {
-                    -0.50f + blockPos.x + 0.1f * -scale,   -0.50f + blockPos.y + 0.1f * -scale,    0.0f + blockPos.z,
-                    -0.50f + blockPos.x + 0.1f * -scale,    0.50f + blockPos.y + 0.1f * scale,    0.0f + blockPos.z,
-                     0.50f + blockPos.x + 0.1f * scale,    0.50f + blockPos.y + 0.1f * scale,    0.0f + blockPos.z,
-                     0.50f + blockPos.x + 0.1f * scale,   -0.50f + blockPos.y + 0.1f * -scale,    0.0f + blockPos.z,
-
-                    -0.50f + blockPos.x + 0.1f * -scale,   -0.50f + blockPos.y + 0.1f * -scale,    0.0f + blockPos.z,
-                     0.50f + blockPos.x + 0.1f * scale,   -0.50f + blockPos.y + 0.1f * -scale,    0.0f + blockPos.z,
-                     0.50f + blockPos.x + 0.1f * scale,    0.50f + blockPos.y + 0.1f * scale,    0.0f + blockPos.z,
-                    -0.50f + blockPos.x + 0.1f * -scale,    0.50f + blockPos.y + 0.1f * scale,    0.0f + blockPos.z,
-            };
-
-            normals = long_normals;
-            for (int i = 0; i < triangle.size() / 3; i++) { colorMask.push_back(tintr); colorMask.push_back(tintg); colorMask.push_back(tintb); }
+        int tileSize = blockType.isTool() ? xdimensItem : xdimens;
+        for (int e = 0; e < 2; e++) {
+            int base = e * 4;
+            indices.push_back(base + 0); indices.push_back(base + 1); indices.push_back(base + 2);
+            indices.push_back(base + 2); indices.push_back(base + 3); indices.push_back(base + 0);
         }
-        else {
+        uint32_t uintUVs = (((uint8_t)155 << 24)) | (((uint8_t)tileSize << 16)) | ((uint8_t)(yoffset) << 8) | ((uint8_t)(xoffset)); // Packaging floats into one integer
+        float startUvs;
+        memcpy(&startUvs, &uintUVs, sizeof(float));
+        //for (int i = 0; i < 6; i++) {
+        globalUVs = {
+            (clipX), (clipX), startUvs,
+            (clipX), (clipY), startUvs,
+            (clipY), (clipY), startUvs,     
+            (clipY), (clipX), startUvs,
 
-            for (int e = 0; e < 2; e++) {
-                int base = e * 4;
-                indices.push_back(base + 0); indices.push_back(base + 1); indices.push_back(base + 2);
-                indices.push_back(base + 2); indices.push_back(base + 3); indices.push_back(base + 0);
-            }
-            uint32_t uintUVs = (((uint8_t)155 << 24)) | (((uint8_t)xdimensItem << 16)) | ((uint8_t)(yoffset) << 8) | ((uint8_t)(xoffset)); // Packaging floats into one integer
-            float startUvs;
-            memcpy(&startUvs, &uintUVs, sizeof(float));
-            //for (int i = 0; i < 6; i++) {
-            globalUVs = {
-                (clipX), (clipX), startUvs,
-                (clipX), (clipY), startUvs,
-                (clipY), (clipY), startUvs,
-                (clipY), (clipX), startUvs,
+            (clipX), (clipX), startUvs,
+            (clipY), (clipX), startUvs,
+            (clipY), (clipY), startUvs,
+            (clipX), (clipY), startUvs,
+        };
+        //}
 
-                (clipX), (clipX), startUvs,
-                (clipY), (clipX), startUvs,
-                (clipY), (clipY), startUvs,
-                (clipX), (clipY), startUvs,
-            };
-            //}
+        triangle = {
+                -0.50f + blockPos.x + 0.1f * -scale,   -0.50f + blockPos.y + 0.1f * -scale,    0.0f + blockPos.z,
+                -0.50f + blockPos.x + 0.1f * -scale,    0.50f + blockPos.y + 0.1f * scale,    0.0f + blockPos.z,
+                    0.50f + blockPos.x + 0.1f * scale,    0.50f + blockPos.y + 0.1f * scale,    0.0f + blockPos.z,
+                    0.50f + blockPos.x + 0.1f * scale,   -0.50f + blockPos.y + 0.1f * -scale,    0.0f + blockPos.z,
 
-            triangle = {
-                    -0.50f + blockPos.x + 0.1f * -scale,   -0.50f + blockPos.y + 0.1f * -scale,    0.0f + blockPos.z,
-                    -0.50f + blockPos.x + 0.1f * -scale,    0.50f + blockPos.y + 0.1f * scale,    0.0f + blockPos.z,
-                     0.50f + blockPos.x + 0.1f * scale,    0.50f + blockPos.y + 0.1f * scale,    0.0f + blockPos.z, 
-                     0.50f + blockPos.x + 0.1f * scale,   -0.50f + blockPos.y + 0.1f * -scale,    0.0f + blockPos.z,
+                -0.50f + blockPos.x + 0.1f * -scale,   -0.50f + blockPos.y + 0.1f * -scale,    0.0f + blockPos.z,
+                    0.50f + blockPos.x + 0.1f * scale,   -0.50f + blockPos.y + 0.1f * -scale,    0.0f + blockPos.z,
+                    0.50f + blockPos.x + 0.1f * scale,    0.50f + blockPos.y + 0.1f * scale,    0.0f + blockPos.z,
+                -0.50f + blockPos.x + 0.1f * -scale,    0.50f + blockPos.y + 0.1f * scale,    0.0f + blockPos.z,
+        };
 
-                    -0.50f + blockPos.x + 0.1f * -scale,   -0.50f + blockPos.y + 0.1f * -scale,    0.0f + blockPos.z,
-                     0.50f + blockPos.x + 0.1f * scale,   -0.50f + blockPos.y + 0.1f * -scale,    0.0f + blockPos.z,
-                     0.50f + blockPos.x + 0.1f * scale,    0.50f + blockPos.y + 0.1f * scale,    0.0f + blockPos.z,
-                    -0.50f + blockPos.x + 0.1f * -scale,    0.50f + blockPos.y + 0.1f * scale,    0.0f + blockPos.z,
-            };
-
-            normals = long_normals;
-            for (int i = 0; i < triangle.size() / 3; i++) { colorMask.push_back(tintr); colorMask.push_back(tintg); colorMask.push_back(tintb); }
-        }
+        normals = long_normals;
+        for (int i = 0; i < triangle.size() / 3; i++) { colorMask.push_back(tintr); colorMask.push_back(tintg); colorMask.push_back(tintb); }
     }
 
     vector<GLfloat> finalvertices;

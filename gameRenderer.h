@@ -129,7 +129,7 @@ public:
 
         ortho = glm::ortho(0.0f, float(WIDTH), 0.0f, float(HEIGHT));
 
-        itemProj = perspective(radians(1.0f), 1.0f, 0.01f, 1500.0f),
+        itemProj = perspective(radians(1.0f), 1.f/*(float)1920 / float(1080)*/, 0.01f, 1500.0f),
         itemView = lookAt(vec3(0, 0, 400), vec3(0), vec3(0, 1, 0)),
         currentBlockView = lookAt(vec3(0, 0, 1400), vec3(0), vec3(0, 1, 0));
 
@@ -145,10 +145,10 @@ public:
         inventory.initInventorySlots();
         sky.buildSky();
 
-        workers.push_back(thread(updateChunkJob));
-        for (int i = 0; i < 3; ++i) {
-            if (i < 2)
-                workers.push_back(thread(chunkWorker)); // worker thread is somewhere in threading.h
+        
+        for (int i = 0; i < 2; ++i) {
+            workers.push_back(thread(chunkWorker)); // worker thread is somewhere in threading.h
+            workers.push_back(thread(updateChunkJob));
         }
         
         mainLight = DirectionalLight(mainWindow.getBufferWidth(), mainWindow.getBufferHeight(),
@@ -567,7 +567,7 @@ public:
                 glUniformMatrix4fv(shaders[5]->getModelLocation(), 1, GL_FALSE, value_ptr(model));
             }*/
 
-            glDisable(GL_DEPTH_TEST); // so crosshair draws on top
+            //glDisable(GL_DEPTH_TEST); // so crosshair draws on top
             shaders[2]->useShader();
             glBlendFunc(GL_ONE_MINUS_DST_COLOR, GL_ONE);
 
@@ -760,15 +760,17 @@ public:
                 render3Din2D(itemModel, inventory.hotbarSlots[i].mesh, inventory.hotbarSlots[i].model, inventory.hotbarSlots[i].quadMesh, ortho, itemView, itemProj, inventory.hotbarSlots[i].item);
                 inventory.hotbarSlots[i].textCount.drawText(ortho);
             }
-            Textures[BLOCK_TEX]->useTexture();
-            inventory.updateCurrentBlock();
-			
+            			
             render3Din2D(itemModel * breakModel
-                * rotate(mat4(1.0f), radians((!currentBlock.item.isTool() ? -35.f : 0.f)), vec3(1, 1, 1))
-                * rotate(mat4(1.0f), radians((!currentBlock.item.isTool() ? 45.f : 0.f)), vec3(0, 1, 0))
-                * rotate(mat4(1.0f), radians((currentBlock.item.isTool() ? 75.f : 0.f)), vec3(0, 0, 1))
-                , currentBlock.mesh, translate(mat4(1.0f), vec3(centerX + 600 - 20 * (firstCamera.getYaw() - lastYaw), centerY - 650 - 20 * (firstCamera.getPitch() - lastPitch) - 2 * (firstCamera.initial_velocity.y + firstCamera.velocity.y), 0)), 
+                * rotate(mat4(1.0f), radians((!currentBlock.item.isTool() ? -35.f : 0.f)), vec3(1, 1, 1))                
+                * rotate(mat4(1.0f), radians((!currentBlock.item.isTool() ? 45.f : 200.f)), vec3(0, 1, 0))  
+                * rotate(mat4(1.0f), radians((!currentBlock.item.isTool() ? 0.f : 30.f)), vec3(0, 0, 1)),
+                currentBlock.mesh, 
+                translate(mat4(1.0f), vec3((float)centerX + 600.f - 20.f * (firstCamera.getYaw() - lastYaw),
+                                           (float)centerY - 650.f - 20.f * (firstCamera.getPitch() - lastPitch) - 2 * (firstCamera.initial_velocity.y + firstCamera.velocity.y), 
+                                           0.f)), 
                 currentBlock.quadMesh, ortho, currentBlockView, itemProj, currentBlock.item);
+
             angletest += 1;
 
             if (inventory.invChange()) { inventory.updateInventory(); }
@@ -911,7 +913,7 @@ public:
                         std::lock_guard<std::mutex> lock(chunkUpdateRequestMutex);
                         chunkCleanupQueue.push(chunkochunks);
                     }
-                    chunkUpdateCV.notify_all();
+                    chunkUpdateCV.notify_one();
                     chunk->setAsClean();
                 }
             }
@@ -926,8 +928,8 @@ public:
 
     void renderShadowWorld() {
         vec3 playerpos = firstCamera.getPosition() / vec3(CHUNK_SIZE, 1, CHUNK_SIZE);
-        vec2 _2dPlPosHi = vec2(playerpos.x, playerpos.z) + float(renderDistance) * 0.5f,
-             _2dPlPosLo = vec2(playerpos.x, playerpos.z) - float(renderDistance) * 0.5f;
+        vec2 _2dPlPosHi = vec2(playerpos.x, playerpos.z) + float(renderDistance) * 1.f,
+             _2dPlPosLo = vec2(playerpos.x, playerpos.z) - float(renderDistance) * 1.f;
 
         for (auto& chunks : world.chunkData) {
             auto& chunk = chunks.second;
