@@ -201,7 +201,7 @@ public:
                 ivec2 camChunkPos = ivec2(floorDiv(firstCamera.getPosition().x, CHUNK_SIZE), floorDiv(firstCamera.getPosition().z, CHUNK_SIZE));
                 ivec2 chunkPos = camChunkPos + chunkOff;
                 if (chunkCoords.count(pack(chunkPos)) == 0) {
-                    chunkCoords.emplace(pack(chunkPos), -1);
+                    chunkCoords.emplace(chCoord(pack(chunkPos), 0));
                     {
                         std::lock_guard<std::mutex> lock(queueMutex);
                         chunkRequestQueue.push(pack(chunkPos));
@@ -219,8 +219,9 @@ public:
                     chNeighRes = chunkMeshResult.front();
                     chunkMeshResult.pop();
                 }
-                if (chunkCoords.count(chCoord(chNeighRes->coords))) continue;
-                world.chunkData.at(chNeighRes->coords)->mesh->createMesh(chNeighRes->mesh->vertices, chNeighRes->mesh->indices);
+                if (!chunkCoords.count(chCoord(chNeighRes->coords))) continue;
+                auto it = chunkCoords.find(chCoord(chNeighRes->coords));
+                world.chunkData[it->chIdx]->mesh->createMesh(chNeighRes->mesh->vertices, chNeighRes->mesh->indices);
                 delete chNeighRes;
                 if (!(count++ % 7)) break;
             }
@@ -233,6 +234,10 @@ public:
                     chunkResultQueue.pop();
                 }
                 world.chunkData.emplace_back(move(ch.chPtr));
+                auto it = chunkCoords.find(chCoord(ch.coords));
+                if (it != chunkCoords.end())
+                    chunkCoords.erase(it);
+                chunkCoords.insert(chCoord(ch.coords, world.chunkData.size() - 1));
                 if (!(count++ % 7)) break;
             }
 
@@ -834,8 +839,10 @@ public:
         //outplayerJSON << lastPlayer.dump(4);
     }////
 
-    //template <typename T>
-    void v_erase(vector<unique_ptr<Chunk>>& vec, int index) {
+    template <typename T>
+    void v_erase(vector<unique_ptr<T>>& vec, int index) {
+        //vec[index] = move(vec.back());
+        //vec[index].reset(vec.back().release());
         vec[index] = move(vec.back());
         vec.pop_back();
     }
@@ -879,11 +886,25 @@ public:
         {
             auto& chunk = world.chunkData[i];
             ivec2 coords = chunk->coords();
+
+            if (((coords.x < _2dPlPosLo.x || coords.x > _2dPlPosHi.x) ||
+                (coords.y < _2dPlPosLo.y || coords.y > _2dPlPosHi.y)))
+            {
+                //cout << "Deleted" << endl;
+                if (!chunk->safe_unload) {//} && !chunk->inUse) {
+                    chunkCoords.erase((chunk->coord));
+                    chunkCoords.erase(world.chunkData.back()->coord);
+                    v_erase(world.chunkData, i);
+                    chunkCoords.emplace(chCoord(chunk->coord, i));
+                }
+                else i++;
+                continue;
+            }
             
             if (chunk->getDirty()) {
                 //cout << "Dirty rat" << endl;
                 if ((chunk->neighboursPresent & 0x1E) != 0x1E) {
-                    cout << "Dirty rat - 1 : " << hex << (int)chunk->neighboursPresent << endl;
+                    //cout << "Dirty rat - 1 : " << hex << (int)chunk->neighboursPresent << endl;
                     for (int i = 0; i < 4; i++) {
                         ivec2 chcrds = coords + ivec2(dirs[i], dirs[i + 4]);
                         if (chunkCoords.count(chCoord(pack(chcrds)))) {
@@ -900,8 +921,9 @@ public:
                     for (int i = 0; i < 4; i++) {
                         ivec2 chcrds = coords + ivec2(dirs[i], dirs[i + 4]);
                         uint idxcrds = pack(chcrds);
-                        if (chunkCoords.count(idxcrds)) {
-                            auto& ch = world.chunkData.at(idxcrds);
+						auto it = chunkCoords.find(idxcrds);
+                        if (it != chunkCoords.end() && it->chIdx) {
+                            auto& ch = world.chunkData[it->chIdx];
                             memcpy(chunkochunks->neighbour_data[i].data(), ch->block_data.data(), CHUNK_VOLUME);
                             //ch->inUse = 0;
                         }
@@ -914,19 +936,7 @@ public:
                     chunk->setAsClean();
                 }
             }
-
-            if (((coords.x < _2dPlPosLo.x || coords.x > _2dPlPosHi.x) ||
-                (coords.y < _2dPlPosLo.y || coords.y > _2dPlPosHi.y)))
-            {
-                //cout << "Deleted" << endl;
-                if (!chunk->safe_unload){//} && !chunk->inUse) {
-                    chunkCoords.erase((chunk->coord));
-                    v_erase(world.chunkData, i);
-                }
-                else i++;
-                continue;
-            }
-
+                        
             vec3 center = vec3((coords.x + 0.5) * CHUNK_SIZE, playerPos.y, (coords.y + 0.5) * CHUNK_SIZE);
             if (sphereInFrustum(center, playerPos.y / 2))
                 chunk->mesh->renderMesh();

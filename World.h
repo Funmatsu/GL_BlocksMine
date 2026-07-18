@@ -5,7 +5,7 @@
 
 struct chCoord {
 	uint32_t coords, chIdx;
-    chCoord(){}
+    //chCoord(){}
 	chCoord(uint crd, uint idx) { coords = crd; chIdx = idx; }
 	chCoord(uint crd) { coords = crd; chIdx = 0; }
 	bool operator==(const chCoord& other) const {
@@ -19,12 +19,12 @@ struct chCoord {
 	//	return uint32_t((coords >> 32) & 0xffffffff);
 	//}
 };
-struct chHash {
-	size_t operator()(const chCoord& c) const noexcept {
-        return std::hash<uint32_t>()(c.coords);
-	}
-};
-std::unordered_set<chCoord, chHash> chunkCoords;
+//struct chHash {
+//	size_t operator()(const chCoord& c) const noexcept {
+//        return std::hash<uint32_t>()(c.coords);
+//	}
+//};
+std::unordered_set<chCoord> chunkCoords;
 //std::unordered_map<uint, uint> chunkCoords;// Map;
 std::queue<chPack> chunkMeshQueue;//pair<unique_ptr<Mesh>, Chunk*>
 
@@ -167,16 +167,17 @@ int floorDiv(float a, float b) {
 }
 
 BlockData World::getBlockAt(ivec3 blockPos) {
-    if (blockPos.y == -404) return BlockData(AIR);
-    ivec2 chunkPos = ivec2(floorDiv(blockPos.x, CHUNK_SIZE), floorDiv(blockPos.z, CHUNK_SIZE));
-    auto& chunk = world.chunkData.at(pack(chunkPos));
-    return BlockData(chunk->block_data[chunk->at(blockPos)].blockType);
+    //if (blockPos.y == -404) return BlockData(AIR);
+    //ivec2 chunkPos = ivec2(floorDiv(blockPos.x, CHUNK_SIZE), floorDiv(blockPos.z, CHUNK_SIZE));
+    //auto& chunk = world.chunkData.at(pack(chunkPos));
+    //return BlockData(chunk->block_data[chunk->at(blockPos)].blockType);
 }
 
 Block getBlockAt(ivec3 blockPos) {
     if (blockPos.y == -404) return Block(blockPos, AIR);
     ivec2 chunkPos = ivec2(floorDiv(blockPos.x, CHUNK_SIZE), floorDiv(blockPos.z, CHUNK_SIZE));
-    auto& chunk = world.chunkData.at(pack(chunkPos));
+    auto it = chunkCoords.find(pack(chunkPos));
+    auto& chunk = world.chunkData[it->chIdx];
     return Block(blockPos, chunk->block_data[chunk->at(blockPos)].blockType);
 }
 
@@ -232,7 +233,7 @@ vec3 lookingAtBlock() {
         //if (!chunkCoords.count(chunkVal)) return vec3(0);
         auto it = chunkCoords.find(chunkVal);
         if (rayOrigin.y > 0 && rayOrigin.y < CHUNK_SIZE * CHUNK_SIZE && it != chunkCoords.end() && it->chIdx != 0) {
-            auto& chunk = world.chunkData.at(chunkVal);
+            auto& chunk = world.chunkData[it->chIdx];
             uint64 index = chunk->at(blockPos);
             if (chunk->block_data[index].blockType != AIR)
                 return blockPos;
@@ -430,7 +431,8 @@ LightMesh World::createProjectileMesh(vec3 blockPos, float scale, Item blockType
 
 Block World::deleteBlockFromWorld(vec3 blockPos) {
     ivec2 chunkPos = ivec2(floorDiv(blockPos.x, CHUNK_SIZE), floorDiv(blockPos.z, CHUNK_SIZE));
-    auto& chunk = chunkData.at(pack(chunkPos));
+    auto it = chunkCoords.find(pack(chunkPos));
+    auto& chunk = chunkData[it->chIdx];
     Block returnBlock;
     Item& blockType = chunk->block_data[chunk->at(blockPos)].blockType;
     if (blockType.isBreakable()) {
