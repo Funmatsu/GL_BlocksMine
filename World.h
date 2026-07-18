@@ -3,7 +3,29 @@
 #include "Chunk.h"
 #include "normals.h"
 
-std::unordered_set<uint32_t> chunkCoords;
+struct chCoord {
+	uint32_t coords, chIdx;
+    chCoord(){}
+	chCoord(uint crd, uint idx) { coords = crd; chIdx = idx; }
+	chCoord(uint crd) { coords = crd; chIdx = 0; }
+	bool operator==(const chCoord& other) const {
+        return coords == other.coords;
+	}
+
+	//uint32_t getCrds() {
+	//	return uint32_t(coords & 0xffffffff);
+	//}
+	//uint32_t getVecIdx() {
+	//	return uint32_t((coords >> 32) & 0xffffffff);
+	//}
+};
+struct chHash {
+	size_t operator()(const chCoord& c) const noexcept {
+        return std::hash<uint32_t>()(c.coords);
+	}
+};
+std::unordered_set<chCoord, chHash> chunkCoords;
+//std::unordered_map<uint, uint> chunkCoords;// Map;
 std::queue<chPack> chunkMeshQueue;//pair<unique_ptr<Mesh>, Chunk*>
 
 std::mutex chunkMeshQueueMutex;
@@ -96,7 +118,8 @@ class World {
     public:
     //vector<Chunk> chunks;
     //unordered_map<glm::ivec2, Chunk, ivec2_hash, ivec2_eq> chunkData;
-    unordered_map<uint32_t, unique_ptr<Chunk>> chunkData;
+    //unordered_map<uint32_t, unique_ptr<Chunk>> chunkData;
+    vector<unique_ptr<Chunk>> chunkData;
     //vector<unique_ptr<Chunk>> chunkData;
     //ChunkData chunkData;
     World() {
@@ -160,10 +183,11 @@ Block getBlockAt(ivec3 blockPos) {
 bool blockExistsAt(ivec3 blockPos) {
     if (world.chunkData.empty()) return false;
     ivec2 chunkCoord = ivec2(floorDiv(blockPos.x, CHUNK_SIZE), floorDiv(blockPos.z, CHUNK_SIZE));
-    uint64_t chunkIndex = pack(chunkCoord);
-    auto chunkIt = world.chunkData.find(chunkIndex);
-    if (chunkIt == world.chunkData.end()) return false;
-    auto& chunk = chunkIt->second;
+    uint32_t chunkIndex = pack(chunkCoord);
+    auto chunkIt = chunkCoords.find(chCoord(chunkIndex));
+    if (chunkIt == chunkCoords.end()) return false;
+    auto& chunkIdx = chunkIt->chIdx;
+	auto& chunk = world.chunkData[chunkIdx];
     //Chunk& chunk = world.chunkData[chunkCoord];
     //if (!chunk.exists) return false;
     int vec_blockPos = chunk->at(blockPos);
@@ -177,9 +201,10 @@ bool blockExistsAt(ivec3 blockPos, bool block_excl_natural) {
     if (world.chunkData.empty()) return false;
     ivec2 chunkCoord = ivec2(floorDiv(blockPos.x, CHUNK_SIZE), floorDiv(blockPos.z, CHUNK_SIZE));
     uint64_t chunkIndex = pack(chunkCoord);
-    auto chunkIt = world.chunkData.find(chunkIndex);
-    if (chunkIt == world.chunkData.end()) return false;
-    auto& chunk = chunkIt->second;
+    auto chunkIt = chunkCoords.find(chunkIndex);
+    if (chunkIt == chunkCoords.end()) return false;
+    auto& chunkIdx = chunkIt->chIdx;
+    auto& chunk = world.chunkData[chunkIdx];
     //Chunk& chunk = world.chunkData[chunkCoord];
     //if (!chunk.exists) return false;
     int vec_blockPos = chunk->at(blockPos);
@@ -205,7 +230,8 @@ vec3 lookingAtBlock() {
         ivec2 chunkPos = ivec2(floorDiv(blockPos.x, CHUNK_SIZE), floorDiv(blockPos.z, CHUNK_SIZE));
         int chunkVal = pack(chunkPos);
         //if (!chunkCoords.count(chunkVal)) return vec3(0);
-        if (rayOrigin.y > 0 && rayOrigin.y < CHUNK_SIZE * CHUNK_SIZE && world.chunkData.count(chunkVal)) {
+        auto it = chunkCoords.find(chunkVal);
+        if (rayOrigin.y > 0 && rayOrigin.y < CHUNK_SIZE * CHUNK_SIZE && it != chunkCoords.end() && it->chIdx != 0) {
             auto& chunk = world.chunkData.at(chunkVal);
             uint64 index = chunk->at(blockPos);
             if (chunk->block_data[index].blockType != AIR)
@@ -217,7 +243,12 @@ vec3 lookingAtBlock() {
 
 void World::addChunk(unique_ptr<Chunk>& newChunk, uint32_t xyChunk) {
     //chunkData.insert(xyChunk, newChunk);
-    chunkData.emplace(xyChunk, move(newChunk));
+    //hunkData.emplace(xyChunk, move(newChunk));
+    chunkData.emplace_back(move(newChunk));
+    auto it = chunkCoords.find(chCoord(xyChunk));
+    if(it != chunkCoords.end())
+		chunkCoords.erase(it);
+	chunkCoords.insert(chCoord(xyChunk, chunkData.size() - 1));
     //chunkCount++;
     //chunkData[pack(xyChunk)] = *newChunk;
 }

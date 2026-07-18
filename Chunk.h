@@ -107,12 +107,13 @@ public:
     // 
 	//abyte randbool0 : 4;
     //abyte randbool1 : 4;
-	abyte needUpdate : 7;
+	abyte needUpdate  : 6;
     abyte safe_unload : 1;
+    abyte inUse       : 1;
 
     void setAsDirty() { neighboursPresent &= ~(1 << 0); }
 	void setAsClean() { neighboursPresent |=  (1 << 0); }
-    bool getDirty() { return !((neighboursPresent >> 0) & 1); }
+    uint8_t  getDirty() { return !((neighboursPresent >> 0) & 1); }
     ivec2 coords() {
         return ivec2(int16_t((coord >> 16)), int16_t(coord));
     }

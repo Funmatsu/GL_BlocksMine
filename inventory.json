@@ -101,7 +101,7 @@
                 "item": "iron_ore"
             },
             {
-                "count": 7,
+                "count": 9,
                 "id": 1,
                 "item": "diamond_ore"
             },
@@ -148,7 +148,7 @@
                 "item": "cloud"
             },
             {
-                "count": 59,
+                "count": 60,
                 "id": 6,
                 "item": "oak_wood"
             },
@@ -173,7 +173,7 @@
                 "item": "dirt_block"
             },
             {
-                "count": 152,
+                "count": 154,
                 "id": 4,
                 "item": "stone_block"
             },

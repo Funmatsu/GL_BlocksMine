@@ -282,7 +282,7 @@ bool shouldEmitFace(vec2 xyChunk, Chunk* cd, Item currentBlockType, int x, int y
     if (!cd->inBounds(nx, ny, nz) && ny >= -1 && ny < CHUNK_HEIGHT) {
         if (ny == -1) return 1;
         uint32_t pos = pack(ivec2(floorDiv(nx, CHUNK_SIZE), floorDiv(nz, CHUNK_SIZE)));
-        if (!world.chunkData.count(pos)) return 0;
+        if (chunkCoords.count(chCoord(pos))) return 0;
         else {
             BlockData& bData = (*world.chunkData[pos])(nx, ny, nz);
             return (isAir(bData.blockType)) || bData.blockType.isFlat();
@@ -1147,7 +1147,7 @@ void meshScheduleWorker() {
         unique_lock<mutex> lock(cloudrMutex);
         meshSchedCV.wait(lock, [] { return chunkResultQueue.empty(); });
     }
-    while (!stopMeshing) {
+/*    while (!stopMeshing) {
         int dirs[] = { -1, 0, 1, 0, 0, -1, 0, 1 };
 
         for (auto it = world.chunkData.begin(); it != world.chunkData.end(); ++it) {
@@ -1184,7 +1184,7 @@ void meshScheduleWorker() {
                 }
             }
         }
-    }
+    }*/
 }
 
 void updateChunkJob() {
