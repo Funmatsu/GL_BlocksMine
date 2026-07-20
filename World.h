@@ -19,12 +19,12 @@ struct chCoord {
 	//	return uint32_t((coords >> 32) & 0xffffffff);
 	//}
 };
-//struct chHash {
-//	size_t operator()(const chCoord& c) const noexcept {
-//        return std::hash<uint32_t>()(c.coords);
-//	}
-//};
-std::unordered_set<chCoord> chunkCoords;
+struct chHash {
+	size_t operator()(const chCoord& c) const noexcept {
+        return c.coords;
+	}
+};
+std::unordered_set<chCoord, chHash> chunkCoords;
 //std::unordered_map<uint, uint> chunkCoords;// Map;
 std::queue<chPack> chunkMeshQueue;//pair<unique_ptr<Mesh>, Chunk*>
 

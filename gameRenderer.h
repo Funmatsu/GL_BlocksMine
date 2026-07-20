@@ -201,14 +201,14 @@ public:
                 ivec2 camChunkPos = ivec2(floorDiv(firstCamera.getPosition().x, CHUNK_SIZE), floorDiv(firstCamera.getPosition().z, CHUNK_SIZE));
                 ivec2 chunkPos = camChunkPos + chunkOff;
                 if (chunkCoords.count(pack(chunkPos)) == 0) {
-                    chunkCoords.emplace(chCoord(pack(chunkPos), 0));
+                    chunkCoords.emplace(pack(chunkPos), 0);
                     {
                         std::lock_guard<std::mutex> lock(queueMutex);
                         chunkRequestQueue.push(pack(chunkPos));
                         queueCV.notify_one();
                     }
                     count++;
-                    if (!(count % 7)) { break; }
+                    if (!(count % 8)) { break; }
                 }
             }
 
@@ -223,7 +223,7 @@ public:
                 auto it = chunkCoords.find(chCoord(chNeighRes->coords));
                 world.chunkData[it->chIdx]->mesh->createMesh(chNeighRes->mesh->vertices, chNeighRes->mesh->indices);
                 delete chNeighRes;
-                if (!(count++ % 7)) break;
+                //if (!(count++ % 32)) break;
             }
 
             while (!chunkResultQueue.empty()) {
@@ -233,12 +233,10 @@ public:
                     ch = chunkResultQueue.front();
                     chunkResultQueue.pop();
                 }
-                world.chunkData.emplace_back(move(ch.chPtr));
-                auto it = chunkCoords.find(chCoord(ch.coords));
-                if (it != chunkCoords.end())
-                    chunkCoords.erase(it);
-                chunkCoords.insert(chCoord(ch.coords, world.chunkData.size() - 1));
-                if (!(count++ % 7)) break;
+                chunkCoords.erase(ch.coords);
+                world.chunkData.emplace_back(move(ch.chPtr));                
+                chunkCoords.emplace(ch.coords, world.chunkData.size() - 1);
+                //if (!(count++ % 32)) break;
             }
 
             VP = projection * firstCamera.calcViewMatrix();
@@ -560,17 +558,17 @@ public:
                 it++;
             }
             glUniformMatrix4fv(shaders[0]->getModelLocation(), 1, GL_FALSE, value_ptr(model));
-            /*            shaders[5]->useShader();
-                        view = activeCamera.calcViewMatrix();
+            shaders[5]->useShader();
+            view = activeCamera.calcViewMatrix();
 
-                        //For block highlighting
-                        ivec3 lookPosition = lookingAtBlock();
-                        if (lookPosition.y >= 0) {
-                            mat4 modelLooking = translate(mat4(1.0f), vec3(lookPosition));
-                            glUniformMatrix4fv(shaders[5]->getModelLocation(), 1, GL_FALSE, value_ptr(modelLooking));
-                            lookingMesh.renderMesh();
-                            glUniformMatrix4fv(shaders[5]->getModelLocation(), 1, GL_FALSE, value_ptr(model));
-                        }*/
+            //For block highlighting
+            ivec3 lookPosition = lookingAtBlock();
+            if (lookPosition.y >= 0) {
+                mat4 modelLooking = translate(mat4(1.0f), vec3(lookPosition));
+                glUniformMatrix4fv(shaders[5]->getModelLocation(), 1, GL_FALSE, value_ptr(modelLooking));
+                lookingMesh.renderMesh();
+                glUniformMatrix4fv(shaders[5]->getModelLocation(), 1, GL_FALSE, value_ptr(model));
+            }
 
                         //glDisable(GL_DEPTH_TEST); // so crosshair draws on top
             shaders[2]->useShader();
@@ -882,25 +880,26 @@ public:
 
         //auto it = world.chunkData.begin();
         for (int i = 0; i < world.chunkData.size(); )
-        //while (it != world.chunkData.end()) 
+            //while (it != world.chunkData.end()) 
         {
             auto& chunk = world.chunkData[i];
             ivec2 coords = chunk->coords();
 
-            if (((coords.x < _2dPlPosLo.x || coords.x > _2dPlPosHi.x) ||
-                (coords.y < _2dPlPosLo.y || coords.y > _2dPlPosHi.y)))
+            if (((coords.x <= _2dPlPosLo.x || coords.x >= _2dPlPosHi.x) ||
+                (coords.y <= _2dPlPosLo.y || coords.y >= _2dPlPosHi.y)))
             {
                 //cout << "Deleted" << endl;
                 if (!chunk->safe_unload) {//} && !chunk->inUse) {
+                    uint backCrd = world.chunkData.back()->coord;
                     chunkCoords.erase((chunk->coord));
-                    chunkCoords.erase(world.chunkData.back()->coord);
+                    chunkCoords.erase(backCrd);
+                    //chunkCoords.emplace(backCrd, i); // To account for back element being moved to the current index
                     v_erase(world.chunkData, i);
-                    chunkCoords.emplace(chCoord(chunk->coord, i));
                 }
                 else i++;
                 continue;
             }
-            
+
             if (chunk->getDirty()) {
                 //cout << "Dirty rat" << endl;
                 if ((chunk->neighboursPresent & 0x1E) != 0x1E) {
@@ -921,9 +920,10 @@ public:
                     for (int i = 0; i < 4; i++) {
                         ivec2 chcrds = coords + ivec2(dirs[i], dirs[i + 4]);
                         uint idxcrds = pack(chcrds);
-						auto it = chunkCoords.find(idxcrds);
+                        auto it = chunkCoords.find(idxcrds);
                         if (it != chunkCoords.end() && it->chIdx) {
-                            auto& ch = world.chunkData[it->chIdx];
+                            //cout << it->chIdx << " : me" << endl;
+                            auto& ch = world.chunkData.at(it->chIdx);
                             memcpy(chunkochunks->neighbour_data[i].data(), ch->block_data.data(), CHUNK_VOLUME);
                             //ch->inUse = 0;
                         }
@@ -936,7 +936,7 @@ public:
                     chunk->setAsClean();
                 }
             }
-                        
+
             vec3 center = vec3((coords.x + 0.5) * CHUNK_SIZE, playerPos.y, (coords.y + 0.5) * CHUNK_SIZE);
             if (sphereInFrustum(center, playerPos.y / 2))
                 chunk->mesh->renderMesh();
