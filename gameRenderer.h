@@ -222,7 +222,7 @@ public:
                 if (!world.chunkData.count(chNeighRes->coords)) continue;
                 world.chunkData.at(chNeighRes->coords)->mesh->createMesh(chNeighRes->mesh->vertices, chNeighRes->mesh->indices);
                 delete chNeighRes;
-                if(!(count++ % 7)) break;
+                //if(!(count++ % 7)) break;
             }
 
             while (!chunkResultQueue.empty()) {
@@ -233,7 +233,7 @@ public:
                     chunkResultQueue.pop();
                 }
                 world.chunkData.try_emplace(ch.coords, move(ch.chPtr));
-                if (!(count++ % 7)) break;
+                //if (!(count++ % 7)) break;
             }
 
             VP = projection * firstCamera.calcViewMatrix();
