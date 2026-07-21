@@ -1039,24 +1039,24 @@ void meshChunk(chNeighPack* chNeigh) {
     int minX = xyChunk.x * CHUNK_SIZE, minY = 0, minZ = xyChunk.y * CHUNK_SIZE;
     
     for (int x = minX; x < minX + CHUNK_SIZE; ++x) {
-        buildMaskX(chNeigh->block_data.data(), chNeigh->neighbour_data[0].data(), (x + 0) - minX, 0, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskX, -1);
+        buildMaskX(chNeigh->mainChunk->block_data.data(), chNeigh->neighbour_data[0].data(), (x + 0) - minX, 0, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskX, -1);
         greedyMerge(maskX, m, xyChunk, x + 0, CHUNK_SIZE, CHUNK_HEIGHT - 1, 0, unitNormalX0, base);
 
-        buildMaskX(chNeigh->block_data.data(), chNeigh->neighbour_data[1].data(), (x + 1) - minX, 1, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskX,  1);
+        buildMaskX(chNeigh->mainChunk->block_data.data(), chNeigh->neighbour_data[1].data(), (x + 1) - minX, 1, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskX,  1);
         greedyMerge(maskX, m, xyChunk, x + 1, CHUNK_SIZE, CHUNK_HEIGHT - 1, 1, unitNormalX1, base);
     }
     for (int z = minZ; z < minZ + CHUNK_SIZE; ++z) {
-        buildMaskZ(chNeigh->block_data.data(), chNeigh->neighbour_data[2].data(), (z + 0) - minZ, 2, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskZ, -1);
+        buildMaskZ(chNeigh->mainChunk->block_data.data(), chNeigh->neighbour_data[2].data(), (z + 0) - minZ, 2, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskZ, -1);
         greedyMerge(maskZ, m, xyChunk, z + 0, CHUNK_SIZE, CHUNK_HEIGHT - 1, 2, unitNormalZ0, base);
         
-        buildMaskZ(chNeigh->block_data.data(), chNeigh->neighbour_data[3].data(), (z + 1) - minZ, 3, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskZ,  1);
+        buildMaskZ(chNeigh->mainChunk->block_data.data(), chNeigh->neighbour_data[3].data(), (z + 1) - minZ, 3, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskZ,  1);
         greedyMerge(maskZ, m, xyChunk, z + 1, CHUNK_SIZE, CHUNK_HEIGHT - 1, 3, unitNormalZ1, base);
     }
     for (int y = minY; y < minY + CHUNK_HEIGHT - 1; ++y) {
-        buildMaskY(chNeigh->block_data.data(), y + 0, 4, CHUNK_SIZE, CHUNK_SIZE, maskY, -1);
+        buildMaskY(chNeigh->mainChunk->block_data.data(), y + 0, 4, CHUNK_SIZE, CHUNK_SIZE, maskY, -1);
         greedyMerge(maskY, m, xyChunk, y + 0, CHUNK_SIZE, CHUNK_SIZE, 4, unitNormalY0, base);
 
-        buildMaskY(chNeigh->block_data.data(), y + 1, 5, CHUNK_SIZE, CHUNK_SIZE, maskY,  1);
+        buildMaskY(chNeigh->mainChunk->block_data.data(), y + 1, 5, CHUNK_SIZE, CHUNK_SIZE, maskY,  1);
         greedyMerge(maskY, m, xyChunk, y + 1, CHUNK_SIZE, CHUNK_SIZE, 5, unitNormalY1, base);
     }
  
@@ -1166,7 +1166,7 @@ void meshScheduleWorker() {
                 if (chunk->neighboursPresent == 0x1E) { // 1 1110 
                     chNeighPack* chunkochunks = new chNeighPack();
                     chunkochunks->coords = chunk->coord;
-                    memcpy(chunkochunks->block_data.data(), chunk->block_data.data(), CHUNK_VOLUME);
+                    //memcpy(chunkochunks->block_data.data(), chunk->block_data.data(), CHUNK_VOLUME);
                     for (int i = 0; i < 4; i++) {
                         ivec2 chcrds = coords + ivec2(dirs[i], dirs[i + 4]);
                         uint idxcrds = pack(chcrds);

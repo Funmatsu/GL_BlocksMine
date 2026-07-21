@@ -220,7 +220,8 @@ struct chPack {
 
 struct chNeighPack {
     uint coords;
-    array<BlockData, CHUNK_VOLUME> block_data;
+    //array<BlockData, CHUNK_VOLUME> block_data;
+    Chunk* mainChunk;
     array<BlockData, CHUNK_VOLUME> neighbour_data[4];
 };
 

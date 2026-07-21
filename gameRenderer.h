@@ -201,14 +201,14 @@ public:
                 ivec2 camChunkPos = ivec2(floorDiv(firstCamera.getPosition().x, CHUNK_SIZE), floorDiv(firstCamera.getPosition().z, CHUNK_SIZE));
                 ivec2 chunkPos = camChunkPos + chunkOff;
                 if (chunkCoords.count(pack(chunkPos)) == 0) {
-                    chunkCoords.insert(pack(chunkPos));
+                    chunkCoords.emplace(pack(chunkPos));
                     {
                         std::lock_guard<std::mutex> lock(queueMutex);
                         chunkRequestQueue.push(pack(chunkPos));
                         queueCV.notify_one();
                     }
                     count++;
-                    if (!(count % 7)) { break; }
+                    if (!(count % 8)) { break; }
                 }
             }
 
@@ -900,7 +900,8 @@ public:
                 if (chunk->neighboursPresent == 0x1E) { // 1 1110 
                     chNeighPack* chunkochunks = new chNeighPack();
                     chunkochunks->coords = chunk->coord;
-                    memcpy(chunkochunks->block_data.data(), chunk->block_data.data(), CHUNK_VOLUME);
+                    //memcpy(chunkochunks->block_data.data(), chunk->block_data.data(), CHUNK_VOLUME);
+					chunkochunks->mainChunk = chunk.get();
                     for (int i = 0; i < 4; i++) {
                         ivec2 chcrds = coords + ivec2(dirs[i], dirs[i + 4]);
                         uint idxcrds = pack(chcrds);
@@ -987,7 +988,7 @@ public:
                 if (chunk->neighboursPresent == 0x1E) { // 1 1110 
                     chNeighPack* chunkochunks = new chNeighPack();
                     chunkochunks->coords = chunk->coord;
-                    memcpy(chunkochunks->block_data.data(), chunk->block_data.data(), CHUNK_VOLUME);
+                    //memcpy(chunkochunks->block_data.data(), chunk->block_data.data(), CHUNK_VOLUME);
                     for (int i = 0; i < 4; i++) {
                         ivec2 chcrds = coords + ivec2(dirs[i], dirs[i + 4]);
                         uint idxcrds = pack(chcrds);
