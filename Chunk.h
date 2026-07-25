@@ -4,7 +4,7 @@
 #include "Block.h"
 #include "Cloud.h"
 
-using abyte = uint8;
+using a_byte = uint8;
 constexpr int CHUNK_SIZE = 16;
 constexpr int CHUNK_HEIGHT = CHUNK_SIZE * CHUNK_SIZE;  //(CHUNK_SIZE + 2) * (CHUNK_SIZE + 2);
 constexpr int CHUNK_SIZE_2 = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
@@ -88,12 +88,14 @@ struct BlockData {
 class SubChunk {
 public:
     unique_ptr<LightMesh> mesh;
-    abyte needUpdate;
+    a_byte needUpdate;
     SubChunk() {
         mesh = make_unique<LightMesh>();
         needUpdate = true;
     }
 };
+
+#define ALL_NEIGHBOURS_EXIST 0x1E
 
 class Chunk {
 public:
@@ -101,18 +103,19 @@ public:
 	unique_ptr<LightMesh> mesh;
     
     uint32_t coord;
-    abyte neighboursPresent : 5;
-
-    // Still got the space for 16 more bits
-    // 
-	//abyte randbool0 : 4;
-    //abyte randbool1 : 4;
-	abyte needUpdate : 7;
-    abyte safe_unload : 1;
+    
+	a_byte reserved           : 8; // + 9 bits for future use
+    a_byte neighboursPresent  : 5;
+    a_byte safe_unload        : 1;
+	a_byte requestProcesed    : 1;
+    atomic_bool inUse;      //: 8
 
     void setAsDirty() { neighboursPresent &= ~(1 << 0); }
 	void setAsClean() { neighboursPresent |=  (1 << 0); }
     bool getDirty() { return !((neighboursPresent >> 0) & 1); }
+	void meshRequestRedo() { requestProcesed = 1; }
+	void meshRequestUndo() { requestProcesed = 0; }
+	bool meshRequestIsDone() { return requestProcesed == 1; }
     ivec2 coords() {
         return ivec2(int16_t((coord >> 16)), int16_t(coord));
     }
@@ -216,6 +219,13 @@ uint16_t chunkCount = 0;
 struct chPack {
 	Chunk* chPtr;
     uint coords;
+};
+
+struct chNeighPackPtr {
+    uint coords;
+    //array<BlockData, CHUNK_VOLUME> block_data;
+    Chunk* mainChunk;
+    //Chunk* neighbour_data[4];
 };
 
 struct chNeighPack {

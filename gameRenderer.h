@@ -8,27 +8,27 @@ std::vector<glm::ivec2> spiral, cloudSpir;
 class Game {
 public:
     vector<vec4> chCenter_Radii;
-	vec4 planes[6];
+    vec4 planes[6];
     vector<LightMesh*> visChMeshes;
     vector<uint> visbuffer;
     GLsync sync = 0;
 
-    bool handGesture = 0, 
-         swing = 0,
-         night = false,
-         tp = 0,
-         waitChDraw = false;
+    bool handGesture = 0,
+        swing = 0,
+        night = false,
+        tp = 0,
+        waitChDraw = false;
 
     GLfloat deltaTime = 2.0f,
-            lastTime = 0.0f;
+        lastTime = 0.0f;
 
     float breakAngle = 0.0f,
-          boundW = 0.5f, boundL = 0.5f, boundH = 2.0f,
-          projAngle = 45.0,
-          lastXChange = 0.0f, lastYChange = 0.0f,
-          lastYaw = 0.0f, lastPitch = 0.0f,
-          time = 300.0f, lowTime = 10.0f, maxTime = 1000.0,
-          dt = 0.01;
+        boundW = 0.5f, boundL = 0.5f, boundH = 2.0f,
+        projAngle = 45.0,
+        lastXChange = 0.0f, lastYChange = 0.0f,
+        lastYaw = 0.0f, lastPitch = 0.0f,
+        time = 300.0f, lowTime = 10.0f, maxTime = 1000.0,
+        dt = 0.01;
 
     int renderDistance = 25,
         chunkRenderMonitor = 0,
@@ -42,24 +42,24 @@ public:
     std::vector<std::thread> workers;
 
     LightMesh headMesh,
-              lookingMesh,
-              compassMesh;
+        lookingMesh,
+        compassMesh;
 
     mat4 model, projection, view,
-         ortho,
-         itemProj, itemView, currentBlockView,
-         itemModel,
-         breakModel,
-         VP;
+        ortho,
+        itemProj, itemView, currentBlockView,
+        itemModel,
+        breakModel,
+        VP;
 
     Projectile ball;
 
-    abyte count = 0, count_time = 0;
+    a_byte count = 0, count_time = 0;
 
     Crosshair crosshair;
 
     Block breakingBlock;
-    
+
     Text position, craftedItemName, cursorPos;
 
     json Jitems, tools, player;
@@ -68,7 +68,7 @@ public:
 
     Block lookBlock;
 
-	vec3 headPos, headFront;
+    vec3 headPos, headFront;
 
     Game() {
         ifstream playerJSON("player.json");
@@ -88,7 +88,7 @@ public:
         if (!itemsJSON) {
             ofstream outJSON("items.json");
             outJSON.close();
-            itemsJSON.open("items.json"); 
+            itemsJSON.open("items.json");
         }
         itemsJSON >> Jitems;
 
@@ -130,14 +130,14 @@ public:
         ortho = glm::ortho(0.0f, float(WIDTH), 0.0f, float(HEIGHT));
 
         itemProj = perspective(radians(1.0f), 1.f/*(float)1920 / float(1080)*/, 0.01f, 1500.0f),
-        itemView = lookAt(vec3(0, 0, 400), vec3(0), vec3(0, 1, 0)),
-        currentBlockView = lookAt(vec3(0, 0, 1400), vec3(0), vec3(0, 1, 0));
+            itemView = lookAt(vec3(0, 0, 400), vec3(0), vec3(0, 1, 0)),
+            currentBlockView = lookAt(vec3(0, 0, 1400), vec3(0), vec3(0, 1, 0));
 
         itemModel = scale(mat4(1.0f), vec3(0.08f, 0.1f, 0.08f)) *
-                    rotate(mat4(1.0f), radians(-90.0f), vec3(0, 0, 1)) *
-                    rotate(mat4(1.0f), radians( 30.0f), vec3(1, 0, 0)) *
-                    rotate(mat4(1.0f), radians( 45.0f), vec3(0, 1, 0))
-                    ;
+            rotate(mat4(1.0f), radians(-90.0f), vec3(0, 0, 1)) *
+            rotate(mat4(1.0f), radians(30.0f), vec3(1, 0, 0)) *
+            rotate(mat4(1.0f), radians(45.0f), vec3(0, 1, 0))
+            ;
 
         breakModel = mat4(1.0f);
 
@@ -145,21 +145,21 @@ public:
         inventory.initInventorySlots();
         sky.buildSky();
 
-        
+
         for (int i = 0; i < 2; ++i) {
             workers.push_back(thread(chunkWorker)); // worker thread is somewhere in threading.h
             workers.push_back(thread(updateChunkJob));
         }
-        
+
         mainLight = DirectionalLight(mainWindow.getBufferWidth(), mainWindow.getBufferHeight(),
             1.0f, 1.0f, 1.0f,
             0.8f, 0.5f,
             0.0f, -CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE, CHUNK_SIZE);//CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE, CHUNK_SIZE
 
-        auxLight = DirectionalLight(100 , 100 ,
-                                    1.0f, 1.0f, 1.0f,
-                                    0.7f, 0.5f,
-                                   -1.0f, 1.5f, 0.0f);
+        auxLight = DirectionalLight(100, 100,
+            1.0f, 1.0f, 1.0f,
+            0.7f, 0.5f,
+            -1.0f, 1.5f, 0.0f);
 
         position.model = translate(mat4(1.0f), vec3(50, 1700, 0));
 
@@ -171,7 +171,7 @@ public:
 
     void run() {
         while (!mainWindow.getShouldClose()) {
-			shaders[0]->useShader();
+            shaders[0]->useShader();
             auto startframe = chrono::high_resolution_clock::now();
             static bool breakblockdb = 0, placeblockdb = 0, invtoggledb = 0; // db = debounce
             static int angletest = 0;
@@ -217,10 +217,15 @@ public:
                 {
                     std::lock_guard<std::mutex> lock(chunkMeshQueueMutex);
                     chNeighRes = chunkMeshResult.front();
-                    chunkMeshResult.pop();                    
+                    chunkMeshResult.pop();
                 }
-                if (!world.chunkData.count(chNeighRes->coords)) continue;
-                world.chunkData.at(chNeighRes->coords)->mesh->createMesh(chNeighRes->mesh->vertices, chNeighRes->mesh->indices);
+                if (!world.chunkData.count(chNeighRes->coords)) {
+                    delete chNeighRes;
+                    continue;
+                }
+                auto& chunk = world.chunkData.at(chNeighRes->coords);
+                chunk->mesh->createMesh(chNeighRes->mesh->vertices, chNeighRes->mesh->indices);
+                chunk->setAsClean();
                 delete chNeighRes;
                 //if(!(count++ % 7)) break;
             }
@@ -257,8 +262,8 @@ public:
             glUniform1i(glGetUniformLocation(shaders[0]->getShaderId(), "grassColorTexture"), 4);
 
             //isolateWorld();
-			//scheduleMeshWorld();
-			//renderWorld();
+            //scheduleMeshWorld();
+            //renderWorld();
 
             render();
 
@@ -353,8 +358,8 @@ public:
 
                     breakAngle += swing ? 5 : -5;
                     breakModel = rotate(mat4(1.f), -radians(breakAngle), vec3(0, 0, 1))
-                               * translate(mat4(1.f), vec3(breakAngle, 2 * breakAngle, 0))
-                               ;
+                        * translate(mat4(1.f), vec3(breakAngle, 2 * breakAngle, 0))
+                        ;
                 }
                 else {
                     glUniform1i(glGetUniformLocation(shaders[0]->getShaderId(), "uniformBreaking"), 0);
@@ -521,10 +526,10 @@ public:
             glUniform1i(glGetUniformLocation(shaders[0]->getShaderId(), "topTexture"), 2);
             for (auto it = dropped.begin(); it != dropped.end(); ) {
                 Projectile& drop = *it;
-                if (drop.item.isTool()){
+                if (drop.item.isTool()) {
                     Textures[TOOLS_TEX]->useTexture();
                 }
-                else{
+                else {
                     Textures[BLOCK_TEX]->useTexture();
                 }
                 drop.shot = !blockExistsAt((vec3(ftoint(drop.position.x) + 0.5, drop.position.y, ftoint(drop.position.z) + 0.5))) && !drop.done;
@@ -540,7 +545,7 @@ public:
                 drop.model *= translate(mat4(1.0f), vec3(0, 0.25 * sin(radians(float(drop.angle))), 0));
                 drop.model *= rotate(mat4(1.0f), radians(drop.angle++), vec3(0, 1, 0));
                 glUniformMatrix4fv(shaders[0]->getModelLocation(), 1, GL_FALSE, value_ptr(drop.model));
-                
+
                 if (length(drop.position - firstCamera.getPosition()) <= 3 && drop.angle > 360) {
                     drop.done = 1;
                     drop.position += (firstCamera.getPosition() - drop.position) / 10.f;
@@ -555,19 +560,19 @@ public:
                 it++;
             }
             glUniformMatrix4fv(shaders[0]->getModelLocation(), 1, GL_FALSE, value_ptr(model));
-/*            shaders[5]->useShader();
-            view = activeCamera.calcViewMatrix();
+            /*            shaders[5]->useShader();
+                        view = activeCamera.calcViewMatrix();
 
-            //For block highlighting
-            ivec3 lookPosition = lookingAtBlock();
-            if (lookPosition.y >= 0) {
-                mat4 modelLooking = translate(mat4(1.0f), vec3(lookPosition));
-                glUniformMatrix4fv(shaders[5]->getModelLocation(), 1, GL_FALSE, value_ptr(modelLooking));
-                lookingMesh.renderMesh();
-                glUniformMatrix4fv(shaders[5]->getModelLocation(), 1, GL_FALSE, value_ptr(model));
-            }*/
+                        //For block highlighting
+                        ivec3 lookPosition = lookingAtBlock();
+                        if (lookPosition.y >= 0) {
+                            mat4 modelLooking = translate(mat4(1.0f), vec3(lookPosition));
+                            glUniformMatrix4fv(shaders[5]->getModelLocation(), 1, GL_FALSE, value_ptr(modelLooking));
+                            lookingMesh.renderMesh();
+                            glUniformMatrix4fv(shaders[5]->getModelLocation(), 1, GL_FALSE, value_ptr(model));
+                        }*/
 
-            //glDisable(GL_DEPTH_TEST); // so crosshair draws on top
+                        //glDisable(GL_DEPTH_TEST); // so crosshair draws on top
             shaders[2]->useShader();
             glBlendFunc(GL_ONE_MINUS_DST_COLOR, GL_ONE);
 
@@ -587,7 +592,7 @@ public:
             inventory.drawHotbar();
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-            if(inventory.mainInventoryOn)
+            if (inventory.mainInventoryOn)
                 Textures[LARGE_INV_TEX]->useTexture();
             if (mainWindow.getKeys()[GLFW_KEY_C]) {
                 if (craftedItem.item != AIR) {
@@ -630,7 +635,7 @@ public:
                 inventory.invDidChange(1);
             }
 
-			invtoggledb = mainWindow.keyIsPressed(GLFW_KEY_E) == 1;
+            invtoggledb = mainWindow.keyIsPressed(GLFW_KEY_E) == 1;
 
             if (mainWindow.getKeys()[GLFW_KEY_RIGHT_SHIFT] && mainWindow.getKeys()[GLFW_KEY_E]) {
                 for (int i = 0; i < (sizeof(inventory.mainInventorySlots) / sizeof(inventory.mainInventorySlots[3])); i++) {
@@ -760,15 +765,15 @@ public:
                 render3Din2D(itemModel, inventory.hotbarSlots[i].mesh, inventory.hotbarSlots[i].model, inventory.hotbarSlots[i].quadMesh, ortho, itemView, itemProj, inventory.hotbarSlots[i].item);
                 inventory.hotbarSlots[i].textCount.drawText(ortho);
             }
-            			
+
             render3Din2D(itemModel * breakModel
-                * rotate(mat4(1.0f), radians((!currentBlock.item.isTool() ? -35.f : 0.f)), vec3(1, 1, 1))                
-                * rotate(mat4(1.0f), radians((!currentBlock.item.isTool() ? 45.f : 200.f)), vec3(0, 1, 0))  
+                * rotate(mat4(1.0f), radians((!currentBlock.item.isTool() ? -35.f : 0.f)), vec3(1, 1, 1))
+                * rotate(mat4(1.0f), radians((!currentBlock.item.isTool() ? 45.f : 200.f)), vec3(0, 1, 0))
                 * rotate(mat4(1.0f), radians((!currentBlock.item.isTool() ? 0.f : 30.f)), vec3(0, 0, 1)),
-                currentBlock.mesh, 
+                currentBlock.mesh,
                 translate(mat4(1.0f), vec3((float)centerX + 600.f - 20.f * (firstCamera.getYaw() - lastYaw),
-                                           (float)centerY - 650.f - 20.f * (firstCamera.getPitch() - lastPitch) - 2 * (firstCamera.initial_velocity.y + firstCamera.velocity.y), 
-                                           0.f)), 
+                    (float)centerY - 650.f - 20.f * (firstCamera.getPitch() - lastPitch) - 2 * (firstCamera.initial_velocity.y + firstCamera.velocity.y),
+                    0.f)),
                 currentBlock.quadMesh, ortho, currentBlockView, itemProj, currentBlock.item);
 
             angletest += 1;
@@ -782,8 +787,8 @@ public:
                 lastPlayer["player"]["y"] = firstCamera.getPosition().y;
                 lastPlayer["player"]["z"] = firstCamera.getPosition().z;
                 ofstream playerJSON("player.json");
-                playerJSON << lastPlayer.dump(4);         
-                            
+                playerJSON << lastPlayer.dump(4);
+
                 chunkGenRunning = false;
                 chunkUpdateCV.notify_all();
                 stopChunkUpdaters = true;
@@ -798,10 +803,10 @@ public:
                 stopMeshing = false;
 
                 for (auto& t : workers) {
-					cout << "Joining thread " << workers.size() << endl;
+                    cout << "Joining thread " << workers.size() << endl;
                     t.join();
-                }                                                                                         
-                
+                }
+
                 return;
             }
 
@@ -826,12 +831,6 @@ public:
             frame_duration_calc = (chrono::duration<double>(endframe - startframe).count());
         }
 
-        //json lastPlayer;
-        //lastPlayer["player"]["x"] = firstCamera.getPosition().x;
-        //lastPlayer["player"]["y"] = firstCamera.getPosition().y;
-        //lastPlayer["player"]["z"] = firstCamera.getPosition().z;
-        //ofstream outplayerJSON("player.json");
-        //outplayerJSON << lastPlayer.dump(4);
     }////
 
     template <typename T>
@@ -871,56 +870,61 @@ public:
         vec2 _2dPlPosHi = vec2(playerPos.x, playerPos.z) + float(renderDistance),
             _2dPlPosLo = vec2(playerPos.x, playerPos.z) - float(renderDistance);
 
-        auto it = world.chunkData.begin();
+        auto it = world.chunkData.begin(); bool inUse = false;
+        int dirs[] = { -1, 1, 0, 0,   0, 0, -1, 1 };
+
         while (it != world.chunkData.end()) {
             auto& chunk = it->second;
             ivec2 coords = chunk->coords();
 
-            int dirs[] = { -1, 1, 0, 0,   0, 0, -1, 1 };
-
             if (((coords.x <= _2dPlPosLo.x || coords.x >= _2dPlPosHi.x) ||
-                 (coords.y <= _2dPlPosLo.y || coords.y >= _2dPlPosHi.y) )) 
+                (coords.y <= _2dPlPosLo.y || coords.y >= _2dPlPosHi.y)))
             {
-                if (!chunk->safe_unload) {
+                if (!chunk->inUse.compare_exchange_strong(inUse, true) && !chunk->safe_unload) {
                     chunkCoords.erase((chunk->coord));
                     it = world.chunkData.erase(it);
-                } else it++;
+                }
+                else it++;
                 continue;
             }
 
             if (chunk->getDirty()) {
                 if ((chunk->neighboursPresent & 0x1E) != 0x1E) {
+                    
                     for (int i = 0; i < 4; i++) {
                         ivec2 chcrds = coords + ivec2(dirs[i], dirs[i + 4]);
                         if (world.chunkData.count(pack(chcrds)) > 0) {
-                            chunk->neighboursPresent |= (1 << (i + 1)); 
+                            //cout << "Chunk Here " << (int)chunk->neighboursPresent << endl;
+                            chunk->neighboursPresent |= (1 << (i + 1));
                         }
                     }
                 }
-                if (chunk->neighboursPresent == 0x1E) { // 1 1110 
-                    chNeighPack* chunkochunks = new chNeighPack();
+                if (chunk->neighboursPresent == 0x1E && !chunk->meshRequestIsDone()) { // 1 1110
+                    
+                    chNeighPackPtr* chunkochunks = new chNeighPackPtr();
                     chunkochunks->coords = chunk->coord;
                     //memcpy(chunkochunks->block_data.data(), chunk->block_data.data(), CHUNK_VOLUME);
-					chunkochunks->mainChunk = chunk.get();
-                    for (int i = 0; i < 4; i++) {
-                        ivec2 chcrds = coords + ivec2(dirs[i], dirs[i + 4]);
-                        uint idxcrds = pack(chcrds);
-                        if (world.chunkData.count(idxcrds)) {
-                            auto& ch = world.chunkData.at(idxcrds);
-                            memcpy(chunkochunks->neighbour_data[i].data(), ch->block_data.data(), CHUNK_VOLUME);
-                        }
-                    }
+                    chunkochunks->mainChunk = chunk.get();
+                    //for (int i = 1; i < 3; i++) {    
+                    //    ivec2 chcrds = coords + ivec2(dirs[i], dirs[i + 4]);
+                    //    uint idxcrds = pack(chcrds);
+                    //    if (world.chunkData.count(idxcrds)) {
+                    //        auto& ch = world.chunkData.at(idxcrds);
+                    //        memcpy(chunkochunks->neighbour_data[i].data(), ch->block_data.data(), CHUNK_VOLUME);
+                    //    }
+                    //}
                     {
                         std::lock_guard<std::mutex> lock(chunkUpdateRequestMutex);
                         chunkCleanupQueue.push(chunkochunks);
                     }
                     chunkUpdateCV.notify_one();
-                    chunk->setAsClean();
+                    cout << "Chunk Here and there" << endl;
+                    chunk->meshRequestRedo();
                 }
             }
 
             vec3 center = vec3((coords.x + 0.5) * CHUNK_SIZE, playerPos.y, (coords.y + 0.5) * CHUNK_SIZE);
-            if (sphereInFrustum(center, playerPos.y/2))
+            if (sphereInFrustum(center, playerPos.y / 2))
                 chunk->mesh->renderMesh();
 
             it++;
@@ -930,11 +934,11 @@ public:
     void renderShadowWorld() {
         vec3 playerpos = firstCamera.getPosition() / vec3(CHUNK_SIZE, 1, CHUNK_SIZE);
         vec2 _2dPlPosHi = vec2(playerpos.x, playerpos.z) + float(renderDistance) * 1.f,
-             _2dPlPosLo = vec2(playerpos.x, playerpos.z) - float(renderDistance) * 1.f;
+            _2dPlPosLo = vec2(playerpos.x, playerpos.z) - float(renderDistance) * 1.f;
 
         for (auto& chunks : world.chunkData) {
             auto& chunk = chunks.second;
-            ivec2 coords = chunk->coords();  
+            ivec2 coords = chunk->coords();
 
             if ((coords.x >= _2dPlPosLo.x && coords.x <= _2dPlPosHi.x) &&
                 (coords.y >= _2dPlPosLo.y && coords.y <= _2dPlPosHi.y)) {
@@ -948,12 +952,12 @@ public:
     void isolateWorld() {
         vec3 playerPos = firstCamera.getPosition() / vec3(CHUNK_SIZE, 1, CHUNK_SIZE);
         vec2 _2dPlPosHi = vec2(playerPos.x, playerPos.z) + float(renderDistance),
-            _2dPlPosLo  = vec2(playerPos.x, playerPos.z) - float(renderDistance);
+            _2dPlPosLo = vec2(playerPos.x, playerPos.z) - float(renderDistance);
 
         for (auto it = world.chunkData.begin(); it != world.chunkData.end();) {
-			auto& chunk = it->second;
-			ivec2 coords = chunk->coords();
-                       
+            auto& chunk = it->second;
+            ivec2 coords = chunk->coords();
+
             if ((coords.x <= _2dPlPosLo.x || coords.x >= _2dPlPosHi.x) ||
                 (coords.y <= _2dPlPosLo.y || coords.y >= _2dPlPosHi.y))
             {
@@ -963,7 +967,7 @@ public:
             }
 
             it++;
-		}
+        }
     }
 
     void scheduleMeshWorld() {
@@ -975,7 +979,7 @@ public:
         for (auto it = world.chunkData.begin(); it != world.chunkData.end(); it++) {
             auto& chunk = it->second;
             ivec2 coords = chunk->coords();
-                        
+
             if (chunk->getDirty()) {
                 if ((chunk->neighboursPresent & 0x1E) != 0x1E) {
                     for (int i = 0; i < 4; i++) {
@@ -999,7 +1003,7 @@ public:
                     }
                     {
                         std::lock_guard<std::mutex> lock(chunkUpdateRequestMutex);
-                        chunkCleanupQueue.push(chunkochunks);
+                        //chunkCleanupQueue.push(chunkochunks);
                     }
                     chunkUpdateCV.notify_one();
                     chunk->setAsClean();
@@ -1028,9 +1032,9 @@ public:
 
     bool playerCollides() {
         return  blockExistsAt(vec3(ftoint(firstCamera.getPosition().x - boundW / 2 + 0.5), firstCamera.getPosition().y - 1.5, ftoint(firstCamera.getPosition().z - boundL / 2 + 0.5)), 1) ||
-                blockExistsAt(vec3(ftoint(firstCamera.getPosition().x - boundW / 2 + 0.5), firstCamera.getPosition().y - 1.5, ftoint(firstCamera.getPosition().z + boundL / 2 + 0.5)), 1) ||
-                blockExistsAt(vec3(ftoint(firstCamera.getPosition().x + boundW / 2 + 0.5), firstCamera.getPosition().y - 1.5, ftoint(firstCamera.getPosition().z + boundL / 2 + 0.5)), 1) ||
-                blockExistsAt(vec3(ftoint(firstCamera.getPosition().x + boundW / 2 + 0.5), firstCamera.getPosition().y - 1.5, ftoint(firstCamera.getPosition().z - boundL / 2 + 0.5)), 1);
+            blockExistsAt(vec3(ftoint(firstCamera.getPosition().x - boundW / 2 + 0.5), firstCamera.getPosition().y - 1.5, ftoint(firstCamera.getPosition().z + boundL / 2 + 0.5)), 1) ||
+            blockExistsAt(vec3(ftoint(firstCamera.getPosition().x + boundW / 2 + 0.5), firstCamera.getPosition().y - 1.5, ftoint(firstCamera.getPosition().z + boundL / 2 + 0.5)), 1) ||
+            blockExistsAt(vec3(ftoint(firstCamera.getPosition().x + boundW / 2 + 0.5), firstCamera.getPosition().y - 1.5, ftoint(firstCamera.getPosition().z - boundL / 2 + 0.5)), 1);
     }
 
     void keyControl(float dt) {
@@ -1063,7 +1067,7 @@ public:
             position += right * movementSpeed * deltaTime;
         }
         if (mainWindow.getKeys()[GLFW_KEY_SPACE]) {
-			//position += vec3(0, movementSpeed * deltaTime, 0);
+            //position += vec3(0, movementSpeed * deltaTime, 0);
             initial_velocity.y = 100 * 3 * movementSpeed;
         }
         if (mainWindow.getKeys()[GLFW_KEY_LEFT_SHIFT]) {
@@ -1109,37 +1113,37 @@ public:
 
     void loadInventory() {
         json inventoryData;
-		ifstream ifs("inventory.json");
+        ifstream ifs("inventory.json");
 
         ifs >> inventoryData;
         for (int i = 0; i < 9; i++) {
             inventory.hotbarSlots[i].item.id = inventoryData["mainInventory"][3][i]["id"];
-            inventory.hotbarSlots[i].count   = inventoryData["mainInventory"][3][i]["count"];
+            inventory.hotbarSlots[i].count = inventoryData["mainInventory"][3][i]["count"];
         }
         for (int i = 0; i < 4; i++)
             for (int j = 0; j < 9; j++) {
                 inventory.mainInventorySlots[i][j].item.id = inventoryData["mainInventory"][i][j]["id"];
-                inventory.mainInventorySlots[i][j].count   = inventoryData["mainInventory"][i][j]["count"];
+                inventory.mainInventorySlots[i][j].count = inventoryData["mainInventory"][i][j]["count"];
             }
 
         inventory.invDidChange(1);
     }
 
-    void storeInventory() { 
-		json inventoryData;
-		for (int i = 0; i < 9; i++) {
-			inventoryData["mainInventory"][3][i]["item"]    = itemTypeString[inventory.hotbarSlots[i].item.id];
-			inventoryData["mainInventory"][3][i]["count"]   = inventory.hotbarSlots[i].count;
+    void storeInventory() {
+        json inventoryData;
+        for (int i = 0; i < 9; i++) {
+            inventoryData["mainInventory"][3][i]["item"] = itemTypeString[inventory.hotbarSlots[i].item.id];
+            inventoryData["mainInventory"][3][i]["count"] = inventory.hotbarSlots[i].count;
             inventoryData["mainInventory"][3][i]["id"] = (int)inventory.hotbarSlots[i].item.id;
-		}
-		for (int i = 0; i < 4; i++) {
-			for (int j = 0; j < 9; j++) {
-				inventoryData["mainInventory"][i][j]["item"]  = itemTypeString[inventory.mainInventorySlots[i][j].item.id];
-				inventoryData["mainInventory"][i][j]["count"] = inventory.mainInventorySlots[i][j].count;
-                inventoryData["mainInventory"][i][j]["id"]  = (int)inventory.mainInventorySlots[i][j].item.id;
-			}
-		}
-		ofstream outFile("inventory.json");
-		outFile << inventoryData.dump(4);
+        }
+        for (int i = 0; i < 4; i++) {
+            for (int j = 0; j < 9; j++) {
+                inventoryData["mainInventory"][i][j]["item"] = itemTypeString[inventory.mainInventorySlots[i][j].item.id];
+                inventoryData["mainInventory"][i][j]["count"] = inventory.mainInventorySlots[i][j].count;
+                inventoryData["mainInventory"][i][j]["id"] = (int)inventory.mainInventorySlots[i][j].item.id;
+            }
+        }
+        ofstream outFile("inventory.json");
+        outFile << inventoryData.dump(4);
     }
 };

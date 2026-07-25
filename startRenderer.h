@@ -16,6 +16,7 @@ class startMenu
 {
 public:
 	startMenu() {
+		std::ios_base::sync_with_stdio(false); // Disables synch between C and C++ standard streams for performance boost
 		mainWindow = Window(WIDTH, HEIGHT);
 		mainWindow.initialize();
 		createShaders();

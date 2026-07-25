@@ -47,7 +47,7 @@ std::queue<Block> placeResQueue;
 std::mutex placeResMutex;
 std::mutex worldChunkDataMutex;
 
-std::queue<chNeighPack*> chunkCleanupQueue;
+std::queue<chNeighPackPtr*> chunkCleanupQueue;
 std::queue<chNeighResult*> chunkMeshResult;
 
 std::atomic<bool> chunkGenRunning = true;
@@ -61,19 +61,21 @@ std::atomic<bool> stopChunkNeighCheck = false;
 bool blockBreakingOut = false;
 bool blockPlacingOut = false;
 
-ivec3   unitNormalX0 = ivec3( 1, 0, 0),
-        unitNormalX1 = ivec3(-1, 0, 0),
-        unitNormalZ0 = ivec3( 0, 0, 1),
-        unitNormalZ1 = ivec3( 0, 0,-1),
-        unitNormalY0 = ivec3( 0, 1, 0),
-        unitNormalY1 = ivec3( 0,-1, 0);
+ivec3   unitNormalX0 = ivec3(1, 0, 0),
+unitNormalX1 = ivec3(-1, 0, 0),
+unitNormalZ0 = ivec3(0, 0, 1),
+unitNormalZ1 = ivec3(0, 0, -1),
+unitNormalY0 = ivec3(0, 1, 0),
+unitNormalY1 = ivec3(0, -1, 0);
 
 ivec3   nextChunkNormalX0 = unitNormalX0 * CHUNK_SIZE,
-        nextChunkNormalX1 = unitNormalX1 * CHUNK_SIZE,
-        nextChunkNormalZ0 = unitNormalZ0 * CHUNK_SIZE,
-        nextChunkNormalZ1 = unitNormalZ1 * CHUNK_SIZE,
-        nextChunkNormalY0 = unitNormalY0 * CHUNK_SIZE,
-        nextChunkNormalY1 = unitNormalY1 * CHUNK_SIZE;
+nextChunkNormalX1 = unitNormalX1 * CHUNK_SIZE,
+nextChunkNormalZ0 = unitNormalZ0 * CHUNK_SIZE,
+nextChunkNormalZ1 = unitNormalZ1 * CHUNK_SIZE,
+nextChunkNormalY0 = unitNormalY0 * CHUNK_SIZE,
+nextChunkNormalY1 = unitNormalY1 * CHUNK_SIZE;
+
+int dirs[] = { -1, 1, 0, 0,   0, 0, -1, 1 };
 
 std::random_device rd;
 std::mt19937 gen(rd()); // Mersenne Twister engine
@@ -157,7 +159,7 @@ void generateBlocks(vec2 xyChunk, Chunk* repChunk) {
         for (int z = minZ; z < minZ + CHUNK_SIZE; z++) {
             uint skylight = 15;
             ch(x, 1, z) = BEDROCK;
-            
+
             float fx = float(x), fz = float(z);
 
             float base = norm(baseNoise.GetNoise(fx, fz)) * 10.0f;
@@ -176,7 +178,7 @@ void generateBlocks(vec2 xyChunk, Chunk* repChunk) {
 
             for (int y = scaledHeight; y > 1; y--) {
                 jump = 0;
-                
+
                 int radius = 3;  //adjust for size
                 if (y >= scaledHeight - 1) {
                     blockType = GRASS_BLOCK;
@@ -222,8 +224,8 @@ void generateBlocks(vec2 xyChunk, Chunk* repChunk) {
                                     float dist = glm::length(vec3(dx, dy, dz));
 
                                     if (dist <= radius + randomFloat(-0.3f, 0.3f)) {
-                                        BlockData& bdt   = ch(x + dx, floorHeight + dy, z + dz),
-                                                   bdtup = ch(x + dx, floorHeight + 1, z + dz);
+                                        BlockData& bdt = ch(x + dx, floorHeight + dy, z + dz),
+                                            bdtup = ch(x + dx, floorHeight + 1, z + dz);
 
                                         if (bdt == AIR) {
                                             bdt = OAK_LEAVES;
@@ -235,7 +237,7 @@ void generateBlocks(vec2 xyChunk, Chunk* repChunk) {
                     }
                 }
 
-            //notree:;  //No trees should be created if they are near the chunks border
+                //notree:;  //No trees should be created if they are near the chunks border
 
                 if (blockType == GRASS_BLOCK && blockType != OAK_WOOD) {
                     BlockData& blockData = ch(x, y + 1, z);
@@ -446,12 +448,12 @@ void emitFace(Mesh& m, int face, Item blockType, float x, float y, float z, vec3
         break;
     }
 
-    uint32_t norm_color = ((abyte(n.x < 0 ? 1 : 0) & 0x1) << 5) | ((abyte(absl(n.x)) & 0x1) << 4)
-        | ((abyte(n.y < 0 ? 1 : 0) & 0x1) << 3) | ((abyte(absl(n.y)) & 0x1) << 2)
-        | ((abyte(n.z < 0 ? 1 : 0) & 0x1) << 1) | ((abyte(absl(n.z)) & 0x1) << 0)
-        | ((abyte(cMask.x * 100) & 0x7F) << 20)
-        | ((abyte(cMask.y * 100) & 0x7F) << 13)
-        | ((abyte(cMask.z * 100) & 0x7F) << 6);
+    uint32_t norm_color = ((a_byte(n.x < 0 ? 1 : 0) & 0x1) << 5) | ((a_byte(absl(n.x)) & 0x1) << 4)
+        | ((a_byte(n.y < 0 ? 1 : 0) & 0x1) << 3) | ((a_byte(absl(n.y)) & 0x1) << 2)
+        | ((a_byte(n.z < 0 ? 1 : 0) & 0x1) << 1) | ((a_byte(absl(n.z)) & 0x1) << 0)
+        | ((a_byte(cMask.x * 100) & 0x7F) << 20)
+        | ((a_byte(cMask.y * 100) & 0x7F) << 13)
+        | ((a_byte(cMask.z * 100) & 0x7F) << 6);
     float normcolor;
     memcpy(&normcolor, &norm_color, sizeof(float));
 
@@ -487,7 +489,7 @@ void meshChunk(vec2 xyChunk, Chunk* cd, Mesh& out, vec3 direction, ivec3 positio
                 //vec3 blockOrientation = vec3(sign_shift(block_data.orientation, 5) * (block_data.orientation >> 4) & 1,
                 //                             sign_shift(block_data.orientation, 3) * (block_data.orientation >> 2) & 1,
                 //                             sign_shift(block_data.orientation, 1) * (block_data.orientation >> 0) & 1);
-                if (direction != vec3(0, 1, 0)){//&& position == blockPos) {
+                if (direction != vec3(0, 1, 0)) {//&& position == blockPos) {
                     //block_data.orientation = ((direction.x < 0 ? 1 : 0) << 5) | ((absl(direction.x)) << 4) |
                     //                         ((direction.x < 0 ? 1 : 0) << 3) | ((absl(direction.y)) << 2) |
                     //                         ((direction.x < 0 ? 1 : 0) << 1) | ((absl(direction.z)) << 0);
@@ -610,7 +612,7 @@ bool buildMaskY(BlockData* bData, int planeDirVal, int faceDir, int W, int H, ui
         for (int b = 0; b < W; b++) {
             int idx = b + l * W;
             uint8_t& maskItem = mask[idx]; maskItem = 0;
-            posx = b, posz = l; 
+            posx = b, posz = l;
 
             uint8_t neighItem = bData[at(posx, checkposy, posz)].blockType.id;
             if (items[neighItem].isUncullable())
@@ -637,8 +639,8 @@ void buildMask(Chunk* ch, BlockData* bData, BlockData* neighData, int planeDirVa
             uint8_t neighType = neighItem.id;
             if (neighType == 0 || neighItem.isFlat() || neighType == 8) {
                 if (ch->localInBounds(pos)) maskItem = bData[at(pos)].blockType.id;
-                else { 
-                    int index = at(pos + normal);  
+                else {
+                    int index = at(pos + normal);
                     maskItem = neighData[index].blockType.id;
                 }
             }
@@ -673,7 +675,7 @@ void buildMaskX(BlockData* bData, BlockData* neighData, int planeDirVal, int fac
 void buildMaskZ(BlockData* bData, BlockData* neighData, int planeDirVal, int faceDir, int W, int H, uint8_t* mask, int normal) {
     int posx, posy, posz = planeDirVal;
     int checkposz = planeDirVal + normal;
-	int znorm = -normal * CHUNK_SIZE;
+    int znorm = -normal * CHUNK_SIZE;
     for (int l = 0; l < H; l++) {
         for (int b = 0; b < W; b++) {
             int idx = b + l * W;
@@ -697,18 +699,18 @@ void buildMaskZ(BlockData* bData, BlockData* neighData, int planeDirVal, int fac
 
 void feed(float* uv, float w, float h, float packed, int direction) { // direction = 0 ? clockwise : counterclockwise
     if (!direction) { //feedCW
-        uv[0] = 0, uv[ 1] = 0, uv[ 2] = packed;
-        uv[3] = 0, uv[ 4] = h, uv[ 5] = packed;
-        uv[6] = w, uv[ 7] = h, uv[ 8] = packed;
+        uv[0] = 0, uv[1] = 0, uv[2] = packed;
+        uv[3] = 0, uv[4] = h, uv[5] = packed;
+        uv[6] = w, uv[7] = h, uv[8] = packed;
         uv[9] = w, uv[10] = 0, uv[11] = packed;
     }
     else { // feedCCW 
-        uv[0] = 0, uv[ 1] = 0, uv[ 2] = packed;
-        uv[3] = w, uv[ 4] = 0, uv[ 5] = packed;
-        uv[6] = w, uv[ 7] = h, uv[ 8] = packed;
+        uv[0] = 0, uv[1] = 0, uv[2] = packed;
+        uv[3] = w, uv[4] = 0, uv[5] = packed;
+        uv[6] = w, uv[7] = h, uv[8] = packed;
         uv[9] = 0, uv[10] = h, uv[11] = packed;
     }
-    };
+};
 
 void emitFace(Mesh& m, int face, uint8_t blockType, ivec3 blockPos, ivec3 dims, ivec3 normals, int& base) {
     float v[12];
@@ -743,36 +745,36 @@ void emitFace(Mesh& m, int face, uint8_t blockType, ivec3 blockPos, ivec3 dims, 
 
     if (!flat) {
         switch (face) {
-        case 0: v[0] = blockPos.x + -0.5f,          v[1] = blockPos.y + -0.5f,          v[2] = blockPos.z + -0.5f;          v[3] = blockPos.x + -0.5f,          v[4] = blockPos.y + -0.5f + dims.y, v[5] = blockPos.z + -0.5f;          v[6] = blockPos.x + -0.5f,          v[7] = blockPos.y + -0.5f + dims.y, v[8] = blockPos.z + -0.5f + dims.z; v[9] = blockPos.x + -0.5f,          v[10] = blockPos.y + -0.5f,          v[11] = blockPos.z + -0.5f + dims.z; break; // -X
-        case 1: v[0] = blockPos.x + -0.5f + dims.x, v[1] = blockPos.y + -0.5f,          v[2] = blockPos.z + -0.5f;          v[3] = blockPos.x + -0.5f + dims.x, v[4] = blockPos.y + -0.5f,          v[5] = blockPos.z + -0.5f + dims.z; v[6] = blockPos.x + -0.5f + dims.x, v[7] = blockPos.y + -0.5f + dims.y, v[8] = blockPos.z + -0.5f + dims.z; v[9] = blockPos.x + -0.5f + dims.x, v[10] = blockPos.y + -0.5f + dims.y, v[11] = blockPos.z + -0.5f;          break; // +X
-        case 2: v[0] = blockPos.x + -0.5f,          v[1] = blockPos.y + -0.5f,          v[2] = blockPos.z + -0.5f;          v[3] = blockPos.x + -0.5f + dims.x, v[4] = blockPos.y + -0.5f,          v[5] = blockPos.z + -0.5f;          v[6] = blockPos.x + -0.5f + dims.x, v[7] = blockPos.y + -0.5f + dims.y, v[8] = blockPos.z + -0.5f;          v[9] = blockPos.x + -0.5f,          v[10] = blockPos.y + -0.5f + dims.y, v[11] = blockPos.z + -0.5f;          break; // -Z
-        case 3: v[0] = blockPos.x + -0.5f,          v[1] = blockPos.y + -0.5f,          v[2] = blockPos.z + -0.5f + dims.z; v[3] = blockPos.x + -0.5f,          v[4] = blockPos.y + -0.5f + dims.y, v[5] = blockPos.z + -0.5f + dims.z; v[6] = blockPos.x + -0.5f + dims.x, v[7] = blockPos.y + -0.5f + dims.y, v[8] = blockPos.z + -0.5f + dims.z; v[9] = blockPos.x + -0.5f + dims.x, v[10] = blockPos.y + -0.5f,          v[11] = blockPos.z + -0.5f + dims.z; break; // +Z
-        case 4: v[0] = blockPos.x + -0.5f,          v[1] = blockPos.y + -0.5f,          v[2] = blockPos.z + -0.5f;          v[3] = blockPos.x + -0.5f,          v[4] = blockPos.y + -0.5f,          v[5] = blockPos.z + -0.5f + dims.z; v[6] = blockPos.x + -0.5f + dims.x, v[7] = blockPos.y + -0.5f,          v[8] = blockPos.z + -0.5f + dims.z; v[9] = blockPos.x + -0.5f + dims.x, v[10] = blockPos.y + -0.5f,          v[11] = blockPos.z + -0.5f;          break; // -Y
-        case 5: v[0] = blockPos.x + -0.5f,          v[1] = blockPos.y + -0.5f + dims.y, v[2] = blockPos.z + -0.5f;          v[3] = blockPos.x + -0.5f + dims.x, v[4] = blockPos.y + -0.5f + dims.y, v[5] = blockPos.z + -0.5f;          v[6] = blockPos.x + -0.5f + dims.x, v[7] = blockPos.y + -0.5f + dims.y, v[8] = blockPos.z + -0.5f + dims.z; v[9] = blockPos.x + -0.5f,          v[10] = blockPos.y + -0.5f + dims.y, v[11] = blockPos.z + -0.5f + dims.z; break; // +Y
+        case 0: v[0] = blockPos.x + -0.5f, v[1] = blockPos.y + -0.5f, v[2] = blockPos.z + -0.5f;          v[3] = blockPos.x + -0.5f, v[4] = blockPos.y + -0.5f + dims.y, v[5] = blockPos.z + -0.5f;          v[6] = blockPos.x + -0.5f, v[7] = blockPos.y + -0.5f + dims.y, v[8] = blockPos.z + -0.5f + dims.z; v[9] = blockPos.x + -0.5f, v[10] = blockPos.y + -0.5f, v[11] = blockPos.z + -0.5f + dims.z; break; // -X
+        case 1: v[0] = blockPos.x + -0.5f + dims.x, v[1] = blockPos.y + -0.5f, v[2] = blockPos.z + -0.5f;          v[3] = blockPos.x + -0.5f + dims.x, v[4] = blockPos.y + -0.5f, v[5] = blockPos.z + -0.5f + dims.z; v[6] = blockPos.x + -0.5f + dims.x, v[7] = blockPos.y + -0.5f + dims.y, v[8] = blockPos.z + -0.5f + dims.z; v[9] = blockPos.x + -0.5f + dims.x, v[10] = blockPos.y + -0.5f + dims.y, v[11] = blockPos.z + -0.5f;          break; // +X
+        case 2: v[0] = blockPos.x + -0.5f, v[1] = blockPos.y + -0.5f, v[2] = blockPos.z + -0.5f;          v[3] = blockPos.x + -0.5f + dims.x, v[4] = blockPos.y + -0.5f, v[5] = blockPos.z + -0.5f;          v[6] = blockPos.x + -0.5f + dims.x, v[7] = blockPos.y + -0.5f + dims.y, v[8] = blockPos.z + -0.5f;          v[9] = blockPos.x + -0.5f, v[10] = blockPos.y + -0.5f + dims.y, v[11] = blockPos.z + -0.5f;          break; // -Z
+        case 3: v[0] = blockPos.x + -0.5f, v[1] = blockPos.y + -0.5f, v[2] = blockPos.z + -0.5f + dims.z; v[3] = blockPos.x + -0.5f, v[4] = blockPos.y + -0.5f + dims.y, v[5] = blockPos.z + -0.5f + dims.z; v[6] = blockPos.x + -0.5f + dims.x, v[7] = blockPos.y + -0.5f + dims.y, v[8] = blockPos.z + -0.5f + dims.z; v[9] = blockPos.x + -0.5f + dims.x, v[10] = blockPos.y + -0.5f, v[11] = blockPos.z + -0.5f + dims.z; break; // +Z
+        case 4: v[0] = blockPos.x + -0.5f, v[1] = blockPos.y + -0.5f, v[2] = blockPos.z + -0.5f;          v[3] = blockPos.x + -0.5f, v[4] = blockPos.y + -0.5f, v[5] = blockPos.z + -0.5f + dims.z; v[6] = blockPos.x + -0.5f + dims.x, v[7] = blockPos.y + -0.5f, v[8] = blockPos.z + -0.5f + dims.z; v[9] = blockPos.x + -0.5f + dims.x, v[10] = blockPos.y + -0.5f, v[11] = blockPos.z + -0.5f;          break; // -Y
+        case 5: v[0] = blockPos.x + -0.5f, v[1] = blockPos.y + -0.5f + dims.y, v[2] = blockPos.z + -0.5f;          v[3] = blockPos.x + -0.5f + dims.x, v[4] = blockPos.y + -0.5f + dims.y, v[5] = blockPos.z + -0.5f;          v[6] = blockPos.x + -0.5f + dims.x, v[7] = blockPos.y + -0.5f + dims.y, v[8] = blockPos.z + -0.5f + dims.z; v[9] = blockPos.x + -0.5f, v[10] = blockPos.y + -0.5f + dims.y, v[11] = blockPos.z + -0.5f + dims.z; break; // +Y
         }
     }
     else {
         switch (face) {
-        case 0: v[0] = blockPos.x + -0.5f,          v[1] = blockPos.y + -0.5f,          v[2] = blockPos.z + -0.5f;          v[3] = blockPos.x + -0.5f,          v[4] = blockPos.y + -0.5f + dims.y, v[5] = blockPos.z + -0.5f;          v[6] = blockPos.x +  0.5f,          v[7] = blockPos.y + -0.5f + dims.y, v[8] = blockPos.z +  0.5f;          v[9] = blockPos.x +  0.5f,          v[10] = blockPos.y + -0.5f,          v[11] = blockPos.z +  0.5f; break; // -X disgonal
-        case 1: v[0] = blockPos.x + -0.5f,          v[1] = blockPos.y + -0.5f,          v[2] = blockPos.z +  0.5f;          v[3] = blockPos.x + -0.5f,          v[4] = blockPos.y + -0.5f + dims.y, v[5] = blockPos.z +  0.5f;          v[6] = blockPos.x +  0.5f,          v[7] = blockPos.y + -0.5f + dims.y, v[8] = blockPos.z + -0.5f;          v[9] = blockPos.x +  0.5f,          v[10] = blockPos.y + -0.5f,          v[11] = blockPos.z + -0.5f; break; // +X diagonal
-        case 2: v[0] = blockPos.x +  0.5f,          v[1] = blockPos.y + -0.5f,          v[2] = blockPos.z +  0.5f;          v[3] = blockPos.x +  0.5f,          v[4] = blockPos.y + -0.5f + dims.y, v[5] = blockPos.z +  0.5f;          v[6] = blockPos.x + -0.5f,          v[7] = blockPos.y + -0.5f + dims.y, v[8] = blockPos.z + -0.5f;          v[9] = blockPos.x + -0.5f,          v[10] = blockPos.y + -0.5f,          v[11] = blockPos.z + -0.5f; break; // -X disgonal
-        case 3: v[0] = blockPos.x +  0.5f,          v[1] = blockPos.y + -0.5f,          v[2] = blockPos.z + -0.5f;          v[3] = blockPos.x +  0.5f,          v[4] = blockPos.y + -0.5f + dims.y, v[5] = blockPos.z + -0.5f;          v[6] = blockPos.x + -0.5f,          v[7] = blockPos.y + -0.5f + dims.y, v[8] = blockPos.z +  0.5f;          v[9] = blockPos.x + -0.5f,          v[10] = blockPos.y + -0.5f,          v[11] = blockPos.z +  0.5f; break; // +X diagonal
-		default:memset(v, 0, sizeof(float) * 12); break;
+        case 0: v[0] = blockPos.x + -0.5f, v[1] = blockPos.y + -0.5f, v[2] = blockPos.z + -0.5f;          v[3] = blockPos.x + -0.5f, v[4] = blockPos.y + -0.5f + dims.y, v[5] = blockPos.z + -0.5f;          v[6] = blockPos.x + 0.5f, v[7] = blockPos.y + -0.5f + dims.y, v[8] = blockPos.z + 0.5f;          v[9] = blockPos.x + 0.5f, v[10] = blockPos.y + -0.5f, v[11] = blockPos.z + 0.5f; break; // -X disgonal
+        case 1: v[0] = blockPos.x + -0.5f, v[1] = blockPos.y + -0.5f, v[2] = blockPos.z + 0.5f;          v[3] = blockPos.x + -0.5f, v[4] = blockPos.y + -0.5f + dims.y, v[5] = blockPos.z + 0.5f;          v[6] = blockPos.x + 0.5f, v[7] = blockPos.y + -0.5f + dims.y, v[8] = blockPos.z + -0.5f;          v[9] = blockPos.x + 0.5f, v[10] = blockPos.y + -0.5f, v[11] = blockPos.z + -0.5f; break; // +X diagonal
+        case 2: v[0] = blockPos.x + 0.5f, v[1] = blockPos.y + -0.5f, v[2] = blockPos.z + 0.5f;          v[3] = blockPos.x + 0.5f, v[4] = blockPos.y + -0.5f + dims.y, v[5] = blockPos.z + 0.5f;          v[6] = blockPos.x + -0.5f, v[7] = blockPos.y + -0.5f + dims.y, v[8] = blockPos.z + -0.5f;          v[9] = blockPos.x + -0.5f, v[10] = blockPos.y + -0.5f, v[11] = blockPos.z + -0.5f; break; // -X disgonal
+        case 3: v[0] = blockPos.x + 0.5f, v[1] = blockPos.y + -0.5f, v[2] = blockPos.z + -0.5f;          v[3] = blockPos.x + 0.5f, v[4] = blockPos.y + -0.5f + dims.y, v[5] = blockPos.z + -0.5f;          v[6] = blockPos.x + -0.5f, v[7] = blockPos.y + -0.5f + dims.y, v[8] = blockPos.z + 0.5f;          v[9] = blockPos.x + -0.5f, v[10] = blockPos.y + -0.5f, v[11] = blockPos.z + 0.5f; break; // +X diagonal
+        default:memset(v, 0, sizeof(float) * 12); break;
         }
     }
 
     if (face == bottomDir) { offsetX = xoffsetBottom; offsetY = yoffsetBottom; }
     else if (face == topDir) { offsetX = xoffsetTop;  offsetY = yoffsetTop; }
 
-    uint32_t uintUVs = ((uint8_t)(blockPos.y/3) << 24) | ((uint8_t)(xdimens) << 16) | ((uint8_t)(yoffset + offsetY) << 8) | (uint8_t)(xoffset + offsetX); // Packaging floats into one integer
+    uint32_t uintUVs = ((uint8_t)(blockPos.y / 3) << 24) | ((uint8_t)(xdimens) << 16) | ((uint8_t)(yoffset + offsetY) << 8) | (uint8_t)(xoffset + offsetX); // Packaging floats into one integer
     float startUvs;
     memcpy(&startUvs, &uintUVs, sizeof(float));
-    uint32_t norm_color = ((abyte(normals.x < 0 ? 1 : 0) & 0x1) << 5) | ((abyte(absl(normals.x)) & 0x1) << 4)
-        | ((abyte(normals.y < 0 ? 1 : 0) & 0x1) << 3) | ((abyte(absl(normals.y)) & 0x1) << 2)
-        | ((abyte(normals.z < 0 ? 1 : 0) & 0x1) << 1) | ((abyte(absl(normals.z)) & 0x1) << 0)
-        | ((abyte(cMask.x * 100) & 0x7F) << 20)
-        | ((abyte(cMask.y * 100) & 0x7F) << 13)
-        | ((abyte(cMask.z * 100) & 0x7F) << 6);
+    uint32_t norm_color = ((a_byte(normals.x < 0 ? 1 : 0) & 0x1) << 5) | ((a_byte(absl(normals.x)) & 0x1) << 4)
+        | ((a_byte(normals.y < 0 ? 1 : 0) & 0x1) << 3) | ((a_byte(absl(normals.y)) & 0x1) << 2)
+        | ((a_byte(normals.z < 0 ? 1 : 0) & 0x1) << 1) | ((a_byte(absl(normals.z)) & 0x1) << 0)
+        | ((a_byte(cMask.x * 100) & 0x7F) << 20)
+        | ((a_byte(cMask.y * 100) & 0x7F) << 13)
+        | ((a_byte(cMask.z * 100) & 0x7F) << 6);
     float normcolor;
     memcpy(&normcolor, &norm_color, sizeof(float));
 
@@ -802,24 +804,25 @@ void emitFace(Mesh& m, int face, uint8_t blockType, ivec3 blockPos, ivec3 dims, 
 
 void emitFaceX(Mesh& m, int face, uint8_t blockType, int blockPosx, int blockPosy, int blockPosz, int dimsx, int dimsy, int dimsz, ivec3 normals, int& base) {
     auto feed = [&](vec3* uv, float w, float h, float packed) { // direction = 0 ? clockwise : counterclockwise
-            uv[0] = vec3(0, 0, packed);
-            uv[1] = vec3(0, h, packed);
-            uv[2] = vec3(w, h, packed);
-            uv[3] = vec3(w, 0, packed); };
+        uv[0] = vec3(0, 0, packed);
+        uv[1] = vec3(0, h, packed);
+        uv[2] = vec3(w, h, packed);
+        uv[3] = vec3(w, 0, packed); };
     float tintr = 1.0f, tintg = 1.0f, tintb = 1.0f;
     if ((blockType == GRASS.id || blockType == OAK_LEAVES.id) || (blockType == GRASS_BLOCK.id && face != 4)) {
         tintr = 0.1f, tintg = 0.75f, tintb = 0.1f;
-        if (isFlat(blockType)) { normals = vec3(0, -1, 0); } }
-    bool flat = item(blockType).isFlat(); 
+        if (isFlat(blockType)) { normals = vec3(0, -1, 0); }
+    }
+    bool flat = item(blockType).isFlat();
     float* UVs;
     UVs = getUVs(blockType);
     float xoffset = UVs[0],
-          yoffset = UVs[1],
-          xoffsetTop = UVs[2],
-          yoffsetTop = UVs[3],
-          xoffsetBottom = UVs[4],
-          yoffsetBottom = UVs[5],
-          transparency = UVs[6]; 
+        yoffset = UVs[1],
+        xoffsetTop = UVs[2],
+        yoffsetTop = UVs[3],
+        xoffsetBottom = UVs[4],
+        yoffsetBottom = UVs[5],
+        transparency = UVs[6];
     int dir = face / 2;
     float clipX = 0.0f, clipY = 1.0f;
     float clipXX = 0.0f, clipXY = !flat ? (dimsz) : 1.0f,
@@ -848,12 +851,12 @@ void emitFaceX(Mesh& m, int face, uint8_t blockType, int blockPosx, int blockPos
     uint32_t uintUVs = ((uint8_t)(blockPosy + 100) << 24) | ((uint8_t)(xdimens) << 16) | ((uint8_t)(yoffset + offsetY) << 8) | (uint8_t)(xoffset + offsetX); // Packaging floats into one integer
     float startUvs;
     memcpy(&startUvs, &uintUVs, sizeof(float));
-    uint32_t norm_color = ((abyte(normals.x < 0 ? 1 : 0) & 0x1) << 5) | ((abyte(absl(normals.x)) & 0x1) << 4)
-         | ((0x0) << 3) | (0x0)
-         | ((0x0) << 1) | (0x0)
-         | ((abyte(cMask.x * 100) & 0x7F) << 20)
-         | ((abyte(cMask.y * 100) & 0x7F) << 13)
-         | ((abyte(cMask.z * 100) & 0x7F) << 6);
+    uint32_t norm_color = ((a_byte(normals.x < 0 ? 1 : 0) & 0x1) << 5) | ((a_byte(absl(normals.x)) & 0x1) << 4)
+        | ((0x0) << 3) | (0x0)
+        | ((0x0) << 1) | (0x0)
+        | ((a_byte(cMask.x * 100) & 0x7F) << 20)
+        | ((a_byte(cMask.y * 100) & 0x7F) << 13)
+        | ((a_byte(cMask.z * 100) & 0x7F) << 6);
     float normcolor;
     memcpy(&normcolor, &norm_color, sizeof(float));
 
@@ -875,12 +878,12 @@ void emitFaceX(Mesh& m, int face, uint8_t blockType, int blockPosx, int blockPos
     finalInds[3] = base + 2; finalInds[4] = base + 3; finalInds[5] = base + 0;
 
     m.vertices.insert(m.vertices.end(), finalVerts, finalVerts + 28);
-    m.indices.insert(m.indices.end()  , finalInds , finalInds + 6);
+    m.indices.insert(m.indices.end(), finalInds, finalInds + 6);
     // Two triangles (0,1,2) (2,3,0)
     base += 4;
 }
 
-void greedyMerge(uint8_t* mask, Mesh& m, vec2& xyChunk, int planeDirVal, int W, int H, int faceDir, ivec3 normals, int& base) {
+void greedyMerge(uint8_t* mask, Mesh& m, ivec2& xyChunk, int planeDirVal, int W, int H, int faceDir, ivec3 normals, int& base) {
     int dir = faceDir / 2;
     int minX = xyChunk.x * CHUNK_SIZE, minZ = xyChunk.y * CHUNK_SIZE;
     for (int l = 0; l < H; l++) {
@@ -898,7 +901,7 @@ void greedyMerge(uint8_t* mask, Mesh& m, vec2& xyChunk, int planeDirVal, int W, 
                 for (int d = 0; d < w; d++) {
                     if (mask[row + d] != type) { stop = 1; break; }
                 }
-				if (stop) break;
+                if (stop) break;
                 h++;
             }
 
@@ -1022,7 +1025,7 @@ void greedyMergeY(uint8_t* mask, Mesh& m, vec2& xyChunk, int planeDirVal, int W,
 }
 
 void meshChunk(chNeighPack* chNeigh) {
-	vec2 xyChunk = unpack(chNeigh->coords);
+    ivec2 xyChunk = unpack(chNeigh->coords);
     chNeighResult* chNeighRes = new chNeighResult();
     unique_ptr<Mesh>& mesh = chNeighRes->mesh;
     chNeighRes->coords = toCoords(xyChunk);
@@ -1037,29 +1040,94 @@ void meshChunk(chNeighPack* chNeigh) {
     uint8_t maskZ[CHUNK_SIZE * CHUNK_HEIGHT];
 
     int minX = xyChunk.x * CHUNK_SIZE, minY = 0, minZ = xyChunk.y * CHUNK_SIZE;
-    
+
     for (int x = minX; x < minX + CHUNK_SIZE; ++x) {
         buildMaskX(chNeigh->mainChunk->block_data.data(), chNeigh->neighbour_data[0].data(), (x + 0) - minX, 0, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskX, -1);
         greedyMerge(maskX, m, xyChunk, x + 0, CHUNK_SIZE, CHUNK_HEIGHT - 1, 0, unitNormalX0, base);
 
-        buildMaskX(chNeigh->mainChunk->block_data.data(), chNeigh->neighbour_data[1].data(), (x + 1) - minX, 1, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskX,  1);
+        buildMaskX(chNeigh->mainChunk->block_data.data(), chNeigh->neighbour_data[1].data(), (x + 1) - minX, 1, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskX, 1);
         greedyMerge(maskX, m, xyChunk, x + 1, CHUNK_SIZE, CHUNK_HEIGHT - 1, 1, unitNormalX1, base);
     }
     for (int z = minZ; z < minZ + CHUNK_SIZE; ++z) {
         buildMaskZ(chNeigh->mainChunk->block_data.data(), chNeigh->neighbour_data[2].data(), (z + 0) - minZ, 2, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskZ, -1);
         greedyMerge(maskZ, m, xyChunk, z + 0, CHUNK_SIZE, CHUNK_HEIGHT - 1, 2, unitNormalZ0, base);
-        
-        buildMaskZ(chNeigh->mainChunk->block_data.data(), chNeigh->neighbour_data[3].data(), (z + 1) - minZ, 3, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskZ,  1);
+
+        buildMaskZ(chNeigh->mainChunk->block_data.data(), chNeigh->neighbour_data[3].data(), (z + 1) - minZ, 3, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskZ, 1);
         greedyMerge(maskZ, m, xyChunk, z + 1, CHUNK_SIZE, CHUNK_HEIGHT - 1, 3, unitNormalZ1, base);
     }
     for (int y = minY; y < minY + CHUNK_HEIGHT - 1; ++y) {
         buildMaskY(chNeigh->mainChunk->block_data.data(), y + 0, 4, CHUNK_SIZE, CHUNK_SIZE, maskY, -1);
         greedyMerge(maskY, m, xyChunk, y + 0, CHUNK_SIZE, CHUNK_SIZE, 4, unitNormalY0, base);
 
-        buildMaskY(chNeigh->mainChunk->block_data.data(), y + 1, 5, CHUNK_SIZE, CHUNK_SIZE, maskY,  1);
+        buildMaskY(chNeigh->mainChunk->block_data.data(), y + 1, 5, CHUNK_SIZE, CHUNK_SIZE, maskY, 1);
         greedyMerge(maskY, m, xyChunk, y + 1, CHUNK_SIZE, CHUNK_SIZE, 5, unitNormalY1, base);
     }
- 
+
+    std::lock_guard<std::mutex> lock(chunkMeshQueueMutex);
+    chunkMeshResult.push(chNeighRes);
+    delete chNeigh;
+}
+
+void meshChunk(chNeighPackPtr* chNeigh) {
+    ivec2 xyChunk = unpack(chNeigh->coords);
+    chNeighResult* chNeighRes = new chNeighResult();
+    unique_ptr<Mesh>& mesh = chNeighRes->mesh;
+    chNeighRes->coords = toCoords(xyChunk);
+    Chunk* neighChunks[4];
+
+    bool ChunkInUse = false;
+    for (int i = 0; i < 4; i++) {
+        ivec2 chcrds = xyChunk + ivec2(dirs[i], dirs[i + 4]);
+        uint idxcrds = pack(chcrds);
+        if (world.chunkData.count(idxcrds)) {
+            neighChunks[i] = (world.chunkData.at(idxcrds)).get();
+            if (!neighChunks[i]->inUse.compare_exchange_strong(ChunkInUse, true)) {
+                chNeigh->mainChunk->meshRequestUndo();
+                delete chNeighRes;
+                delete chNeigh;
+
+                return;
+            }
+        }
+    }
+
+    Mesh& m = *mesh;
+    m.vertices.reserve(5000 * 8.5);
+    m.indices .reserve(5000 * 2.5);
+    int base = 0;
+    
+    uint8_t maskY[CHUNK_SIZE * CHUNK_SIZE];
+    uint8_t maskX[CHUNK_SIZE * CHUNK_HEIGHT];
+    uint8_t maskZ[CHUNK_SIZE * CHUNK_HEIGHT];
+
+    int minX = xyChunk.x * CHUNK_SIZE, minY = 0, minZ = xyChunk.y * CHUNK_SIZE;
+
+    for (int x = minX; x < minX + CHUNK_SIZE; ++x) {
+        buildMaskX(chNeigh->mainChunk->block_data.data(), neighChunks[0]->block_data.data(), (x + 0) - minX, 0, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskX, -1);
+        greedyMerge(maskX, m, xyChunk, x + 0, CHUNK_SIZE, CHUNK_HEIGHT - 1, 0, unitNormalX0, base);
+
+        buildMaskX(chNeigh->mainChunk->block_data.data(), neighChunks[1]->block_data.data(), (x + 1) - minX, 1, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskX, 1);
+        greedyMerge(maskX, m, xyChunk, x + 1, CHUNK_SIZE, CHUNK_HEIGHT - 1, 1, unitNormalX1, base);
+    }
+    for (int z = minZ; z < minZ + CHUNK_SIZE; ++z) {
+        buildMaskZ(chNeigh->mainChunk->block_data.data(), neighChunks[2]->block_data.data(), (z + 0) - minZ, 2, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskZ, -1);
+        greedyMerge(maskZ, m, xyChunk, z + 0, CHUNK_SIZE, CHUNK_HEIGHT - 1, 2, unitNormalZ0, base);
+
+        buildMaskZ(chNeigh->mainChunk->block_data.data(), neighChunks[3]->block_data.data(), (z + 1) - minZ, 3, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskZ, 1);
+        greedyMerge(maskZ, m, xyChunk, z + 1, CHUNK_SIZE, CHUNK_HEIGHT - 1, 3, unitNormalZ1, base);
+    }
+    for (int y = minY; y < minY + CHUNK_HEIGHT - 1; ++y) {
+        buildMaskY(chNeigh->mainChunk->block_data.data(), y + 0, 4, CHUNK_SIZE, CHUNK_SIZE, maskY, -1);
+        greedyMerge(maskY, m, xyChunk, y + 0, CHUNK_SIZE, CHUNK_SIZE, 4, unitNormalY0, base);
+
+        buildMaskY(chNeigh->mainChunk->block_data.data(), y + 1, 5, CHUNK_SIZE, CHUNK_SIZE, maskY, 1);
+        greedyMerge(maskY, m, xyChunk, y + 1, CHUNK_SIZE, CHUNK_SIZE, 5, unitNormalY1, base);
+    }
+
+    for (int i = 0; i < 4; i++) {
+        neighChunks[i]->inUse.store(false);
+    }
+
     std::lock_guard<std::mutex> lock(chunkMeshQueueMutex);
     chunkMeshResult.push(chNeighRes);
     delete chNeigh;
@@ -1110,7 +1178,7 @@ void chunkWorker() {
         newChunk->coord = (coord);
 
         generateBlocks(unpack(coord), newChunk);
-        
+
         {
             lock_guard<mutex> lock(addChunkMutex);
             chunkResultQueue.push({ newChunk, coord });
@@ -1176,8 +1244,8 @@ void meshScheduleWorker() {
                         }
                     }
                     {
-                        std::lock_guard<std::mutex> lock(chunkUpdateRequestMutex);
-                        chunkCleanupQueue.push(chunkochunks);
+                        //std::lock_guard<std::mutex> lock(chunkUpdateRequestMutex);
+                        //chunkCleanupQueue.push(chunkochunks);
                     }
                     chunkUpdateCV.notify_one();
                     chunk->setAsClean();
@@ -1189,7 +1257,7 @@ void meshScheduleWorker() {
 
 void updateChunkJob() {
     while (!stopChunkUpdaters) {
-		chNeighPack* chNeigh;
+        chNeighPackPtr* chNeigh;
         {
             unique_lock<mutex> lock(chunkUpdateRequestMutex);
             chunkUpdateCV.wait(lock, [] { return !chunkCleanupQueue.empty() || stopChunkUpdaters; });

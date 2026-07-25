@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
-using abyte = uint8_t;
+using a_byte = uint8_t;
+using a_word = uint32_t;
 inline int chunkSize = 16;
 
 inline ivec2 unpack(uint32_t packedxz) {
@@ -16,8 +17,8 @@ inline uint32_t pack(ivec2 xz) {
 class CloudMesh {
 public:
     unique_ptr<Mesh> mesh;
-    vector<abyte> cloud_data;
-    abyte& operator()(int x, int z) {
+    vector<a_byte> cloud_data;
+    a_byte& operator()(int x, int z) {
         if (mesh) return cloud_data[x * chunkSize + z];
     }
     CloudMesh() {

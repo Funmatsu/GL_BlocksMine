@@ -97,6 +97,7 @@ class World {
     //vector<Chunk> chunks;
     //unordered_map<glm::ivec2, Chunk, ivec2_hash, ivec2_eq> chunkData;
     unordered_map<uint32_t, unique_ptr<Chunk>> chunkData;
+    atomic_bool mapInUse;
     //vector<unique_ptr<Chunk>> chunkData;
     //ChunkData chunkData;
     World() {
@@ -372,12 +373,12 @@ LightMesh World::createProjectileMesh(vec3 blockPos, float scale, Item blockType
         finalvertices.push_back(globalUVs[i + 1]);
         finalvertices.push_back(globalUVs[i + 2]);
 
-        uint32_t norm_color = ((abyte(normals[i + 0] < 0 ? 1 : 0) & 0x1) << 5) | ((abyte(absl(normals[i + 0])) & 0x1) << 4)
-            | ((abyte(normals[i + 1] < 0 ? 1 : 0) & 0x1) << 3) | ((abyte(absl(normals[i + 1])) & 0x1) << 2)
-            | ((abyte(normals[i + 2] < 0 ? 1 : 0) & 0x1) << 1) | ((abyte(absl(normals[i + 2])) & 0x1) << 0)
-            | ((abyte(tintr * 100) & 0x7F) << 20)
-            | ((abyte(tintg * 100) & 0x7F) << 13)
-            | ((abyte(tintb * 100) & 0x7F) << 6);
+        uint32_t norm_color = ((a_byte(normals[i + 0] < 0 ? 1 : 0) & 0x1) << 5) | ((a_byte(absl(normals[i + 0])) & 0x1) << 4)
+            | ((a_byte(normals[i + 1] < 0 ? 1 : 0) & 0x1) << 3) | ((a_byte(absl(normals[i + 1])) & 0x1) << 2)
+            | ((a_byte(normals[i + 2] < 0 ? 1 : 0) & 0x1) << 1) | ((a_byte(absl(normals[i + 2])) & 0x1) << 0)
+            | ((a_byte(tintr * 100) & 0x7F) << 20)
+            | ((a_byte(tintg * 100) & 0x7F) << 13)
+            | ((a_byte(tintb * 100) & 0x7F) << 6);
         float normcolor;
         memcpy(&normcolor, &norm_color, sizeof(float));
 
@@ -703,12 +704,12 @@ LightMesh World::createMeshCube(vec3 blockPos, float scale, Item blockType) {
         finalvertices.push_back(globalUVs[i + 1]);
         finalvertices.push_back(globalUVs[i + 2]);
 
-        uint32_t norm_color = ((abyte(normals[i + 0] < 0 ? 1 : 0) & 0x1) << 5) | ((abyte(absl(normals[i + 0])) & 0x1) << 4)
-            | ((abyte(normals[i + 1] < 0 ? 1 : 0) & 0x1) << 3) | ((abyte(absl(normals[i + 1])) & 0x1) << 2)
-            | ((abyte(normals[i + 2] < 0 ? 1 : 0) & 0x1) << 1) | ((abyte(absl(normals[i + 2])) & 0x1) << 0)
-            | ((abyte(100) & 0x7F) << 20)
-            | ((abyte(100) & 0x7F) << 13)
-            | ((abyte(100) & 0x7F) << 6);
+        uint32_t norm_color = ((a_byte(normals[i + 0] < 0 ? 1 : 0) & 0x1) << 5) | ((a_byte(absl(normals[i + 0])) & 0x1) << 4)
+            | ((a_byte(normals[i + 1] < 0 ? 1 : 0) & 0x1) << 3) | ((a_byte(absl(normals[i + 1])) & 0x1) << 2)
+            | ((a_byte(normals[i + 2] < 0 ? 1 : 0) & 0x1) << 1) | ((a_byte(absl(normals[i + 2])) & 0x1) << 0)
+            | ((a_byte(100) & 0x7F) << 20)
+            | ((a_byte(100) & 0x7F) << 13)
+            | ((a_byte(100) & 0x7F) << 6);
         float normcolor;
         memcpy(&normcolor, &norm_color, sizeof(float));
 
@@ -747,7 +748,7 @@ void emitFace(Mesh& m, int face, Item blockType, float x, float y, float z);
 
 //void meshChunk(vec2 xyChunk, unique_ptr<Chunk>& ch);// , int subChunky);
 
-void meshChunk(chNeighPack*);
+void meshChunk(chNeighPackPtr*);
 
 //
 //void meshSubChunks(vec2 xyChunk, Chunk* ch);// , Mesh& m, int subChunky);
@@ -761,7 +762,7 @@ void meshChunk(vec2 xyChunk, Chunk* cd, Mesh& out, vec3 direction, ivec3 positio
 
 void generateChunkAt(vec2 xyChunk, Chunk* repChunk);
 
-void updateChunk(chNeighPack* chNeigh, vec3 direction, ivec3 position) {
+void updateChunk(chNeighPackPtr* chNeigh, vec3 direction, ivec3 position) {
     //unique_ptr<Mesh> m = make_unique<Mesh>();
     // Rebuild mesh from current blockData
  //   static int vi = 0;
