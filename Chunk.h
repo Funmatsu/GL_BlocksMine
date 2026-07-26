@@ -166,6 +166,7 @@ public:
     Chunk(){
         mesh = make_unique<LightMesh>();
         coord = uint32_t(-1);
+		inUse.store(false);
     }
 
     BlockData& operator[](ivec3 pos) {

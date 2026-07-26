@@ -226,8 +226,9 @@ public:
                 auto& chunk = world.chunkData.at(chNeighRes->coords);
                 chunk->mesh->createMesh(chNeighRes->mesh->vertices, chNeighRes->mesh->indices);
                 chunk->setAsClean();
+				chunk->meshRequestUndo();
                 delete chNeighRes;
-                //if(!(count++ % 7)) break;
+                if(!(count++ % 8)) break;
             }
 
             while (!chunkResultQueue.empty()) {
@@ -870,19 +871,22 @@ public:
         vec2 _2dPlPosHi = vec2(playerPos.x, playerPos.z) + float(renderDistance),
             _2dPlPosLo = vec2(playerPos.x, playerPos.z) - float(renderDistance);
 
-        auto it = world.chunkData.begin(); bool inUse = false;
+        auto it = world.chunkData.begin(); 
         int dirs[] = { -1, 1, 0, 0,   0, 0, -1, 1 };
 
-        while (it != world.chunkData.end()) {
+        while (it != world.chunkData.end()) {            
             auto& chunk = it->second;
             ivec2 coords = chunk->coords();
 
             if (((coords.x <= _2dPlPosLo.x || coords.x >= _2dPlPosHi.x) ||
                 (coords.y <= _2dPlPosLo.y || coords.y >= _2dPlPosHi.y)))
             {
-                if (!chunk->inUse.compare_exchange_strong(inUse, true) && !chunk->safe_unload) {
-                    chunkCoords.erase((chunk->coord));
-                    it = world.chunkData.erase(it);
+                if (!chunk->safe_unload) {
+                    bool inUse = false;
+                    if (!chunk->inUse.compare_exchange_strong(inUse, true)) {
+                        chunkCoords.erase((chunk->coord));
+                        it = world.chunkData.erase(it);
+                    }
                 }
                 else it++;
                 continue;
@@ -890,35 +894,22 @@ public:
 
             if (chunk->getDirty()) {
                 if ((chunk->neighboursPresent & 0x1E) != 0x1E) {
-                    
                     for (int i = 0; i < 4; i++) {
                         ivec2 chcrds = coords + ivec2(dirs[i], dirs[i + 4]);
-                        if (world.chunkData.count(pack(chcrds)) > 0) {
-                            //cout << "Chunk Here " << (int)chunk->neighboursPresent << endl;
+                        if (world.chunkData.count(pack(chcrds)) > 0) 
                             chunk->neighboursPresent |= (1 << (i + 1));
-                        }
                     }
                 }
-                if (chunk->neighboursPresent == 0x1E && !chunk->meshRequestIsDone()) { // 1 1110
-                    
+                if (chunk->neighboursPresent == 0x1E && !chunk->meshRequestIsDone()) { // 1 1110 = 0x1E
                     chNeighPackPtr* chunkochunks = new chNeighPackPtr();
                     chunkochunks->coords = chunk->coord;
-                    //memcpy(chunkochunks->block_data.data(), chunk->block_data.data(), CHUNK_VOLUME);
                     chunkochunks->mainChunk = chunk.get();
-                    //for (int i = 1; i < 3; i++) {    
-                    //    ivec2 chcrds = coords + ivec2(dirs[i], dirs[i + 4]);
-                    //    uint idxcrds = pack(chcrds);
-                    //    if (world.chunkData.count(idxcrds)) {
-                    //        auto& ch = world.chunkData.at(idxcrds);
-                    //        memcpy(chunkochunks->neighbour_data[i].data(), ch->block_data.data(), CHUNK_VOLUME);
-                    //    }
-                    //}
                     {
                         std::lock_guard<std::mutex> lock(chunkUpdateRequestMutex);
                         chunkCleanupQueue.push(chunkochunks);
                     }
                     chunkUpdateCV.notify_one();
-                    cout << "Chunk Here and there" << endl;
+                    //cout << "Chunk Here and there" << endl;
                     chunk->meshRequestRedo();
                 }
             }

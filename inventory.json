@@ -148,17 +148,17 @@
                 "item": "cloud"
             },
             {
-                "count": 59,
+                "count": 60,
                 "id": 6,
                 "item": "oak_wood"
             },
             {
-                "count": 7,
+                "count": 10,
                 "id": 12,
                 "item": "grass"
             },
             {
-                "count": 51,
+                "count": 58,
                 "id": 2,
                 "item": "grass_block"
             },
@@ -168,7 +168,7 @@
                 "item": "wooden_axe"
             },
             {
-                "count": 26,
+                "count": 37,
                 "id": 5,
                 "item": "dirt_block"
             },

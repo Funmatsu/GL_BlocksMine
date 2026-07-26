@@ -1074,14 +1074,16 @@ void meshChunk(chNeighPackPtr* chNeigh) {
     unique_ptr<Mesh>& mesh = chNeighRes->mesh;
     chNeighRes->coords = toCoords(xyChunk);
     Chunk* neighChunks[4];
-
-    bool ChunkInUse = false;
+        
     for (int i = 0; i < 4; i++) {
         ivec2 chcrds = xyChunk + ivec2(dirs[i], dirs[i + 4]);
         uint idxcrds = pack(chcrds);
-        if (world.chunkData.count(idxcrds)) {
-            neighChunks[i] = (world.chunkData.at(idxcrds)).get();
+        auto it = world.chunkData.find(idxcrds);
+        if (it != world.chunkData.end()) {
+            bool ChunkInUse = false;
+            neighChunks[i] = it->second.get();
             if (!neighChunks[i]->inUse.compare_exchange_strong(ChunkInUse, true)) {
+				//cout << "Neighbour Chunk at " << to_string(chcrds) << " is in use" << endl;
                 chNeigh->mainChunk->meshRequestUndo();
                 delete chNeighRes;
                 delete chNeigh;
@@ -1124,12 +1126,13 @@ void meshChunk(chNeighPackPtr* chNeigh) {
         greedyMerge(maskY, m, xyChunk, y + 1, CHUNK_SIZE, CHUNK_SIZE, 5, unitNormalY1, base);
     }
 
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 4; i++) 
         neighChunks[i]->inUse.store(false);
-    }
 
-    std::lock_guard<std::mutex> lock(chunkMeshQueueMutex);
-    chunkMeshResult.push(chNeighRes);
+    {
+        std::lock_guard<std::mutex> lock(chunkMeshQueueMutex);
+        chunkMeshResult.push(chNeighRes);
+    }
     delete chNeigh;
 }
 
