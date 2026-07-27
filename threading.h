@@ -1074,22 +1074,24 @@ void meshChunk(chNeighPackPtr* chNeigh) {
     unique_ptr<Mesh>& mesh = chNeighRes->mesh;
     chNeighRes->coords = toCoords(xyChunk);
     Chunk* neighChunks[4];
-        
+	
     for (int i = 0; i < 4; i++) {
         ivec2 chcrds = xyChunk + ivec2(dirs[i], dirs[i + 4]);
         uint idxcrds = pack(chcrds);
         auto it = world.chunkData.find(idxcrds);
         if (it != world.chunkData.end()) {
-            bool ChunkInUse = false;
-            neighChunks[i] = it->second.get();
-            if (!neighChunks[i]->inUse.compare_exchange_strong(ChunkInUse, true)) {
-				//cout << "Neighbour Chunk at " << to_string(chcrds) << " is in use" << endl;
-                chNeigh->mainChunk->meshRequestUndo();
-                delete chNeighRes;
-                delete chNeigh;
+            //bool ChunkInUse = false;            
+            //if (it->second->inUse.compare_exchange_strong(ChunkInUse, true)) { // if true, then the switch happened. I claim the chunk pointer
+                neighChunks[i] = it->second.get();
+                //cout << hex << (int)it->second->neighboursPresent << endl;
+            //}
+            //else {
+            //    chNeigh->mainChunk->meshRequestUndo();
+            //    delete chNeighRes;
+            //    delete chNeigh;
 
-                return;
-            }
+            //    return;
+            //}
         }
     }
 
@@ -1125,14 +1127,14 @@ void meshChunk(chNeighPackPtr* chNeigh) {
         buildMaskY(chNeigh->mainChunk->block_data.data(), y + 1, 5, CHUNK_SIZE, CHUNK_SIZE, maskY, 1);
         greedyMerge(maskY, m, xyChunk, y + 1, CHUNK_SIZE, CHUNK_SIZE, 5, unitNormalY1, base);
     }
-
-    for (int i = 0; i < 4; i++) 
-        neighChunks[i]->inUse.store(false);
-
+        
     {
         std::lock_guard<std::mutex> lock(chunkMeshQueueMutex);
         chunkMeshResult.push(chNeighRes);
     }
+
+    for (int i = 0; i < 4; i++)
+        neighChunks[i]->inUse.store(false);
     delete chNeigh;
 }
 

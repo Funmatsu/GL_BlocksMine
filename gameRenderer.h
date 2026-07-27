@@ -201,14 +201,13 @@ public:
                 ivec2 camChunkPos = ivec2(floorDiv(firstCamera.getPosition().x, CHUNK_SIZE), floorDiv(firstCamera.getPosition().z, CHUNK_SIZE));
                 ivec2 chunkPos = camChunkPos + chunkOff;
                 if (chunkCoords.count(pack(chunkPos)) == 0) {
-                    chunkCoords.emplace(pack(chunkPos));
+                    chunkCoords.insert(pack(chunkPos));
                     {
                         std::lock_guard<std::mutex> lock(queueMutex);
                         chunkRequestQueue.push(pack(chunkPos));
-                        queueCV.notify_one();
                     }
-                    count++;
-                    if (!(count % 8)) { break; }
+                    queueCV.notify_one();
+                    if (!(count++ % 16)) { break; }
                 }
             }
 
@@ -219,16 +218,18 @@ public:
                     chNeighRes = chunkMeshResult.front();
                     chunkMeshResult.pop();
                 }
-                if (!world.chunkData.count(chNeighRes->coords)) {
+                auto it = world.chunkData.find(chNeighRes->coords);
+                if (it == world.chunkData.end()) {
                     delete chNeighRes;
                     continue;
                 }
-                auto& chunk = world.chunkData.at(chNeighRes->coords);
+                auto& chunk = it->second;
                 chunk->mesh->createMesh(chNeighRes->mesh->vertices, chNeighRes->mesh->indices);
+                delete chNeighRes;
                 chunk->setAsClean();
 				chunk->meshRequestUndo();
-                delete chNeighRes;
-                if(!(count++ % 8)) break;
+                
+                //if(!(count++ % 8)) break;
             }
 
             while (!chunkResultQueue.empty()) {
@@ -239,7 +240,7 @@ public:
                     chunkResultQueue.pop();
                 }
                 world.chunkData.try_emplace(ch.coords, move(ch.chPtr));
-                //if (!(count++ % 7)) break;
+                if (!(count++ % 16)) break;
             }
 
             VP = projection * firstCamera.calcViewMatrix();
@@ -878,15 +879,13 @@ public:
             auto& chunk = it->second;
             ivec2 coords = chunk->coords();
 
+            bool inUse = false;
             if (((coords.x <= _2dPlPosLo.x || coords.x >= _2dPlPosHi.x) ||
-                (coords.y <= _2dPlPosLo.y || coords.y >= _2dPlPosHi.y)))
+                 (coords.y <= _2dPlPosLo.y || coords.y >= _2dPlPosHi.y)))
             {
-                if (!chunk->safe_unload) {
-                    bool inUse = false;
-                    if (!chunk->inUse.compare_exchange_strong(inUse, true)) {
-                        chunkCoords.erase((chunk->coord));
-                        it = world.chunkData.erase(it);
-                    }
+                if (/*chunk->inUse.compare_exchange_strong(inUse, true) && */!chunk->safe_unload) {
+                    chunkCoords.erase((chunk->coord));
+                    it = world.chunkData.erase(it);
                 }
                 else it++;
                 continue;
@@ -997,7 +996,7 @@ public:
                         //chunkCleanupQueue.push(chunkochunks);
                     }
                     chunkUpdateCV.notify_one();
-                    chunk->setAsClean();
+                    //chunk->setAsClean();
                 }
             }
         }
