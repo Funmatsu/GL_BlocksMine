@@ -1080,18 +1080,7 @@ void meshChunk(chNeighPackPtr* chNeigh) {
         uint idxcrds = pack(chcrds);
         auto it = world.chunkData.find(idxcrds);
         if (it != world.chunkData.end()) {
-            //bool ChunkInUse = false;            
-            //if (it->second->inUse.compare_exchange_strong(ChunkInUse, true)) { // if true, then the switch happened. I claim the chunk pointer
-                neighChunks[i] = it->second.get();
-                //cout << hex << (int)it->second->neighboursPresent << endl;
-            //}
-            //else {
-            //    chNeigh->mainChunk->meshRequestUndo();
-            //    delete chNeighRes;
-            //    delete chNeigh;
-
-            //    return;
-            //}
+            neighChunks[i] = it->second.get();
         }
     }
 

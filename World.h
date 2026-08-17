@@ -97,7 +97,7 @@ class World {
     //vector<Chunk> chunks;
     //unordered_map<glm::ivec2, Chunk, ivec2_hash, ivec2_eq> chunkData;
     unordered_map<uint32_t, unique_ptr<Chunk>> chunkData;
-    atomic_bool mapInUse;
+    //atomic_bool mapInUse;
     //vector<unique_ptr<Chunk>> chunkData;
     //ChunkData chunkData;
     World() {
@@ -112,9 +112,7 @@ class World {
 
     void updateSubChunk(const ivec2& chunkCoord, int subCh, vec3 direction, ivec3 position);
 
-
     void updateWholeChunk(const ivec2& chunkCoord, vec3 direction, ivec3 position);
-
 
     void updateChunk(Chunk& chunk);
 

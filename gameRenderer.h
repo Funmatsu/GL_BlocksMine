@@ -146,7 +146,7 @@ public:
         sky.buildSky();
 
 
-        for (int i = 0; i < 2; ++i) {
+        for (int i = 0; i < 1; ++i) {
             workers.push_back(thread(chunkWorker)); // worker thread is somewhere in threading.h
             workers.push_back(thread(updateChunkJob));
         }
@@ -207,7 +207,7 @@ public:
                         chunkRequestQueue.push(pack(chunkPos));
                     }
                     queueCV.notify_one();
-                    if (!(count++ % 16)) { break; }
+                    if (!(count++ % 8)) { break; }
                 }
             }
 
@@ -226,9 +226,7 @@ public:
                 auto& chunk = it->second;
                 chunk->mesh->createMesh(chNeighRes->mesh->vertices, chNeighRes->mesh->indices);
                 delete chNeighRes;
-                chunk->setAsClean();
-				chunk->meshRequestUndo();
-                
+                                
                 //if(!(count++ % 8)) break;
             }
 
@@ -240,7 +238,7 @@ public:
                     chunkResultQueue.pop();
                 }
                 world.chunkData.try_emplace(ch.coords, move(ch.chPtr));
-                if (!(count++ % 16)) break;
+                if (!(count++ % 8)) break;
             }
 
             VP = projection * firstCamera.calcViewMatrix();
@@ -562,19 +560,19 @@ public:
                 it++;
             }
             glUniformMatrix4fv(shaders[0]->getModelLocation(), 1, GL_FALSE, value_ptr(model));
-            /*            shaders[5]->useShader();
-                        view = activeCamera.calcViewMatrix();
+            shaders[5]->useShader();
+            view = activeCamera.calcViewMatrix();
 
-                        //For block highlighting
-                        ivec3 lookPosition = lookingAtBlock();
-                        if (lookPosition.y >= 0) {
-                            mat4 modelLooking = translate(mat4(1.0f), vec3(lookPosition));
-                            glUniformMatrix4fv(shaders[5]->getModelLocation(), 1, GL_FALSE, value_ptr(modelLooking));
-                            lookingMesh.renderMesh();
-                            glUniformMatrix4fv(shaders[5]->getModelLocation(), 1, GL_FALSE, value_ptr(model));
-                        }*/
+            //For block highlighting
+            ivec3 lookPosition = lookingAtBlock();
+            if (lookPosition.y >= 0) {
+                mat4 modelLooking = translate(mat4(1.0f), vec3(lookPosition));
+                glUniformMatrix4fv(shaders[5]->getModelLocation(), 1, GL_FALSE, value_ptr(modelLooking));
+                lookingMesh.renderMesh();
+                glUniformMatrix4fv(shaders[5]->getModelLocation(), 1, GL_FALSE, value_ptr(model));
+            }
 
-                        //glDisable(GL_DEPTH_TEST); // so crosshair draws on top
+            //glDisable(GL_DEPTH_TEST); // so crosshair draws on top although I need the crosshair to give inverted colors
             shaders[2]->useShader();
             glBlendFunc(GL_ONE_MINUS_DST_COLOR, GL_ONE);
 
@@ -583,7 +581,7 @@ public:
                 crosshair.drawCrosshair();
             }
 
-            shaders[2]->useShader();
+            shaders[2]->useShader(); // the day that I coded for this I was not quite sure if it was good enough. Why do I like to write "The day"?
             Textures[SLOT_TEX]->useTexture();
             inventory.defineHotbarSlotSelectorGeometry();
             inventory.drawHotbarSlotSelector();
@@ -599,7 +597,7 @@ public:
             if (mainWindow.getKeys()[GLFW_KEY_C]) {
                 if (craftedItem.item != AIR) {
                     for (int i = (sizeof(inventory.mainInventorySlots) / sizeof(inventory.mainInventorySlots[3])) - 1; i >= 0; i--) {
-                        for (int j = 0; j < (sizeof(inventory.mainInventorySlots[3]) / sizeof(InventorySlot)); j++) {
+                        for (int j = 0; j < (sizeof(inventory.mainInventorySlots[3]) / sizeof(InventorySlot)); j++) {           
                             if (inventory.mainInventorySlots[i][j].item == AIR
                                 || inventory.mainInventorySlots[i][j].item == craftedItem.item
                                 ) {
@@ -883,7 +881,7 @@ public:
             if (((coords.x <= _2dPlPosLo.x || coords.x >= _2dPlPosHi.x) ||
                  (coords.y <= _2dPlPosLo.y || coords.y >= _2dPlPosHi.y)))
             {
-                if (/*chunk->inUse.compare_exchange_strong(inUse, true) && */!chunk->safe_unload) {
+                if (!chunk->safe_unload) {
                     chunkCoords.erase((chunk->coord));
                     it = world.chunkData.erase(it);
                 }
@@ -899,7 +897,7 @@ public:
                             chunk->neighboursPresent |= (1 << (i + 1));
                     }
                 }
-                if (chunk->neighboursPresent == 0x1E && !chunk->meshRequestIsDone()) { // 1 1110 = 0x1E
+                if (chunk->neighboursPresent == 0x1E) { // 1 1110 = 0x1E
                     chNeighPackPtr* chunkochunks = new chNeighPackPtr();
                     chunkochunks->coords = chunk->coord;
                     chunkochunks->mainChunk = chunk.get();
@@ -908,8 +906,7 @@ public:
                         chunkCleanupQueue.push(chunkochunks);
                     }
                     chunkUpdateCV.notify_one();
-                    //cout << "Chunk Here and there" << endl;
-                    chunk->meshRequestRedo();
+                    chunk->setAsClean();
                 }
             }
 
