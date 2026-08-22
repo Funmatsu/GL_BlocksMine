@@ -146,7 +146,7 @@ public:
         sky.buildSky();
 
 
-        for (int i = 0; i < 1; ++i) {
+        for (int i = 0; i < 2; ++i) {
             workers.push_back(thread(chunkWorker)); // worker thread is somewhere in threading.h
             workers.push_back(thread(updateChunkJob));
         }
@@ -227,7 +227,7 @@ public:
                 chunk->mesh->createMesh(chNeighRes->mesh->vertices, chNeighRes->mesh->indices);
                 delete chNeighRes;
                                 
-                //if(!(count++ % 8)) break;
+                if(!(count++ % 8)) break; // To mesh as fast as ossible, donot cap n_o chunks meshed per frame.
             }
 
             while (!chunkResultQueue.empty()) {
@@ -876,12 +876,13 @@ public:
         while (it != world.chunkData.end()) {            
             auto& chunk = it->second;
             ivec2 coords = chunk->coords();
+            bool chunkReady = false;
 
             bool inUse = false;
             if (((coords.x <= _2dPlPosLo.x || coords.x >= _2dPlPosHi.x) ||
                  (coords.y <= _2dPlPosLo.y || coords.y >= _2dPlPosHi.y)))
             {
-                if (!chunk->safe_unload) {
+                if (!chunk->safe_unload && chunk->inUse.compare_exchange_strong(chunkReady, true)) {
                     chunkCoords.erase((chunk->coord));
                     it = world.chunkData.erase(it);
                 }

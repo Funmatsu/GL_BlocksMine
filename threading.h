@@ -1076,11 +1076,23 @@ void meshChunk(chNeighPackPtr* chNeigh) {
     Chunk* neighChunks[4];
 	
     for (int i = 0; i < 4; i++) {
+        bool chunkReady = false;
         ivec2 chcrds = xyChunk + ivec2(dirs[i], dirs[i + 4]);
         uint idxcrds = pack(chcrds);
         auto it = world.chunkData.find(idxcrds);
-        if (it != world.chunkData.end()) {
+        if (it != world.chunkData.end() && it->second->inUse.compare_exchange_strong(chunkReady, true)) {
             neighChunks[i] = it->second.get();
+        }
+        else {
+            chNeigh->mainChunk->setAsDirty();
+            {
+                std::lock_guard<std::mutex> lock(chunkMeshQueueMutex);
+                chunkMeshResult.push(chNeighRes);
+            }
+            for (int j = i - 1; j >= 0; j--)
+                neighChunks[j]->inUse.store(false);
+            delete chNeigh;
+            return;
         }
     }
 
@@ -1117,10 +1129,16 @@ void meshChunk(chNeighPackPtr* chNeigh) {
         greedyMerge(maskY, m, xyChunk, y + 1, CHUNK_SIZE, CHUNK_SIZE, 5, unitNormalY1, base);
     }
         
+    sendmesh:
     {
         std::lock_guard<std::mutex> lock(chunkMeshQueueMutex);
         chunkMeshResult.push(chNeighRes);
     }
+
+    //neighChunks[0]->inUse.store(false);
+    //neighChunks[1]->inUse.store(false);
+    //neighChunks[2]->inUse.store(false);
+    //neighChunks[3]->inUse.store(false);
 
     for (int i = 0; i < 4; i++)
         neighChunks[i]->inUse.store(false);

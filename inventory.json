@@ -96,7 +96,7 @@
         ],
         [
             {
-                "count": 10,
+                "count": 11,
                 "id": 3,
                 "item": "iron_ore"
             },
@@ -158,7 +158,7 @@
                 "item": "grass"
             },
             {
-                "count": 58,
+                "count": 63,
                 "id": 2,
                 "item": "grass_block"
             },
@@ -168,12 +168,12 @@
                 "item": "wooden_axe"
             },
             {
-                "count": 37,
+                "count": 42,
                 "id": 5,
                 "item": "dirt_block"
             },
             {
-                "count": 152,
+                "count": 164,
                 "id": 4,
                 "item": "stone_block"
             },

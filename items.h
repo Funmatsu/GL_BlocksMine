@@ -359,7 +359,7 @@ public:
 					cursor.count--;	
 			}
 			
-			//cout << "called" << endl;
+			//cout << "called" << endl; Yeah stop yapping cuz it anit working
 		}
 		else {
 			if (cursor.item == AIR && item != AIR) {
@@ -378,7 +378,6 @@ public:
 					}
 				}
 				if (cursor.count <= 0) { cursor.mesh.giveMesh(); }
-				//cout << "called twice" << endl;
 			}
 			else {
 				if (cursor.item == item && item != AIR) {
@@ -396,7 +395,6 @@ public:
 						if (cursor.count)
 							cursor.count--;
 					}
-					//cout << "called similarly" << endl;q
 				}
 			}
 		}
