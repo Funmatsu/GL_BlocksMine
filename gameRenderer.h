@@ -146,7 +146,7 @@ public:
         sky.buildSky();
 
 
-        for (int i = 0; i < 2; ++i) {
+        for (int i = 0; i < 1; ++i) {
             workers.push_back(thread(chunkWorker)); // worker thread is somewhere in threading.h
             workers.push_back(thread(updateChunkJob));
         }
@@ -898,7 +898,7 @@ public:
                             chunk->neighboursPresent |= (1 << (i + 1));
                     }
                 }
-                if (chunk->neighboursPresent == 0x1E) { // 1 1110 = 0x1E
+                if (chunk->neighboursPresent == 0x1E) { // 1 1110 = 0x1E = 30
                     chNeighPackPtr* chunkochunks = new chNeighPackPtr();
                     chunkochunks->coords = chunk->coord;
                     chunkochunks->mainChunk = chunk.get();

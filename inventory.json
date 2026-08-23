@@ -54,14 +54,14 @@
                 "item": "air"
             },
             {
-                "count": 5,
-                "id": 9,
-                "item": "oak_plank"
-            },
-            {
                 "count": 0,
                 "id": 0,
                 "item": "air"
+            },
+            {
+                "count": 65,
+                "id": 6,
+                "item": "oak_wood"
             },
             {
                 "count": 0,
@@ -111,9 +111,9 @@
                 "item": "oak_leaves"
             },
             {
-                "count": 0,
-                "id": 0,
-                "item": "air"
+                "count": 5,
+                "id": 9,
+                "item": "oak_plank"
             },
             {
                 "count": 1,
@@ -143,14 +143,14 @@
         ],
         [
             {
-                "count": 2246,
+                "count": 2208,
                 "id": 7,
                 "item": "cloud"
             },
             {
-                "count": 64,
-                "id": 6,
-                "item": "oak_wood"
+                "count": 1,
+                "id": 13,
+                "item": "crafting_table"
             },
             {
                 "count": 10,

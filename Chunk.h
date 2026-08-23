@@ -224,16 +224,7 @@ struct chPack {
 
 struct chNeighPackPtr {
     uint coords;
-    //array<BlockData, CHUNK_VOLUME> block_data;
     Chunk* mainChunk;
-    //Chunk* neighbour_data[4];
-};
-
-struct chNeighPack {
-    uint coords;
-    //array<BlockData, CHUNK_VOLUME> block_data;
-    Chunk* mainChunk;
-    array<BlockData, CHUNK_VOLUME> neighbour_data[4];
 };
 
 struct chNeighResult {

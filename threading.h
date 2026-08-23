@@ -1085,19 +1085,16 @@ void meshChunk(chNeighPackPtr* chNeigh) {
         }
         else {
             chNeigh->mainChunk->setAsDirty();
-            {
-                std::lock_guard<std::mutex> lock(chunkMeshQueueMutex);
-                chunkMeshResult.push(chNeighRes);
-            }
             for (int j = i - 1; j >= 0; j--)
                 neighChunks[j]->inUse.store(false);
             delete chNeigh;
+			delete chNeighRes;
             return;
         }
     }
 
     Mesh& m = *mesh;
-    m.vertices.reserve(5000 * 8.5);
+    m.vertices.reserve(10000 * 8.5);
     m.indices .reserve(5000 * 2.5);
     int base = 0;
     
@@ -1134,11 +1131,6 @@ void meshChunk(chNeighPackPtr* chNeigh) {
         std::lock_guard<std::mutex> lock(chunkMeshQueueMutex);
         chunkMeshResult.push(chNeighRes);
     }
-
-    //neighChunks[0]->inUse.store(false);
-    //neighChunks[1]->inUse.store(false);
-    //neighChunks[2]->inUse.store(false);
-    //neighChunks[3]->inUse.store(false);
 
     for (int i = 0; i < 4; i++)
         neighChunks[i]->inUse.store(false);
