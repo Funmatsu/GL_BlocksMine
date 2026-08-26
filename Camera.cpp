@@ -12,6 +12,7 @@ Camera::Camera() {
 	front = vec3(0.0f, 0.0f, -1.0f);
 	movementSpeed = 0.1f;
 	turnSpeed = 0.1f;
+	gravity = 10.0f;
 
 	update();
 }

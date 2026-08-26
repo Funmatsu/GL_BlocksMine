@@ -28,6 +28,7 @@ public:
 		movementSpeed = other.movementSpeed;
 		turnSpeed = other.turnSpeed;
 		initial_velocity = vec3(0);
+		gravity = other.gravity;
 		update();
 	}
 	void keyControl(bool* keys, float deltaTime, float dt);
@@ -42,12 +43,14 @@ public:
 	float getPitch() { return pitch; }
 	void setPosition(vec3 pos) { position = pos; }
 	void setFront(vec3 other_front) { front = other_front; }
+	float getGravity() { return gravity; }
+	void setGravity(float g) { gravity = g; }
 	mat4 calcViewMatrix();
-	vec3 velocity = vec3(0), initial_velocity, acceleration = vec3(0,-10, 0), velocity_factor = vec3(1);
+	vec3 velocity = vec3(0), initial_velocity, acceleration = vec3(0,-gravity, 0), velocity_factor = vec3(1);
 	void calculateCamPos(float dt);
 private:
 	vec3 position, front, up, right, worldUp;
-	float yaw, pitch, movementSpeed, turnSpeed;
+	float yaw, pitch, movementSpeed, turnSpeed, gravity;
 	void update();
 };
 

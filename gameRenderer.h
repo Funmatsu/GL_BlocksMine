@@ -151,9 +151,9 @@ public:
             workers.push_back(thread(updateChunkJob));
         }
 
-        //for (int i = 0; i < 1; ++i) {
-        //    workers.push_back(thread(chunkMeshSchedWorker));
-        //}
+        for (int i = 0; i < 1; ++i) {
+            workers.push_back(thread(chunkMeshSchedWorker));
+        }
 
         mainLight = DirectionalLight(mainWindow.getBufferWidth(), mainWindow.getBufferHeight(),
             1.0f, 1.0f, 1.0f,
@@ -198,7 +198,7 @@ public:
                 (int)abs(firstCamera.getPosition().z) > (int)abs(mainLight.getShadowPos().z) + 10) {
                 mainLight.setShadowPos(firstCamera.getPosition());
             }
-            if (person_view % 3 != 2)
+            if (person_view % 4 < 2)
                 activeCamera.setFront(firstCamera.getFront());
 
             for (auto chunkOff : spiral) {
@@ -294,8 +294,11 @@ public:
             }
             else {
                 glfwSetInputMode(mainWindow.getWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-                firstCamera.mouseControl(pow(1, person_view) * mainWindow.getXChange(), mainWindow.getYChange());
-                thirdCamera_back.mouseControl(pow(-1, person_view) * mainWindow.getXChange(), mainWindow.getYChange());
+                if (person_view == 3 && !mainWindow.getKeys()[GLFW_KEY_1])
+                    spectateCamera.mouseControl(mainWindow.getXChange(), mainWindow.getYChange());
+                else
+                    firstCamera.mouseControl(mainWindow.getXChange(), mainWindow.getYChange());
+                thirdCamera_back.mouseControl(-mainWindow.getXChange(), mainWindow.getYChange());
             }
 
             if (mainWindow.getKeyPressed() >= GLFW_KEY_1 && mainWindow.getKeyPressed() <= GLFW_KEY_9) {
@@ -425,7 +428,12 @@ public:
 
                 if (mainWindow.getKeys()[GLFW_KEY_F3]) {
                     std::this_thread::sleep_for(std::chrono::milliseconds(200));
-                    person_view = (++person_view % 3);
+                    person_view = (++person_view % 4);
+					if (person_view == 3) {
+						spectateCamera.setPosition(firstCamera.getPosition());
+						spectateCamera.setFront(firstCamera.getFront());
+						spectateCamera.setGravity(0.0f);
+					}
                 }
 
                 if (mainWindow.getKeys()[GLFW_KEY_F5]) {
@@ -486,6 +494,9 @@ public:
             }
             else if (person_view == 1) {
                 activeCamera = thirdCamera_back;
+            }
+            else if (person_view == 3) {                
+                activeCamera = spectateCamera;
             }
 
             Textures[FACE_TEX]->useTexture();
@@ -890,26 +901,26 @@ public:
                 continue;
             }
 
-            if (chunk->getDirty()) {
-                if ((chunk->neighboursPresent & 0x1E) != 0x1E) {
-                    for (int i = 0; i < 4; i++) {
-                        ivec2 chcrds = coords + ivec2(dirs[i], dirs[i + 4]);
-                        if (world.chunkData.count(pack(chcrds)) > 0)
-                            chunk->neighboursPresent |= (1 << (i + 1));
-                    }
-                }
-                if (chunk->neighboursPresent == 0x1E) { // 1 1110 = 0x1E = 30
-                    chNeighPackPtr* chunkochunks = new chNeighPackPtr();
-                    chunkochunks->coords = chunk->coord;
-                    chunkochunks->mainChunk = chunk.get();
-                    {
-                        std::lock_guard<std::mutex> lock(chunkUpdateRequestMutex);
-                        chunkCleanupQueue.push(chunkochunks);
-                    }
-                    chunkUpdateCV.notify_one();
-                    chunk->setAsClean();
-                }
-            }
+            //if (chunk->getDirty()) {
+            //    if ((chunk->neighboursPresent & 0x1E) != 0x1E) {
+            //        for (int i = 0; i < 4; i++) {
+            //            ivec2 chcrds = coords + ivec2(dirs[i], dirs[i + 4]);
+            //            if (world.chunkData.count(pack(chcrds)) > 0)
+            //                chunk->neighboursPresent |= (1 << (i + 1));
+            //        }
+            //    }
+            //    if (chunk->neighboursPresent == 0x1E) { // 1 1110 = 0x1E = 30
+            //        chNeighPackPtr* chunkochunks = new chNeighPackPtr();
+            //        chunkochunks->coords = chunk->coord;
+            //        chunkochunks->mainChunk = chunk.get();
+            //        {
+            //            std::lock_guard<std::mutex> lock(chunkUpdateRequestMutex);
+            //            chunkCleanupQueue.push(chunkochunks);
+            //        }
+            //        chunkUpdateCV.notify_one();
+            //        chunk->setAsClean();
+            //    }
+            //}
 
             vec3 center = vec3((coords.x + 0.5) * CHUNK_SIZE, playerPos.y, (coords.y + 0.5) * CHUNK_SIZE);
             if (sphereInFrustum(center, playerPos.y / 2))
@@ -1043,6 +1054,7 @@ public:
     }
 
     void keyControl(float dt) {
+		Camera* activeCamera = person_view == 3 ? &spectateCamera : &firstCamera;
         bool press_repeat = mainWindow.keyWasRepeated(GLFW_KEY_W);
         if (mainWindow.getKeys()[GLFW_KEY_CAPS_LOCK] || press_repeat) {
             deltaTime = 4;
@@ -1050,15 +1062,15 @@ public:
         else {
             deltaTime = 2;
         }
-        vec3& position = firstCamera.getPosition(1),
-            right = firstCamera.getRight(),
-            front = firstCamera.getFront(),
-            & initial_velocity = firstCamera.initial_velocity;
+        vec3& position = activeCamera->getPosition(1),
+            right = activeCamera->getRight(),
+            front = activeCamera->getFront(),
+            & initial_velocity = activeCamera->initial_velocity;
         if (mainWindow.getKeys()[GLFW_KEY_W]) {
-            vec3 checkPosX0 = firstCamera.getPosition() + vec3(front.x * movementSpeed * deltaTime, -1, 0),
-                checkPosZ0 = firstCamera.getPosition() + vec3(0, -1, front.z * movementSpeed * deltaTime),
-                checkPosX1 = firstCamera.getPosition() + vec3(front.x * movementSpeed * deltaTime, 0, 0),
-                checkPosZ1 = firstCamera.getPosition() + vec3(0, 0, front.z * movementSpeed * deltaTime);
+            vec3 checkPosX0 = activeCamera->getPosition() + vec3(front.x * movementSpeed * deltaTime, -1, 0),
+                checkPosZ0 = activeCamera->getPosition() + vec3(0, -1, front.z * movementSpeed * deltaTime),
+                checkPosX1 = activeCamera->getPosition() + vec3(front.x * movementSpeed * deltaTime, 0, 0),
+                checkPosZ1 = activeCamera->getPosition() + vec3(0, 0, front.z * movementSpeed * deltaTime);
             if (!blockExistsAt(checkPosX0 + vec3(0.5, 0, 0), 1) && !blockExistsAt(checkPosX1 + vec3(0.5, 0, 0)), 1) position.x = checkPosX0.x;
             if (!blockExistsAt(checkPosZ0 + vec3(0, 0, 0.5), 1) && !blockExistsAt(checkPosZ1 + vec3(0, 0, 0.5)), 1) position.z = checkPosZ0.z;
         }
@@ -1072,11 +1084,13 @@ public:
             position += right * movementSpeed * deltaTime;
         }
         if (mainWindow.getKeys()[GLFW_KEY_SPACE]) {
-            //position += vec3(0, movementSpeed * deltaTime, 0);
-            initial_velocity.y = 100 * 3 * movementSpeed;
+			if (person_view == 3)
+                position += vec3(0, movementSpeed * deltaTime, 0);
+            else
+                initial_velocity.y = 100 * 3 * movementSpeed;
         }
         if (mainWindow.getKeys()[GLFW_KEY_LEFT_SHIFT]) {
-            vec3 checkPos = firstCamera.getPosition() + vec3(0, -movementSpeed * deltaTime, 0);
+            vec3 checkPos = activeCamera->getPosition() + vec3(0, -movementSpeed * deltaTime, 0);
             if (!blockExistsAt(checkPos - vec3(0, 1, 0))) position.y = checkPos.y;
         }
         if (mainWindow.getKeys()[GLFW_KEY_LEFT_CONTROL]) {
@@ -1087,7 +1101,7 @@ public:
             movementSpeed /= 1.2;
             mainWindow.getKeys()[GLFW_KEY_LEFT_CONTROL] = false;
         }
-        firstCamera.calculateCamPos(dt);
+        activeCamera->calculateCamPos(dt);
 
         if (mainWindow.getKeys()[GLFW_KEY_L]) {
             position.y = 100;

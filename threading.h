@@ -770,12 +770,12 @@ void emitFace(Mesh& m, int face, uint8_t blockType, ivec3 blockPos, ivec3 dims, 
     uint32_t uintUVs = ((uint8_t)(blockPos.y / 3) << 24) | ((uint8_t)(xdimens) << 16) | ((uint8_t)(yoffset + offsetY) << 8) | (uint8_t)(xoffset + offsetX); // Packaging floats into one integer
     float startUvs;
     memcpy(&startUvs, &uintUVs, sizeof(float));
-    uint32_t norm_color = ((a_byte(normals.x < 0 ? 1 : 0) & 0x1) << 5) | ((a_byte(absl(normals.x)) & 0x1) << 4)
-        | ((a_byte(normals.y < 0 ? 1 : 0) & 0x1) << 3) | ((a_byte(absl(normals.y)) & 0x1) << 2)
-        | ((a_byte(normals.z < 0 ? 1 : 0) & 0x1) << 1) | ((a_byte(absl(normals.z)) & 0x1) << 0)
-        | ((a_byte(cMask.x * 100) & 0x7F) << 20)
-        | ((a_byte(cMask.y * 100) & 0x7F) << 13)
-        | ((a_byte(cMask.z * 100) & 0x7F) << 6);
+    uint32_t norm_color = ((normals.x & 0x3) << 4)
+                        | ((normals.y & 0x3) << 2)
+                        | ((normals.z & 0x3) << 0)
+                        | ((a_byte(cMask.x * 100) & 0x7F) << 20)
+                        | ((a_byte(cMask.y * 100) & 0x7F) << 13)
+                        | ((a_byte(cMask.z * 100) & 0x7F) << 6);
     float normcolor;
     memcpy(&normcolor, &norm_color, sizeof(float));
 

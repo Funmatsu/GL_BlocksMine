@@ -67,6 +67,7 @@ float movementSpeed = 0.05f;
 Camera activeCamera = Camera(vec3(0.0f, CHUNK_SIZE / 2, 0.0f), vec3(0.0f,  0.5f, 0.0f), 0.0f, 0.0f, movementSpeed,  1.0f);
 Camera firstCamera = Camera(vec3(0.0f, CHUNK_SIZE / 2, 0.0f), vec3(0.0f,  0.5f, 0.0f), 0.0f, 0.0f, movementSpeed, 1.0f);
 Camera thirdCamera_back = Camera(vec3(0.0f, CHUNK_SIZE / 2, 0.0f), vec3(0.0f,  0.5f, 0.0f), 0.0f, 0.0f, movementSpeed,  1.0f);
+Camera spectateCamera = Camera(vec3(0.0f, CHUNK_SIZE / 2, 0.0f), vec3(0.0f, 0.5f, 0.0f), 0.0f, 0.0f, movementSpeed, 1.0f);
 
 const int MAX_CHUNK_NUM = 30;
 

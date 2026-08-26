@@ -111,7 +111,7 @@
                 "item": "oak_leaves"
             },
             {
-                "count": 32,
+                "count": 34,
                 "id": 5,
                 "item": "dirt_block"
             },
@@ -143,7 +143,7 @@
         ],
         [
             {
-                "count": 117,
+                "count": 112,
                 "id": 4,
                 "item": "stone_block"
             },
@@ -158,7 +158,7 @@
                 "item": "grass"
             },
             {
-                "count": 73,
+                "count": 74,
                 "id": 2,
                 "item": "grass_block"
             },
@@ -168,7 +168,7 @@
                 "item": "wooden_pickaxe"
             },
             {
-                "count": 1654,
+                "count": 1645,
                 "id": 7,
                 "item": "cloud"
             },

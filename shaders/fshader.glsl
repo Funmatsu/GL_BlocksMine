@@ -186,9 +186,9 @@ void main(){
 	
 	float lightFactor = 1.0f;
 	if(normal.y == -1) lightFactor *= 1.0f;
-	else if(normal.y == 1) lightFactor *= 0.20f;
-	if(normal.z != 0) lightFactor *= 0.75f;
-	else lightFactor *= 0.90f; //if(normal.x != 0)
+	else if(normal.y == 1) lightFactor *= 0.;
+	else if(normal.x != 0) lightFactor *= 0.7f;
+	else if(normal.z != 0) lightFactor *= 0.9f; //if(normal.x != 0)
 	
 	uint light = (uvs >> 24u) & 0xFFu;
 	
