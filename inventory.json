@@ -59,11 +59,6 @@
                 "item": "air"
             },
             {
-                "count": 65,
-                "id": 6,
-                "item": "oak_wood"
-            },
-            {
                 "count": 0,
                 "id": 0,
                 "item": "air"
@@ -72,6 +67,11 @@
                 "count": 0,
                 "id": 0,
                 "item": "air"
+            },
+            {
+                "count": 1,
+                "id": 5,
+                "item": "dirt_block"
             },
             {
                 "count": 0,
@@ -96,34 +96,34 @@
         ],
         [
             {
-                "count": 11,
+                "count": 26,
                 "id": 3,
                 "item": "iron_ore"
             },
             {
-                "count": 7,
+                "count": 15,
                 "id": 1,
                 "item": "diamond_ore"
             },
             {
-                "count": 20,
+                "count": 24,
                 "id": 8,
                 "item": "oak_leaves"
             },
             {
-                "count": 5,
-                "id": 9,
-                "item": "oak_plank"
+                "count": 32,
+                "id": 5,
+                "item": "dirt_block"
             },
             {
-                "count": 1,
+                "count": 5,
                 "id": 10,
                 "item": "poppy"
             },
             {
-                "count": 0,
-                "id": 0,
-                "item": "air"
+                "count": 6,
+                "id": 6,
+                "item": "oak_wood"
             },
             {
                 "count": 1,
@@ -131,21 +131,21 @@
                 "item": "wooden_pickaxe"
             },
             {
-                "count": 0,
-                "id": 0,
-                "item": "air"
+                "count": 1,
+                "id": 11,
+                "item": "blue_orchid"
             },
             {
-                "count": 0,
-                "id": 0,
-                "item": "air"
+                "count": 58,
+                "id": 5,
+                "item": "dirt_block"
             }
         ],
         [
             {
-                "count": 2208,
-                "id": 7,
-                "item": "cloud"
+                "count": 117,
+                "id": 4,
+                "item": "stone_block"
             },
             {
                 "count": 1,
@@ -158,29 +158,29 @@
                 "item": "grass"
             },
             {
-                "count": 63,
+                "count": 73,
                 "id": 2,
                 "item": "grass_block"
             },
             {
                 "count": 1,
-                "id": 18,
-                "item": "wooden_axe"
+                "id": 17,
+                "item": "wooden_pickaxe"
             },
             {
-                "count": 42,
-                "id": 5,
-                "item": "dirt_block"
+                "count": 1654,
+                "id": 7,
+                "item": "cloud"
             },
             {
-                "count": 164,
+                "count": 324,
                 "id": 4,
                 "item": "stone_block"
             },
             {
-                "count": 1,
-                "id": 17,
-                "item": "wooden_pickaxe"
+                "count": 199,
+                "id": 9,
+                "item": "oak_plank"
             },
             {
                 "count": 1,

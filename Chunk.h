@@ -227,6 +227,12 @@ struct chNeighPackPtr {
     Chunk* mainChunk;
 };
 
+struct chNeighPack {
+    uint coords;
+    Chunk* mainChunk;
+    array<BlockData, CHUNK_VOLUME> neighbour_data[4];
+};
+
 struct chNeighResult {
 	unique_ptr<Mesh> mesh;
     uint coords;

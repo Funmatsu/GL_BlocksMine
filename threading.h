@@ -56,6 +56,7 @@ std::atomic<bool> chunkUpdateGenRunning = true;
 std::atomic<bool> blockBreaking = true;
 std::atomic<bool> blockPlacing = true;
 std::atomic<bool> stopChunkUpdaters = false;
+std::atomic<bool> stopChunkScheders = false;
 std::atomic<bool> stopMeshing = false;
 std::atomic<bool> stopChunkNeighCheck = false;
 bool blockBreakingOut = false;

@@ -3,14 +3,9 @@
 #include <iostream>
 #include "Window.h"
 #include "shaderlist.h"
-//#include "items.h"
 #include "Text.h"
 
 using namespace std;
-
-//unsigned int general_vao = 0;
-//unsigned int item_vao = 0;
-//bool vaobind = 1;
 
 class startMenu
 {
@@ -21,12 +16,6 @@ public:
 		mainWindow.initialize();
 		createShaders();
 		addTextures();
-
-		//glGenVertexArrays(1, &general_vao);
-		//glGenVertexArrays(1, &item_vao);
-
-		//glBindVertexArray(general_vao);
-		//LightMesh::initVAOs();
 
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glEnable(GL_BLEND);
@@ -138,8 +127,9 @@ public:
 			Textures[UI_BUTTON_TEX]->useTexture();
 			m.renderMesh();
 			welcomeText.drawonly();
-			//TODO : Implement start menu
-			//cout << mainWindow.getXPos() << " x " << mainWindow.getYPos() << " y " << endl;
+			//<<<<----|TODO : Implement start menu
+			cout << mainWindow.getXPos() << " x " << mainWindow.getYPos() << " y " << endl;
+			//<<<<--------------------------------
 			mainWindow.swapBuffers();	
 		}
 	}
