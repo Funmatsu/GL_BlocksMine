@@ -514,16 +514,6 @@ void meshChunk(vec2 xyChunk, Chunk* cd, Mesh& out, vec3 direction, ivec3 positio
             }
 }
 
-//void generateChunkAt(vec2 xyChunk, Chunk* repChunk) {
-//    auto start = std::chrono::high_resolution_clock::now();
-//
-//    generateBlocks(xyChunk, repChunk);
-//    meshChunk(xyChunk, repChunk, repChunk->mesh, vec3(0, 1, 0), vec3(0, -1, 0));
-//
-//    auto end = std::chrono::high_resolution_clock::now();
-//    cout << repChunk->mesh.vertices.size() << " : Elapsed: " << std::chrono::duration<double>(end - start).count() << " s\n";
-//}
-
 /// <summary>
 /// This will begin an attempt for a fast greedy meshing algorithm
 /// </summary>
@@ -1095,8 +1085,8 @@ void meshChunk(chNeighPackPtr* chNeigh) {
     }
 
     Mesh& m = *mesh;
-    m.vertices.reserve(10000 * 8.5);
-    m.indices .reserve(5000 * 2.5);
+    m.vertices.reserve(5000 * 8.5);
+    m.indices .reserve(2000 * 2.5);
     int base = 0;
     
     uint8_t maskY[CHUNK_SIZE * CHUNK_SIZE];
@@ -1138,7 +1128,7 @@ void meshChunk(chNeighPackPtr* chNeigh) {
     delete chNeigh;
 }
 
-void breakThread() {
+void blockBreakThreadWorker() {
     while (blockBreaking) {
         if (blockBreakingOut) {
             std::lock_guard<std::mutex> lock(breakReqMutex);
@@ -1152,9 +1142,7 @@ void breakThread() {
     }
 }
 
-std::thread blockBreakThread1(breakThread);
-
-std::thread blockPlaceThread([&]() {
+void blockPlaceThreadWorker() {
     while (blockPlacing) {
         if (blockPlacingOut) {
             std::lock_guard<std::mutex> lock(placeReqMutex);
@@ -1166,7 +1154,7 @@ std::thread blockPlaceThread([&]() {
                 placeResQueue.pop();
         }
     }
-    });
+}
 
 void chunkWorker() {
     while (chunkGenRunning) {

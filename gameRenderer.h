@@ -54,7 +54,7 @@ public:
 
     Projectile ball;
 
-    a_byte count = 0, count_time = 0;
+    uint count = 0, count_time = 0;
 
     Crosshair crosshair;
 
@@ -146,14 +146,17 @@ public:
         sky.buildSky();
 
 
-        for (int i = 0; i < 2; ++i) {
+        for (int i = 0; i < 1; ++i) {
             workers.push_back(thread(chunkWorker)); // worker thread is somewhere in threading.h
             workers.push_back(thread(updateChunkJob));
         }
 
-        for (int i = 0; i < 1; ++i) {
-            workers.push_back(thread(chunkMeshSchedWorker));
-        }
+        workers.push_back(thread(blockBreakThreadWorker));
+        workers.push_back(thread(blockPlaceThreadWorker));
+
+        //for (int i = 0; i < 1; ++i) {
+        //    workers.push_back(thread(chunkMeshSchedWorker));
+        //}
 
         mainLight = DirectionalLight(mainWindow.getBufferWidth(), mainWindow.getBufferHeight(),
             1.0f, 1.0f, 1.0f,
@@ -171,6 +174,8 @@ public:
 
         glClearColor(1, 1, 1, 0);
         meshSchedCV.notify_all();
+
+        activeCamera = &firstCamera;
     }
 
     void run() {
@@ -180,6 +185,7 @@ public:
             static bool breakblockdb = 0, placeblockdb = 0, invtoggledb = 0; // db = debounce
             static int angletest = 0;
             static double frame_duration_calc;
+			static int spiralCount = 0;
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             glfwPollEvents();
 
@@ -199,19 +205,23 @@ public:
                 mainLight.setShadowPos(firstCamera.getPosition());
             }
             if (person_view % 4 < 2)
-                activeCamera.setFront(firstCamera.getFront());
+                activeCamera->setFront(firstCamera.getFront());
 
-            for (auto chunkOff : spiral) {
+            for (; spiralCount <= spiral.size(); spiralCount++) {
+                spiralCount = (spiralCount >= spiral.size()) ? 0 : spiralCount;
+				ivec2 chunkOff = spiral[spiralCount];
                 ivec2 camChunkPos = ivec2(floorDiv(firstCamera.getPosition().x, CHUNK_SIZE), floorDiv(firstCamera.getPosition().z, CHUNK_SIZE));
-                ivec2 chunkPos = camChunkPos + chunkOff;
-				uint chCrds = pack(chunkPos);
+                ivec2 chunkPos = camChunkPos + chunkOff; // This is what triggers chuk
+				uint  chCrds = pack(chunkPos);
                 if (chunkCoords.count(chCrds) == 0) {
                     chunkCoords.insert(chCrds);
-                    chunkRequestQueue.push(chCrds);
-
+                    {
+                        std::lock_guard<std::mutex> lock(queueMutex);
+                        chunkRequestQueue.push(chCrds);
+                    }
                     queueCV.notify_one();
-                    if (!(count++ % 16)) { break; }
                 }
+                if (!(++count % 16)) { break; }
             }
 
             while (!chunkMeshResult.empty()) {
@@ -221,27 +231,23 @@ public:
                     chNeighRes = chunkMeshResult.front();
                     chunkMeshResult.pop();
                 }
-                auto it = world.chunkData.find(chNeighRes->coords);
-                //if (it == world.chunkData.end()) {
-                //    delete chNeighRes;
-                //    continue;
-                //}
+                auto it = world.chunkData.find(chNeighRes->coords); //if (it == world.chunkData.end()) { delete chNeighRes; continue; }
                 auto& chunk = it->second;
                 chunk->mesh->createMesh(chNeighRes->mesh->vertices, chNeighRes->mesh->indices);
                 delete chNeighRes;
 
-                if (!(count++ % 16)) break; // To mesh as fast as ossible, donot cap n_o chunks meshed per frame.
+                if (!(++count % 16)) break; // To mesh as fast as ossible, donot cap n_o chunks meshed per frame.
             }
 
             while (!chunkResultQueue.empty()) {
                 chPack ch;
                 {
-                    //lock_guard<mutex> lock(addChunkMutex);
+                    lock_guard<mutex> lock(addChunkMutex);
                     ch = chunkResultQueue.front();
                     chunkResultQueue.pop();
                 }
                 world.chunkData.try_emplace(ch.coords, move(ch.chPtr));
-                if (!(count++ % 16)) break;
+                if (!(++count % 16)) break;
             }
 
             VP = projection * firstCamera.calcViewMatrix();
@@ -273,7 +279,7 @@ public:
             headPos = firstCamera.getPosition(), headFront = firstCamera.getFront();
             lookBlock = getBlockAt(lookingAtBlock());
 
-            view = activeCamera.calcViewMatrix();
+            view = activeCamera->calcViewMatrix();
             projection = perspective(radians(projAngle), (float(mainWindow.getBufferWidth()) / float(mainWindow.getBufferHeight())), 0.01f, float(renderDistance * CHUNK_SIZE));
 
             glUniformMatrix4fv(shaders[0]->getModelLocation(), 1, GL_FALSE, value_ptr(model));
@@ -451,7 +457,7 @@ public:
                         + to_string(cursor.count) + " block : " + itemTypeString[cursor.item.id]
                         + "\n"
                         + "looking at "
-                        + itemTypeString[lookBlock.type.id]
+                        + itemTypeString[lookBlock.type.id] + "Amount of dropped items : " + to_string(dropped.size())
                         + "\n"
                         + " | Frame duration : " + to_string(frame_duration_calc)
                         + "FPS : " + to_string(fpscount)
@@ -490,13 +496,13 @@ public:
             }
 
             if (person_view == 0) {
-                activeCamera = firstCamera;
+                activeCamera = &firstCamera;
             }
             else if (person_view == 1) {
-                activeCamera = thirdCamera_back;
+                activeCamera = &thirdCamera_back;
             }
             else if (person_view == 3) {                
-                activeCamera = spectateCamera;
+                activeCamera = &spectateCamera;
             }
 
             Textures[FACE_TEX]->useTexture();
@@ -561,7 +567,7 @@ public:
                 glUniformMatrix4fv(shaders[0]->getModelLocation(), 1, GL_FALSE, value_ptr(drop.model));
 
                 if (length(drop.position - firstCamera.getPosition()) <= 3 && drop.angle > 360) {
-                    //drop.done = 1;
+                    drop.done = 1;
                     drop.position += (firstCamera.getPosition() - drop.position) / 10.f;
                 }
                 if (length(drop.position - firstCamera.getPosition()) <= 1 && abs(drop.position.y - firstCamera.getPosition().y) <= 2 && drop.angle > 360) {
@@ -574,27 +580,27 @@ public:
             }
             glUniformMatrix4fv(shaders[0]->getModelLocation(), 1, GL_FALSE, value_ptr(model));
             shaders[5]->useShader();
-            view = activeCamera.calcViewMatrix();
+            view = activeCamera->calcViewMatrix();
 
             //For block highlighting
-            ivec3 lookPosition = lookingAtBlock();
-            if (lookPosition.y >= 0) {
-                mat4 modelLooking = translate(mat4(1.0f), vec3(lookPosition));
-                glUniformMatrix4fv(shaders[5]->getModelLocation(), 1, GL_FALSE, value_ptr(modelLooking));
-                lookingMesh.renderMesh();
-                glUniformMatrix4fv(shaders[5]->getModelLocation(), 1, GL_FALSE, value_ptr(model));
-            }
+            //ivec3 lookPosition = lookingAtBlock();
+            //if (lookPosition.y >= 0) {
+            //    mat4 modelLooking = translate(mat4(1.0f), vec3(lookPosition));
+            //    glUniformMatrix4fv(shaders[5]->getModelLocation(), 1, GL_FALSE, value_ptr(modelLooking));
+            //    lookingMesh.renderMesh();
+            //    glUniformMatrix4fv(shaders[5]->getModelLocation(), 1, GL_FALSE, value_ptr(model));
+            //}
 
-            //glDisable(GL_DEPTH_TEST); // so crosshair draws on top although I need the crosshair to give inverted colors
+            glDisable(GL_DEPTH_TEST); // so crosshair draws on top although I need the crosshair to give inverted colors
             shaders[2]->useShader();
+            glUniformMatrix4fv(shaders[2]->getOrthoLocation(), 1, GL_FALSE, glm::value_ptr(ortho));
             glBlendFunc(GL_ONE_MINUS_DST_COLOR, GL_ONE);
 
             if (person_view == 0) {
-                glUniformMatrix4fv(shaders[2]->getOrthoLocation(), 1, GL_FALSE, glm::value_ptr(ortho));
                 crosshair.drawCrosshair();
             }
 
-            shaders[2]->useShader(); // the day that I coded for this I was not quite sure if it was good enough. Why do I like to write "The day"?
+            //shaders[2]->useShader(); // the day that I coded for this I was not quite sure if it was good enough. Why do I like to write "The day"?
             Textures[SLOT_TEX]->useTexture();
             inventory.defineHotbarSlotSelectorGeometry();
             inventory.drawHotbarSlotSelector();
@@ -677,7 +683,6 @@ public:
 
             if (inventory.mainInventoryOn) {
                 Textures[LARGE_INV_TEX]->useTexture();
-                glUniformMatrix4fv(shaders[2]->getOrthoLocation(), 1, GL_FALSE, glm::value_ptr(ortho));
                 glBlendFunc(GL_ONE_MINUS_DST_COLOR, GL_ONE);
 
                 inventory.drawMainInventory();
@@ -809,8 +814,7 @@ public:
                 queueCV.notify_all();
                 blockPlacing = false;
                 blockBreaking = false;
-                blockBreakThread1.join();
-                blockPlaceThread.join();
+                
                 stopChunkUpdaters = true;
                 chunkGenRunning2 = false;
                 chunkUpdateGenRunning = false;
@@ -901,26 +905,26 @@ public:
                 continue;
             }
 
-            //if (chunk->getDirty()) {
-            //    if ((chunk->neighboursPresent & 0x1E) != 0x1E) {
-            //        for (int i = 0; i < 4; i++) {
-            //            ivec2 chcrds = coords + ivec2(dirs[i], dirs[i + 4]);
-            //            if (world.chunkData.count(pack(chcrds)) > 0)
-            //                chunk->neighboursPresent |= (1 << (i + 1));
-            //        }
-            //    }
-            //    if (chunk->neighboursPresent == 0x1E) { // 1 1110 = 0x1E = 30
-            //        chNeighPackPtr* chunkochunks = new chNeighPackPtr();
-            //        chunkochunks->coords = chunk->coord;
-            //        chunkochunks->mainChunk = chunk.get();
-            //        {
-            //            std::lock_guard<std::mutex> lock(chunkUpdateRequestMutex);
-            //            chunkCleanupQueue.push(chunkochunks);
-            //        }
-            //        chunkUpdateCV.notify_one();
-            //        chunk->setAsClean();
-            //    }
-            //}
+            if (chunk->getDirty()) {
+                if ((chunk->neighboursPresent & 0x1E) != 0x1E) {
+                    for (int i = 0; i < 4; i++) {
+                        ivec2 chcrds = coords + ivec2(dirs[i], dirs[i + 4]);
+                        if (world.chunkData.count(pack(chcrds)) > 0)
+                            chunk->neighboursPresent |= (1 << (i + 1));
+                    }
+                }
+                if (chunk->neighboursPresent == 0x1E) { // 1 1110 = 0x1E = 30
+                    chNeighPackPtr* chunkochunks = new chNeighPackPtr();
+                    chunkochunks->coords = chunk->coord;
+                    chunkochunks->mainChunk = chunk.get();
+                    {
+                        std::lock_guard<std::mutex> lock(chunkUpdateRequestMutex);
+                        chunkCleanupQueue.push(chunkochunks);
+                    }
+                    chunkUpdateCV.notify_one();
+                    chunk->setAsClean();
+                }
+            }
 
             vec3 center = vec3((coords.x + 0.5) * CHUNK_SIZE, playerPos.y, (coords.y + 0.5) * CHUNK_SIZE);
             if (sphereInFrustum(center, playerPos.y / 2))

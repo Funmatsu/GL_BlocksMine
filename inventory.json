@@ -96,7 +96,7 @@
         ],
         [
             {
-                "count": 26,
+                "count": 27,
                 "id": 3,
                 "item": "iron_ore"
             },
@@ -111,17 +111,17 @@
                 "item": "oak_leaves"
             },
             {
-                "count": 34,
+                "count": 45,
                 "id": 5,
                 "item": "dirt_block"
             },
             {
-                "count": 5,
+                "count": 6,
                 "id": 10,
                 "item": "poppy"
             },
             {
-                "count": 6,
+                "count": 7,
                 "id": 6,
                 "item": "oak_wood"
             },
@@ -143,7 +143,7 @@
         ],
         [
             {
-                "count": 112,
+                "count": 145,
                 "id": 4,
                 "item": "stone_block"
             },
@@ -153,12 +153,12 @@
                 "item": "crafting_table"
             },
             {
-                "count": 10,
+                "count": 11,
                 "id": 12,
                 "item": "grass"
             },
             {
-                "count": 74,
+                "count": 84,
                 "id": 2,
                 "item": "grass_block"
             },
@@ -173,7 +173,7 @@
                 "item": "cloud"
             },
             {
-                "count": 324,
+                "count": 315,
                 "id": 4,
                 "item": "stone_block"
             },
