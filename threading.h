@@ -1085,8 +1085,8 @@ void meshChunk(chNeighPackPtr* chNeigh) {
     }
 
     Mesh& m = *mesh;
-    m.vertices.reserve(5000 * 8.5);
-    m.indices .reserve(2000 * 2.5);
+    m.vertices.reserve(5000 * 7.5);
+    m.indices .reserve(4000 * 2.5);
     int base = 0;
     
     uint8_t maskY[CHUNK_SIZE * CHUNK_SIZE];
@@ -1130,15 +1130,18 @@ void meshChunk(chNeighPackPtr* chNeigh) {
 
 void blockBreakThreadWorker() {
     while (blockBreaking) {
+        Block block;
         if (blockBreakingOut) {
             std::lock_guard<std::mutex> lock(breakReqMutex);
-            Block block = world.delBlocklook_at();
+            block = world.delBlocklook_at();
             //this_thread::sleep_for(chrono::milliseconds(100));
             ivec2 chunkPos = ivec2(floorDiv(block.position.x, CHUNK_SIZE), floorDiv(block.position.z, CHUNK_SIZE));
             //world.updateChunk(chunkPos, vec3(0), vec3(0));
+
             blockBreakingOut = false;
             breakResQueue.push(block);
         }
+        
     }
 }
 
@@ -1146,13 +1149,14 @@ void blockPlaceThreadWorker() {
     while (blockPlacing) {
         if (blockPlacingOut) {
             std::lock_guard<std::mutex> lock(placeReqMutex);
-            Block block = world.addBlocklook_at(inventory.mainInventorySlots[3][slot].item);
-            //this_thread::sleep_for(chrono::milliseconds(100));
-            blockBreakingOut = false;
-            blockPlacingOut = false;
-            if (!placeResQueue.empty())
-                placeResQueue.pop();
+            //Block block = 
+            world.addBlocklook_at(inventory.mainInventorySlots[3][slot].item);
         }
+        //this_thread::sleep_for(chrono::milliseconds(100));
+        blockBreakingOut = false;
+        blockPlacingOut = false;
+        if (!placeResQueue.empty())
+            placeResQueue.pop();
     }
 }
 

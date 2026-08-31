@@ -101,7 +101,7 @@
                 "item": "iron_ore"
             },
             {
-                "count": 15,
+                "count": 17,
                 "id": 1,
                 "item": "diamond_ore"
             },
@@ -111,7 +111,7 @@
                 "item": "oak_leaves"
             },
             {
-                "count": 45,
+                "count": 55,
                 "id": 5,
                 "item": "dirt_block"
             },
@@ -143,7 +143,7 @@
         ],
         [
             {
-                "count": 145,
+                "count": 144,
                 "id": 4,
                 "item": "stone_block"
             },
@@ -153,12 +153,12 @@
                 "item": "crafting_table"
             },
             {
-                "count": 11,
+                "count": 12,
                 "id": 12,
                 "item": "grass"
             },
             {
-                "count": 84,
+                "count": 104,
                 "id": 2,
                 "item": "grass_block"
             },

@@ -180,7 +180,6 @@ public:
 
     void run() {
         while (!mainWindow.getShouldClose()) {
-            shaders[0]->useShader();
             auto startframe = chrono::high_resolution_clock::now();
             static bool breakblockdb = 0, placeblockdb = 0, invtoggledb = 0; // db = debounce
             static int angletest = 0;
@@ -189,11 +188,13 @@ public:
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             glfwPollEvents();
 
-            sky.applySky(view, projection);//
+            sky.applySky(view, projection);
             glEnable(GL_DEPTH_TEST);
             glDepthFunc(GL_LESS);
-
             start = chrono::high_resolution_clock::now();
+            directionalShadowPass(&mainLight, model); //bound base shader shaders[0] as well before it was removed
+            shaders[0]->useShader();
+            
             if (inventory.mainInventoryOn || inventory.craftingTableInventoryOn) handleInvSlotClicks();
             cursor.x = mainWindow.getXPos();
             cursor.y = mainWindow.getYPos();
@@ -206,10 +207,10 @@ public:
             }
             if (person_view % 4 < 2)
                 activeCamera->setFront(firstCamera.getFront());
-
-            for (; spiralCount <= spiral.size(); spiralCount++) {
-                spiralCount = (spiralCount >= spiral.size()) ? 0 : spiralCount;
+            spiralCount = (spiralCount >= spiral.size()) ? 0 : spiralCount;
+            for (; spiralCount <= spiral.size(); spiralCount++) {  
 				ivec2 chunkOff = spiral[spiralCount];
+            //for (auto& chunkOff : spiral) {
                 ivec2 camChunkPos = ivec2(floorDiv(firstCamera.getPosition().x, CHUNK_SIZE), floorDiv(firstCamera.getPosition().z, CHUNK_SIZE));
                 ivec2 chunkPos = camChunkPos + chunkOff; // This is what triggers chuk
 				uint  chCrds = pack(chunkPos);
@@ -221,22 +222,7 @@ public:
                     }
                     queueCV.notify_one();
                 }
-                if (!(++count % 16)) { break; }
-            }
-
-            while (!chunkMeshResult.empty()) {
-                chNeighResult* chNeighRes;
-                {
-                    std::lock_guard<std::mutex> lock(chunkMeshQueueMutex);
-                    chNeighRes = chunkMeshResult.front();
-                    chunkMeshResult.pop();
-                }
-                auto it = world.chunkData.find(chNeighRes->coords); //if (it == world.chunkData.end()) { delete chNeighRes; continue; }
-                auto& chunk = it->second;
-                chunk->mesh->createMesh(chNeighRes->mesh->vertices, chNeighRes->mesh->indices);
-                delete chNeighRes;
-
-                if (!(++count % 16)) break; // To mesh as fast as ossible, donot cap n_o chunks meshed per frame.
+                if (!(++count % 128)) { break; }
             }
 
             while (!chunkResultQueue.empty()) {
@@ -247,7 +233,22 @@ public:
                     chunkResultQueue.pop();
                 }
                 world.chunkData.try_emplace(ch.coords, move(ch.chPtr));
-                if (!(++count % 16)) break;
+                if (!(++count % 128)) break;
+            }
+
+            while (!chunkMeshResult.empty()) {
+                chNeighResult* chNeighRes;
+                {
+                    std::lock_guard<std::mutex> lock(chunkMeshQueueMutex);
+                    chNeighRes = chunkMeshResult.front();
+                    chunkMeshResult.pop();
+                }
+                auto it = world.chunkData.find(chNeighRes->coords); if (it == world.chunkData.end()) { delete chNeighRes; continue; }
+                auto& chunk = it->second;
+                chunk->mesh->createMesh(chNeighRes->mesh->vertices, chNeighRes->mesh->indices);
+                delete chNeighRes;
+
+                if (!(++count % 2)) break; // To mesh as fast as possible, donot cap n_o chunks meshed per frame....Actually, absolute cap, no pun intended
             }
 
             VP = projection * firstCamera.calcViewMatrix();
@@ -256,7 +257,7 @@ public:
 
             Textures[BLOCK_TEX]->useTexture();
 
-            directionalShadowPass(&mainLight, model); //binds base shader shaders[0] as well
+            shaders[0]->setDirectionalLightTransform(mainLight.directionalLightTransform); // moved for ommission
             glUniform3f(glGetUniformLocation(shaders[0]->getShaderId(), "camPos"), firstCamera.getPosition().x, firstCamera.getPosition().y, firstCamera.getPosition().z);
             glUniform1f(glGetUniformLocation(shaders[0]->getShaderId(), "fogStart"), 0.72 * CHUNK_SIZE * renderDistance);
             glUniform1f(glGetUniformLocation(shaders[0]->getShaderId(), "fogEnd"), 0.75 * CHUNK_SIZE * renderDistance);
@@ -450,6 +451,9 @@ public:
                     cursorPos.replaceWord("cursor position: x = " + to_string(cursor.x) + ", y = " + to_string(cursor.y), vec3(0, 1, 0), vec2(50, 1500));
                     position.drawText(ortho), craftedItemName.drawText(ortho), cursorPos.drawText(ortho);
 
+                    auto end = chrono::high_resolution_clock::now();
+                    double frame_duration(chrono::duration<double>(end - startframe).count());
+
                     position.replaceWord("position  x: "
                         + to_string((int)headPos.x) + " y: "
                         + to_string((int)headPos.y) + " z: "
@@ -457,10 +461,10 @@ public:
                         + to_string(cursor.count) + " block : " + itemTypeString[cursor.item.id]
                         + "\n"
                         + "looking at "
-                        + itemTypeString[lookBlock.type.id] + "Amount of dropped items : " + to_string(dropped.size())
+                        + itemTypeString[lookBlock.type.id] + " | Amount of dropped items : " + to_string(dropped.size())
                         + "\n"
                         + " | Frame duration : " + to_string(frame_duration_calc)
-                        + "FPS : " + to_string(fpscount)
+                        + " FPS : " + to_string(int(1/frame_duration_calc))
                         , vec3(0.4, 1, 0.7));
 
                     craftedItemName.replaceWord("main craft slot 1 contains: " + itemTypeString[craftedItem.item.id]
@@ -579,8 +583,7 @@ public:
                 drop.draw();
             }
             glUniformMatrix4fv(shaders[0]->getModelLocation(), 1, GL_FALSE, value_ptr(model));
-            shaders[5]->useShader();
-            view = activeCamera->calcViewMatrix();
+            //shaders[5]->useShader();
 
             //For block highlighting
             //ivec3 lookPosition = lookingAtBlock();
@@ -843,8 +846,7 @@ public:
             }
 
             mainWindow.updateLastKeyPress();
-            mainWindow.swapBuffers();
-
+            mainWindow.swapBuffers();      
             auto endframe = chrono::high_resolution_clock::now();
             frame_duration_calc = (chrono::duration<double>(endframe - startframe).count());
         }
@@ -891,17 +893,17 @@ public:
         for (auto it = world.chunkData.begin(); it != world.chunkData.end(); ) {
             auto& chunk = it->second;
             ivec2 coords = chunk->coords();
-            bool chunkReady = false;
-
-            bool inUse = false;
+            bool chunkReady = false, inUse = false;
             if (((coords.x <= _2dPlPosLo.x || coords.x >= _2dPlPosHi.x) ||
                 (coords.y <= _2dPlPosLo.y || coords.y >= _2dPlPosHi.y)))
             {
-                if (!chunk->safe_unload && chunk->inUse.compare_exchange_strong(chunkReady, true)) {
+                inUse = chunk->inUse.compare_exchange_strong(chunkReady, true);
+                if (!chunk->safe_unload && inUse) {
                     chunkCoords.erase((chunk->coord));
                     it = world.chunkData.erase(it);
                 }
                 else it++;
+                                
                 continue;
             }
 
@@ -1040,10 +1042,7 @@ public:
         glClear(GL_DEPTH_BUFFER_BIT);
         renderShadowWorld();
 
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-        shaders[0]->useShader();
-        shaders[0]->setDirectionalLightTransform(light->directionalLightTransform);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);        
     }////
 
     int ftoint(float num) {

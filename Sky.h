@@ -103,10 +103,10 @@ public:
 		glUniformMatrix4fv(shader.getViewLocation(), 1, GL_FALSE, value_ptr(view));
 		glUniformMatrix4fv(shader.getProjectionLocation(), 1, GL_FALSE, value_ptr(projection));
 		displaySky();
-		sunshader.useShader();
+		//sunshader.useShader();
 		glUniformMatrix4fv(sunshader.getViewLocation(), 1, GL_FALSE, value_ptr(view));
 		glUniformMatrix4fv(sunshader.getProjectionLocation(), 1, GL_FALSE, value_ptr(projection));
-		sunMesh.renderMesh();
+		//sunMesh.renderMesh();
 		glDepthMask(GL_TRUE);
 	}
 	void addCloud(unique_ptr<CloudMesh>& chm, vec2 coord) {
