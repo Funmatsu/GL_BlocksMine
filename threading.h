@@ -47,7 +47,8 @@ std::queue<Block> placeResQueue;
 std::mutex placeResMutex;
 std::mutex worldChunkDataMutex;
 
-std::queue<chNeighPackPtr*> chunkCleanupQueue;
+//std::queue<chNeighPackPtr*> chunkCleanupQueue;
+std::queue<chNeighPack*> chunkCleanupQueue;
 std::queue<chNeighResult*> chunkMeshResult;
 
 std::atomic<bool> chunkGenRunning = true;
@@ -1254,7 +1255,8 @@ void meshScheduleWorker() {
 
 void updateChunkJob() {
     while (!stopChunkUpdaters) {
-        chNeighPackPtr* chNeigh;
+        //chNeighPackPtr* chNeigh;
+        chNeighPack* chNeigh;
         {
             unique_lock<mutex> lock(chunkUpdateRequestMutex);
             chunkUpdateCV.wait(lock, [] { return !chunkCleanupQueue.empty() || stopChunkUpdaters; });

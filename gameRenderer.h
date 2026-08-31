@@ -907,18 +907,48 @@ public:
                 continue;
             }
 
+            //if (chunk->getDirty()) {
+            //    if ((chunk->neighboursPresent & 0x1E) != 0x1E) {
+            //        for (int i = 0; i < 4; i++) {
+            //            ivec2 chcrds = coords + ivec2(dirs[i], dirs[i + 4]);
+            //            if (world.chunkData.count(pack(chcrds)) > 0)
+            //                chunk->neighboursPresent |= (1 << (i + 1));
+            //        }
+            //    }
+            //    if (chunk->neighboursPresent == 0x1E) { // 1 1110 = 0x1E = 30
+            //        chNeighPackPtr* chunkochunks = new chNeighPackPtr();
+            //        chunkochunks->coords = chunk->coord;
+            //        chunkochunks->mainChunk = chunk.get();
+            //        {
+            //            std::lock_guard<std::mutex> lock(chunkUpdateRequestMutex);
+            //            chunkCleanupQueue.push(chunkochunks);
+            //        }
+            //        chunkUpdateCV.notify_one();
+            //        chunk->setAsClean();
+            //    }
+            //}
             if (chunk->getDirty()) {
                 if ((chunk->neighboursPresent & 0x1E) != 0x1E) {
                     for (int i = 0; i < 4; i++) {
                         ivec2 chcrds = coords + ivec2(dirs[i], dirs[i + 4]);
-                        if (world.chunkData.count(pack(chcrds)) > 0)
+                        if (world.chunkData.count(pack(chcrds)) > 0) {
                             chunk->neighboursPresent |= (1 << (i + 1));
+                        }
                     }
                 }
-                if (chunk->neighboursPresent == 0x1E) { // 1 1110 = 0x1E = 30
-                    chNeighPackPtr* chunkochunks = new chNeighPackPtr();
+                if (chunk->neighboursPresent == 0x1E) { // 1 1110 
+                    chNeighPack* chunkochunks = new chNeighPack();
                     chunkochunks->coords = chunk->coord;
                     chunkochunks->mainChunk = chunk.get();
+                    //memcpy(chunkochunks->block_data.data(), chunk->block_data.data(), CHUNK_VOLUME);
+                    for (int i = 0; i < 4; i++) {
+                        ivec2 chcrds = coords + ivec2(dirs[i], dirs[i + 4]);
+                        uint idxcrds = pack(chcrds);
+                        if (world.chunkData.count(idxcrds)) {
+                            auto& ch = world.chunkData.at(idxcrds);
+                            memcpy(chunkochunks->neighbour_data[i].data(), ch->block_data.data(), CHUNK_VOLUME);
+                        }
+                    }
                     {
                         std::lock_guard<std::mutex> lock(chunkUpdateRequestMutex);
                         chunkCleanupQueue.push(chunkochunks);
@@ -995,7 +1025,7 @@ public:
                 chunkochunks->mainChunk = chunk.get();
                 {
                     std::lock_guard<std::mutex> lock(chunkUpdateRequestMutex);
-                    chunkCleanupQueue.push(chunkochunks);
+                    //chunkCleanupQueue.push(chunkochunks);
                 }
                 chunkUpdateCV.notify_one();
                 chunk->setAsClean();
@@ -1024,7 +1054,7 @@ public:
                         chunkochunks->mainChunk = chunk.get();
                         {
                             std::lock_guard<std::mutex> lock(chunkUpdateRequestMutex);
-                            chunkCleanupQueue.push(chunkochunks);
+                            //chunkCleanupQueue.push(chunkochunks);
                         }
                         chunkUpdateCV.notify_one();
                         chunk->setAsClean();
