@@ -166,14 +166,17 @@ struct Text
     }
 
     void replaceWord(string word, vec3 color, string delim = "\n", float size = 25) {
-        //deleteWord();
-        stringstream ss(word);
+        word += "\n";
         string line;
         float height = 0;
         Mesh linemesh;
-        while (getline(ss, line)) {
-            createTextQuad(linemesh, line, height, color, size);
-            height -= 50;
+        for (int i = 0; i < word.size(); i++) {
+			line += word[i];
+            if (word[i] == '\n') {
+                createTextQuad(linemesh, line, height, color, size);
+                height -= 50;
+                line = "";
+            }
         }
         letters.createMesh(linemesh.vertices, linemesh.indices, linemesh.vertices.size(), linemesh.indices.size());
     }
@@ -215,7 +218,7 @@ struct Text
         Textures[TEXT_TEX]->useTexture();
         //glClearColor(0, 1, 0, 1);
         letters.renderMesh();
-        //if (depthEnabled) glEnable(GL_DEPTH_TEST);  
+        if (depthEnabled) glEnable(GL_DEPTH_TEST);  
     }
 
     void drawonly() {

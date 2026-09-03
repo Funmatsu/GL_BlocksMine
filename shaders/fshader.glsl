@@ -150,18 +150,19 @@ vec4 calcLightByDirection(Light light, vec3 direction, float shadowFactor){
 	return vec4((ambientColor * (1 - shadowFactor*0.4) + (1 - shadowFactor) * diffuseColor).xyz, 1.0f);
 }
 vec4 calcDirLight(){ 
-	float shadowFactor = calcDirectionalShadowFactor();
-	//float shadowFactor = 1.0f;
+	//float shadowFactor = calcDirectionalShadowFactor();
+	float shadowFactor = 0.0f;
 	return calcLightByDirection(directionalLight.base, directionalLight.direction, shadowFactor);
 }
 vec4 calcPointLight() {
 	vec4 totalColor = vec4(0, 0, 0, 0);
+	float shadowFactor = 0.0;
 	for(int i = 0; i < pointLightCount; i++){
 		vec3 direction = -(pointLights[i].position - FragPos);
 		float distance = length(direction);
 		direction = normalize(direction);
 		
-		vec4 color = calcLightByDirection(pointLights[i].base, direction, 0.0);
+		vec4 color = calcLightByDirection(pointLights[i].base, direction, shadowFactor);
 		float attenuation = (pointLights[i].exponent * (distance * distance) +
 							 pointLights[i].linear * distance +
 							 pointLights[i].constant);

@@ -35,7 +35,7 @@ public:
 	void mouseControl(GLfloat xChange, GLfloat yChange);
 	vec3 getFront() { return front; }
 	vec3 getPosition() { return position; }
-	vec3& getPosition(bool) { return position; }
+	vec3& getRefPosition() { return position; }
 	vec3 getRight() { return right; }
 	vec3 getInitVelocity() { return initial_velocity; }
 	float getTurnSpeed() { return turnSpeed; }

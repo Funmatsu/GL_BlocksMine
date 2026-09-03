@@ -47,8 +47,7 @@ std::queue<Block> placeResQueue;
 std::mutex placeResMutex;
 std::mutex worldChunkDataMutex;
 
-//std::queue<chNeighPackPtr*> chunkCleanupQueue;
-std::queue<chNeighPack*> chunkCleanupQueue;
+std::queue<chNeighPackPtr*> chunkCleanupQueue;
 std::queue<chNeighResult*> chunkMeshResult;
 
 std::atomic<bool> chunkGenRunning = true;
@@ -1129,36 +1128,54 @@ void meshChunk(chNeighPackPtr* chNeigh) {
     delete chNeigh;
 }
 
+void blockBreakMainThread() {
+    if (blockBreakingOut) {
+        Block block = world.delBlocklook_at();
+        blockBreakingOut = false;
+		breakResQueue.push(block);
+    }
+}
+
+void blockPlaceMainThread() {
+    if (blockPlacingOut) {
+        world.addBlocklook_at(inventory.mainInventorySlots[3][slot].item);
+        blockPlacingOut = false;
+    }
+}
+
 void blockBreakThreadWorker() {
-    while (blockBreaking) {
+    //while (blockBreaking) {
         Block block;
         if (blockBreakingOut) {
-            std::lock_guard<std::mutex> lock(breakReqMutex);
-            block = world.delBlocklook_at();
+            {
+                //std::lock_guard<std::mutex> lock(breakReqMutex);
+                block = world.delBlocklook_at();
+            }
             //this_thread::sleep_for(chrono::milliseconds(100));
             ivec2 chunkPos = ivec2(floorDiv(block.position.x, CHUNK_SIZE), floorDiv(block.position.z, CHUNK_SIZE));
-            //world.updateChunk(chunkPos, vec3(0), vec3(0));
 
             blockBreakingOut = false;
             breakResQueue.push(block);
         }
         
-    }
+    //}
 }
 
 void blockPlaceThreadWorker() {
-    while (blockPlacing) {
+    //while (blockPlacing) {
         if (blockPlacingOut) {
-            std::lock_guard<std::mutex> lock(placeReqMutex);
-            //Block block = 
-            world.addBlocklook_at(inventory.mainInventorySlots[3][slot].item);
+            {
+                //std::lock_guard<std::mutex> lock(placeReqMutex);
+                //Block block = 
+                world.addBlocklook_at(inventory.mainInventorySlots[3][slot].item);
+            }
+            //this_thread::sleep_for(chrono::milliseconds(100));
+            blockBreakingOut = false;
+            blockPlacingOut = false;
+            if (!placeResQueue.empty())
+                placeResQueue.pop();
         }
-        //this_thread::sleep_for(chrono::milliseconds(100));
-        blockBreakingOut = false;
-        blockPlacingOut = false;
-        if (!placeResQueue.empty())
-            placeResQueue.pop();
-    }
+    //}
 }
 
 void chunkWorker() {
@@ -1255,8 +1272,7 @@ void meshScheduleWorker() {
 
 void updateChunkJob() {
     while (!stopChunkUpdaters) {
-        //chNeighPackPtr* chNeigh;
-        chNeighPack* chNeigh;
+        chNeighPackPtr* chNeigh;
         {
             unique_lock<mutex> lock(chunkUpdateRequestMutex);
             chunkUpdateCV.wait(lock, [] { return !chunkCleanupQueue.empty() || stopChunkUpdaters; });

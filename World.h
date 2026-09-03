@@ -730,11 +730,12 @@ void World::createItem(vec3 blockPos, Item blockType, vec3 direction) {
     ivec2 chunkPos = ivec2(floorDiv(blockPos.x, CHUNK_SIZE), floorDiv(blockPos.z, CHUNK_SIZE));
     auto& chunk = chunkData.at(pack(chunkPos));
     BlockData& blockData = chunk->block_data[chunk->at(blockPos)];
+    chunk->setAsDirty();
+    //updateChunk(chunkPos, trueDir, blockPos);
 
     blockData = BlockData(blockType);
     ivec3 trueDir = floor(blockPos - direction) + vec3(1.0);
-    chunk->setAsDirty();
-    //updateChunk(chunkPos, trueDir, blockPos);
+    
     inventory.deassignInvSlot(slot, 3);
     blockData.blockType.assignLight(pointLights, blockPos);
 }
@@ -747,8 +748,7 @@ void emitFace(Mesh& m, int face, Item blockType, float x, float y, float z);
 
 //void meshChunk(vec2 xyChunk, unique_ptr<Chunk>& ch);// , int subChunky);
 
-//void meshChunk(chNeighPackPtr*);
-void meshChunk(chNeighPack*);
+void meshChunk(chNeighPackPtr*);
 
 //
 //void meshSubChunks(vec2 xyChunk, Chunk* ch);// , Mesh& m, int subChunky);
@@ -762,8 +762,7 @@ void meshChunk(vec2 xyChunk, Chunk* cd, Mesh& out, vec3 direction, ivec3 positio
 
 void generateChunkAt(vec2 xyChunk, Chunk* repChunk);
 
-//void updateChunk(chNeighPackPtr* chNeigh, vec3 direction, ivec3 position) {
-void updateChunk(chNeighPack* chNeigh, vec3 direction, ivec3 position) {
+void updateChunk(chNeighPackPtr* chNeigh, vec3 direction, ivec3 position) {
     //unique_ptr<Mesh> m = make_unique<Mesh>();
     // Rebuild mesh from current blockData
  //   static int vi = 0;

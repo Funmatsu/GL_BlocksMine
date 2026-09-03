@@ -151,8 +151,8 @@ public:
             workers.push_back(thread(updateChunkJob));
         }
 
-        workers.push_back(thread(blockBreakThreadWorker));
-        workers.push_back(thread(blockPlaceThreadWorker));
+        //workers.push_back(thread(blockBreakThreadWorker));
+        //workers.push_back(thread(blockPlaceThreadWorker));
 
         //for (int i = 0; i < 1; ++i) {
         //    workers.push_back(thread(chunkMeshSchedWorker));
@@ -181,20 +181,21 @@ public:
     void run() {
         while (!mainWindow.getShouldClose()) {
             auto startframe = chrono::high_resolution_clock::now();
+            shaders[0]->useShader();
+            
             static bool breakblockdb = 0, placeblockdb = 0, invtoggledb = 0; // db = debounce
             static int angletest = 0;
             static double frame_duration_calc;
 			static int spiralCount = 0;
+            
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            glfwPollEvents();
-
+            glfwPollEvents(); 
+            
             sky.applySky(view, projection);
             glEnable(GL_DEPTH_TEST);
             glDepthFunc(GL_LESS);
+
             start = chrono::high_resolution_clock::now();
-            directionalShadowPass(&mainLight, model); //bound base shader shaders[0] as well before it was removed
-            shaders[0]->useShader();
-            
             if (inventory.mainInventoryOn || inventory.craftingTableInventoryOn) handleInvSlotClicks();
             cursor.x = mainWindow.getXPos();
             cursor.y = mainWindow.getYPos();
@@ -207,10 +208,10 @@ public:
             }
             if (person_view % 4 < 2)
                 activeCamera->setFront(firstCamera.getFront());
-            spiralCount = (spiralCount >= spiral.size()) ? 0 : spiralCount;
-            for (; spiralCount <= spiral.size(); spiralCount++) {  
+                        
+            for (; spiralCount <= spiral.size(); spiralCount++) {
+                spiralCount = (spiralCount >= spiral.size()) ? 0 : spiralCount;
 				ivec2 chunkOff = spiral[spiralCount];
-            //for (auto& chunkOff : spiral) {
                 ivec2 camChunkPos = ivec2(floorDiv(firstCamera.getPosition().x, CHUNK_SIZE), floorDiv(firstCamera.getPosition().z, CHUNK_SIZE));
                 ivec2 chunkPos = camChunkPos + chunkOff; // This is what triggers chuk
 				uint  chCrds = pack(chunkPos);
@@ -225,17 +226,6 @@ public:
                 if (!(++count % 128)) { break; }
             }
 
-            while (!chunkResultQueue.empty()) {
-                chPack ch;
-                {
-                    lock_guard<mutex> lock(addChunkMutex);
-                    ch = chunkResultQueue.front();
-                    chunkResultQueue.pop();
-                }
-                world.chunkData.try_emplace(ch.coords, move(ch.chPtr));
-                if (!(++count % 128)) break;
-            }
-
             while (!chunkMeshResult.empty()) {
                 chNeighResult* chNeighRes;
                 {
@@ -248,16 +238,29 @@ public:
                 chunk->mesh->createMesh(chNeighRes->mesh->vertices, chNeighRes->mesh->indices);
                 delete chNeighRes;
 
-                if (!(++count % 2)) break; // To mesh as fast as possible, donot cap n_o chunks meshed per frame....Actually, absolute cap, no pun intended
+                if (!(++count % 2)) break; // To mesh as fast as ossible, donot cap n_o chunks meshed per frame.
+            }
+
+            while (!chunkResultQueue.empty()) {
+                chPack ch;
+                {
+                    lock_guard<mutex> lock(addChunkMutex);
+                    ch = chunkResultQueue.front();
+                    chunkResultQueue.pop();
+                }
+                world.chunkData.try_emplace(ch.coords, move(ch.chPtr));
+                if (!(++count % 128)) break;
             }
 
             VP = projection * firstCamera.calcViewMatrix();
             mat4 VP_t = VP;// transpose(VP);
             extractFrustumPlanes(VP_t);
-
+            //// >0.1ms
+            
             Textures[BLOCK_TEX]->useTexture();
-
-            shaders[0]->setDirectionalLightTransform(mainLight.directionalLightTransform); // moved for ommission
+                        
+            directionalShadowPass(&mainLight, model); //binds base shader shaders[0] as well
+            
             glUniform3f(glGetUniformLocation(shaders[0]->getShaderId(), "camPos"), firstCamera.getPosition().x, firstCamera.getPosition().y, firstCamera.getPosition().z);
             glUniform1f(glGetUniformLocation(shaders[0]->getShaderId(), "fogStart"), 0.72 * CHUNK_SIZE * renderDistance);
             glUniform1f(glGetUniformLocation(shaders[0]->getShaderId(), "fogEnd"), 0.75 * CHUNK_SIZE * renderDistance);
@@ -274,9 +277,12 @@ public:
             //isolateWorld();
             //scheduleMeshWorld();
             //renderWorld();
-
+            
+            blockBreakMainThread();
+            blockPlaceMainThread();
             render();
-
+            //1-10ms
+            
             headPos = firstCamera.getPosition(), headFront = firstCamera.getFront();
             lookBlock = getBlockAt(lookingAtBlock());
 
@@ -294,7 +300,7 @@ public:
             shaders[0]->setPointLights(pointLights, pointLightCount);
 
             keyControl(dt);
-
+            
             if (inventory.mainInventoryOn || inventory.craftingTableInventoryOn) {
                 glfwSetInputMode(mainWindow.getWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
                 mainWindow.setMouseMoved();
@@ -444,40 +450,39 @@ public:
                 }
 
                 if (mainWindow.getKeys()[GLFW_KEY_F5]) {
-                    mat4 compassModel = translate(mat4(1.0f), headPos + headFront);
-                    glUniformMatrix4fv(shaders[0]->getModelLocation(), 1, GL_FALSE, value_ptr(compassModel));
-                    compassMesh.renderMesh();
-                    glUniformMatrix4fv(shaders[0]->getModelLocation(), 1, GL_FALSE, value_ptr(model));
-                    cursorPos.replaceWord("cursor position: x = " + to_string(cursor.x) + ", y = " + to_string(cursor.y), vec3(0, 1, 0), vec2(50, 1500));
-                    position.drawText(ortho), craftedItemName.drawText(ortho), cursorPos.drawText(ortho);
+                    //mat4 compassModel = translate(mat4(1.0f), headPos + headFront);
+                    //glUniformMatrix4fv(shaders[0]->getModelLocation(), 1, GL_FALSE, value_ptr(compassModel));
+                    //compassMesh.renderMesh();
+                    //glUniformMatrix4fv(shaders[0]->getModelLocation(), 1, GL_FALSE, value_ptr(model));
+                    //cursorPos.replaceWord("cursor position: x = " + to_string(cursor.x) + ", y = " + to_string(cursor.y), vec3(0, 1, 0), vec2(50, 1500));
+                    position.drawText(ortho);// , craftedItemName.drawText(ortho), cursorPos.drawText(ortho);
 
-                    auto end = chrono::high_resolution_clock::now();
-                    double frame_duration(chrono::duration<double>(end - startframe).count());
+					string position_str = 
+                        "position  x: "
+						+ to_string((int)headPos.x) + " y: "
+						+ to_string((int)headPos.y) + " z: "
+						+ to_string((int)headPos.z) + " cursor count -> "
+						+ to_string(cursor.count) + " block : " + itemTypeString[cursor.item.id]
+						+ "\n"
+						+ "looking at "
+						+ itemTypeString[lookBlock.type.id] + " Amount of dropped items : " + to_string(dropped.size())
+						+ "\n"
+                        + " FPS : " + to_string(int(fpscount))
+                        + " | Frame duration : " + to_string(int(1000 * frame_duration_calc))
+						// fpscount)
+						;
+                    position.replaceWord(position_str, vec3(0.4, 1, 0.7));
 
-                    position.replaceWord("position  x: "
-                        + to_string((int)headPos.x) + " y: "
-                        + to_string((int)headPos.y) + " z: "
-                        + to_string((int)headPos.z) + " cursor count -> "
-                        + to_string(cursor.count) + " block : " + itemTypeString[cursor.item.id]
-                        + "\n"
-                        + "looking at "
-                        + itemTypeString[lookBlock.type.id] + " | Amount of dropped items : " + to_string(dropped.size())
-                        + "\n"
-                        + " | Frame duration : " + to_string(frame_duration_calc)
-                        + " FPS : " + to_string(int(1/frame_duration_calc))
-                        , vec3(0.4, 1, 0.7));
+                    //craftedItemName.replaceWord("main craft slot 1 contains: " + itemTypeString[craftedItem.item.id]
+                    //    + ", " + to_string(inventory.mainCraftingSlots[0][1].count) + (inventory.mainCraftingSlots[0][1].count <= 1 ? " item" : " items")
+                    //    + (inventory.invChange() ? " inventory updating...." : " inventory up to date! "
+                    //        + to_string(renderDistance) + " render distance"), normalize(vec3(1.3, 1, 0)), vec2(50, 1550));
 
-                    craftedItemName.replaceWord("main craft slot 1 contains: " + itemTypeString[craftedItem.item.id]
-                        + ", " + to_string(inventory.mainCraftingSlots[0][1].count) + (inventory.mainCraftingSlots[0][1].count <= 1 ? " item" : " items")
-                        + (inventory.invChange() ? " inventory updating...." : " inventory up to date! "
-                            + to_string(renderDistance) + " render distance"), normalize(vec3(1.3, 1, 0)), vec2(50, 1550));
-
-                    if (!(count_time % 10)) {
+                    if (!(count_time++ % 10)) {
                         auto end = chrono::high_resolution_clock::now();
                         double frame_duration(chrono::duration<double>(end - start).count());
                         fpscount = (int(1 / frame_duration));
                     }
-                    count_time++;
                 }
 
                 if (mainWindow.getKeys()[GLFW_KEY_ENTER]) {
@@ -498,7 +503,7 @@ public:
 
                 placeblockdb = (mainWindow.keyIsPressed(GLFW_KEY_P) || mainWindow.rightClickButtonPressed()) == 1;
             }
-
+            ////g
             if (person_view == 0) {
                 activeCamera = &firstCamera;
             }
@@ -510,8 +515,9 @@ public:
             }
 
             Textures[FACE_TEX]->useTexture();
-
-            mat4 modelHead = translate(mat4(1.0f), headPos);
+            //~0.1 - 0.2ms
+            
+            mat4 modelHead = translate(mat4(1.0f), firstCamera.getPosition());
             mat4 rotation(1.0f);
             vec3 dir = normalize(firstCamera.getFront());
             vec3 right = cross(vec3(0, 1, 0), dir);
@@ -523,7 +529,7 @@ public:
             Textures[SLOT_TEX]->useTexture();
 
             vec3 cameraPosition = firstCamera.getPosition();
-
+            
             if (!blockExistsAt((vec3(ftoint(ball.position.x), ftoint(ball.position.y - 0.5), ftoint(ball.position.z))))) {
                 tp = 1;
                 if (ball.shot) {
@@ -543,7 +549,6 @@ public:
                     tp = 0;
                 }
             }
-
 
             Textures[BLOCK_TEX]->useTexture();
             Textures[TOP_TEX]->useNextTexture();
@@ -583,7 +588,9 @@ public:
                 drop.draw();
             }
             glUniformMatrix4fv(shaders[0]->getModelLocation(), 1, GL_FALSE, value_ptr(model));
+            
             //shaders[5]->useShader();
+            view = activeCamera->calcViewMatrix();
 
             //For block highlighting
             //ivec3 lookPosition = lookingAtBlock();
@@ -613,7 +620,6 @@ public:
             glBlendFunc(GL_ONE_MINUS_DST_COLOR, GL_ONE);
             inventory.drawHotbar();
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
             if (inventory.mainInventoryOn)
                 Textures[LARGE_INV_TEX]->useTexture();
             if (mainWindow.getKeys()[GLFW_KEY_C]) {
@@ -777,7 +783,7 @@ public:
                     cursor.textCount.drawText(ortho);
                 }
             }
-
+            
             for (int i = 0; i < 9; i++) {
                 mat4 itemModel = scale(mat4(1.0f), vec3(0.1f, 0.12f, 0.1f)) * rotate(mat4(1.0f), radians(-90.0f), vec3(0, 0, 1)) *
                     ((!inventory.hotbarSlots[i].item.isFlat()) ? rotate(mat4(1.0f), radians(30.0f), vec3(1, 0, 0)) * rotate(mat4(1.0f), radians(45.0f), vec3(0, 1, 0)) : mat4(1.0f)) *
@@ -787,14 +793,14 @@ public:
                 inventory.hotbarSlots[i].textCount.drawText(ortho);
             }
 
-            render3Din2D(itemModel * breakModel
+            mat4 handModel = itemModel * breakModel
                 * rotate(mat4(1.0f), radians((!currentBlock.item.isTool() ? -35.f : 0.f)), vec3(1, 1, 1))
                 * rotate(mat4(1.0f), radians((!currentBlock.item.isTool() ? 45.f : 200.f)), vec3(0, 1, 0))
-                * rotate(mat4(1.0f), radians((!currentBlock.item.isTool() ? 0.f : 30.f)), vec3(0, 0, 1)),
-                currentBlock.mesh,
-                translate(mat4(1.0f), vec3((float)centerX + 600.f - 20.f * (firstCamera.getYaw() - lastYaw),
-                    (float)centerY - 650.f - 20.f * (firstCamera.getPitch() - lastPitch) - 2 * (firstCamera.initial_velocity.y + firstCamera.velocity.y),
-                    0.f)),
+                * rotate(mat4(1.0f), radians((!currentBlock.item.isTool() ? 0.f : 30.f)), vec3(0, 0, 1));
+
+            render3Din2D(handModel, currentBlock.mesh, translate(mat4(1.0f), 
+                vec3((float)centerX + 600.f - 20.f * (firstCamera.getYaw() - lastYaw),
+                     (float)centerY - 650.f - 20.f * (firstCamera.getPitch() - lastPitch) - 2 * (firstCamera.initial_velocity.y + firstCamera.velocity.y), 0.f)),
                 currentBlock.quadMesh, ortho, currentBlockView, itemProj, currentBlock.item);
 
             angletest += 1;
@@ -834,7 +840,7 @@ public:
             if (spawn <= 511) {
                 spawn++;
             }
-
+            
             bool onGround = playerCollides();
             if (!onGround && spawn > 511) {
                 firstCamera.initial_velocity.y -= 0.5;
@@ -844,9 +850,10 @@ public:
                 firstCamera.initial_velocity *= vec3(0);
                 firstCamera.velocity_factor = vec3(1);
             }
-
+            
             mainWindow.updateLastKeyPress();
-            mainWindow.swapBuffers();      
+            mainWindow.swapBuffers();
+
             auto endframe = chrono::high_resolution_clock::now();
             frame_duration_calc = (chrono::duration<double>(endframe - startframe).count());
         }
@@ -885,70 +892,39 @@ public:
     }
 
     void render() {
-        //auto start = chrono::high_resolution_clock::now();
         vec3 playerPos = firstCamera.getPosition() / vec3(CHUNK_SIZE, 1, CHUNK_SIZE);
         vec2 _2dPlPosHi = vec2(playerPos.x, playerPos.z) + float(renderDistance),
-            _2dPlPosLo = vec2(playerPos.x, playerPos.z) - float(renderDistance);
+             _2dPlPosLo = vec2(playerPos.x, playerPos.z) - float(renderDistance);
 
         for (auto it = world.chunkData.begin(); it != world.chunkData.end(); ) {
             auto& chunk = it->second;
             ivec2 coords = chunk->coords();
-            bool chunkReady = false, inUse = false;
+            bool chunkReady = false;
+
+            bool inUse = false;
             if (((coords.x <= _2dPlPosLo.x || coords.x >= _2dPlPosHi.x) ||
                 (coords.y <= _2dPlPosLo.y || coords.y >= _2dPlPosHi.y)))
             {
-                inUse = chunk->inUse.compare_exchange_strong(chunkReady, true);
-                if (!chunk->safe_unload && inUse) {
+                if (!chunk->safe_unload && chunk->inUse.compare_exchange_strong(chunkReady, true)) {
                     chunkCoords.erase((chunk->coord));
                     it = world.chunkData.erase(it);
                 }
                 else it++;
-                                
                 continue;
             }
 
-            //if (chunk->getDirty()) {
-            //    if ((chunk->neighboursPresent & 0x1E) != 0x1E) {
-            //        for (int i = 0; i < 4; i++) {
-            //            ivec2 chcrds = coords + ivec2(dirs[i], dirs[i + 4]);
-            //            if (world.chunkData.count(pack(chcrds)) > 0)
-            //                chunk->neighboursPresent |= (1 << (i + 1));
-            //        }
-            //    }
-            //    if (chunk->neighboursPresent == 0x1E) { // 1 1110 = 0x1E = 30
-            //        chNeighPackPtr* chunkochunks = new chNeighPackPtr();
-            //        chunkochunks->coords = chunk->coord;
-            //        chunkochunks->mainChunk = chunk.get();
-            //        {
-            //            std::lock_guard<std::mutex> lock(chunkUpdateRequestMutex);
-            //            chunkCleanupQueue.push(chunkochunks);
-            //        }
-            //        chunkUpdateCV.notify_one();
-            //        chunk->setAsClean();
-            //    }
-            //}
             if (chunk->getDirty()) {
                 if ((chunk->neighboursPresent & 0x1E) != 0x1E) {
                     for (int i = 0; i < 4; i++) {
                         ivec2 chcrds = coords + ivec2(dirs[i], dirs[i + 4]);
-                        if (world.chunkData.count(pack(chcrds)) > 0) {
+                        if (world.chunkData.count(pack(chcrds)) > 0)
                             chunk->neighboursPresent |= (1 << (i + 1));
-                        }
                     }
                 }
-                if (chunk->neighboursPresent == 0x1E) { // 1 1110 
-                    chNeighPack* chunkochunks = new chNeighPack();
+                if (chunk->neighboursPresent == 0x1E) { // 1 1110 = 0x1E = 30
+                    chNeighPackPtr* chunkochunks = new chNeighPackPtr();
                     chunkochunks->coords = chunk->coord;
                     chunkochunks->mainChunk = chunk.get();
-                    //memcpy(chunkochunks->block_data.data(), chunk->block_data.data(), CHUNK_VOLUME);
-                    for (int i = 0; i < 4; i++) {
-                        ivec2 chcrds = coords + ivec2(dirs[i], dirs[i + 4]);
-                        uint idxcrds = pack(chcrds);
-                        if (world.chunkData.count(idxcrds)) {
-                            auto& ch = world.chunkData.at(idxcrds);
-                            memcpy(chunkochunks->neighbour_data[i].data(), ch->block_data.data(), CHUNK_VOLUME);
-                        }
-                    }
                     {
                         std::lock_guard<std::mutex> lock(chunkUpdateRequestMutex);
                         chunkCleanupQueue.push(chunkochunks);
@@ -964,9 +940,6 @@ public:
 
             it++;
         }
-        //auto end = chrono::high_resolution_clock::now();
-        //double duration = chrono::duration<double>(end - start).count();
-        //cout << "Render duration: " << duration << " seconds" << endl;
     }
 
     void renderShadowWorld() {
@@ -1025,7 +998,7 @@ public:
                 chunkochunks->mainChunk = chunk.get();
                 {
                     std::lock_guard<std::mutex> lock(chunkUpdateRequestMutex);
-                    //chunkCleanupQueue.push(chunkochunks);
+                    chunkCleanupQueue.push(chunkochunks);
                 }
                 chunkUpdateCV.notify_one();
                 chunk->setAsClean();
@@ -1054,7 +1027,7 @@ public:
                         chunkochunks->mainChunk = chunk.get();
                         {
                             std::lock_guard<std::mutex> lock(chunkUpdateRequestMutex);
-                            //chunkCleanupQueue.push(chunkochunks);
+                            chunkCleanupQueue.push(chunkochunks);
                         }
                         chunkUpdateCV.notify_one();
                         chunk->setAsClean();
@@ -1065,25 +1038,33 @@ public:
     }
 
     void directionalShadowPass(DirectionalLight* light, mat4 model) {
-        directionalShadowShader->useShader();
-        directionalShadowShader->setDirectionalLightTransform(light->calcLightTransform());
-        glUniformMatrix4fv(directionalShadowShader->getModelLocation(), 1, GL_FALSE, value_ptr(model));
-        light->shadow_map->write();
-        glClear(GL_DEPTH_BUFFER_BIT);
-        renderShadowWorld();
+        if(mainWindow.getKeys()[GLFW_KEY_B]){
+            directionalShadowShader->useShader();
+            directionalShadowShader->setDirectionalLightTransform(light->calcLightTransform());
+            glUniformMatrix4fv(directionalShadowShader->getModelLocation(), 1, GL_FALSE, value_ptr(model));
+            light->shadow_map->write();
+            glClear(GL_DEPTH_BUFFER_BIT);
+            renderShadowWorld();
 
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);        
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        }
+
+        shaders[0]->useShader();
+        shaders[0]->setDirectionalLightTransform(light->directionalLightTransform);
     }////
 
-    int ftoint(float num) {
+    int ftoint(float num) { // floor to int 
         return num >= 0 ? num : num - 1;
+    }
+    int rtoint(float num) { // round to int
+        return num >= 0 ? ++num : --num;
     }
 
     bool playerCollides() {
         return  blockExistsAt(vec3(ftoint(firstCamera.getPosition().x - boundW / 2 + 0.5), firstCamera.getPosition().y - 1.5, ftoint(firstCamera.getPosition().z - boundL / 2 + 0.5)), 1) ||
-            blockExistsAt(vec3(ftoint(firstCamera.getPosition().x - boundW / 2 + 0.5), firstCamera.getPosition().y - 1.5, ftoint(firstCamera.getPosition().z + boundL / 2 + 0.5)), 1) ||
-            blockExistsAt(vec3(ftoint(firstCamera.getPosition().x + boundW / 2 + 0.5), firstCamera.getPosition().y - 1.5, ftoint(firstCamera.getPosition().z + boundL / 2 + 0.5)), 1) ||
-            blockExistsAt(vec3(ftoint(firstCamera.getPosition().x + boundW / 2 + 0.5), firstCamera.getPosition().y - 1.5, ftoint(firstCamera.getPosition().z - boundL / 2 + 0.5)), 1);
+                blockExistsAt(vec3(ftoint(firstCamera.getPosition().x - boundW / 2 + 0.5), firstCamera.getPosition().y - 1.5, ftoint(firstCamera.getPosition().z + boundL / 2 + 0.5)), 1) ||
+                blockExistsAt(vec3(ftoint(firstCamera.getPosition().x + boundW / 2 + 0.5), firstCamera.getPosition().y - 1.5, ftoint(firstCamera.getPosition().z + boundL / 2 + 0.5)), 1) ||
+                blockExistsAt(vec3(ftoint(firstCamera.getPosition().x + boundW / 2 + 0.5), firstCamera.getPosition().y - 1.5, ftoint(firstCamera.getPosition().z - boundL / 2 + 0.5)), 1);
     }
 
     void keyControl(float dt) {
@@ -1095,17 +1076,19 @@ public:
         else {
             deltaTime = 2;
         }
-        vec3& position = activeCamera->getPosition(1),
+        vec3& position = activeCamera->getRefPosition(),
             right = activeCamera->getRight(),
             front = activeCamera->getFront(),
             & initial_velocity = activeCamera->initial_velocity;
         if (mainWindow.getKeys()[GLFW_KEY_W]) {
-            vec3 checkPosX0 = activeCamera->getPosition() + vec3(front.x * movementSpeed * deltaTime, -1, 0),
-                checkPosZ0 = activeCamera->getPosition() + vec3(0, -1, front.z * movementSpeed * deltaTime),
-                checkPosX1 = activeCamera->getPosition() + vec3(front.x * movementSpeed * deltaTime, 0, 0),
-                checkPosZ1 = activeCamera->getPosition() + vec3(0, 0, front.z * movementSpeed * deltaTime);
-            if (!blockExistsAt(checkPosX0 + vec3(0.5, 0, 0), 1) && !blockExistsAt(checkPosX1 + vec3(0.5, 0, 0)), 1) position.x = checkPosX0.x;
-            if (!blockExistsAt(checkPosZ0 + vec3(0, 0, 0.5), 1) && !blockExistsAt(checkPosZ1 + vec3(0, 0, 0.5)), 1) position.z = checkPosZ0.z;
+            vec3 finalPosition = position;
+            vec3 checkPosX0 = vec3(rtoint(-front.x) - .5, 0,                     0),// + vec3(front.x * movementSpeed * deltaTime, -1, 0),
+                 checkPosZ0 = vec3(                    0, 0, rtoint(-front.z) - .5),// + vec3(0, -1, front.z * movementSpeed * deltaTime),
+                 checkPosX1 = vec3(rtoint( front.x) + .5, 0,                     0),// + vec3(front.x * movementSpeed * deltaTime, 0, 0),
+                 checkPosZ1 = vec3(                    0, 0, rtoint( front.z) + .5);// + vec3(0, 0, front.z * movementSpeed * deltaTime);
+            if (!blockExistsAt(position + checkPosX0) && !blockExistsAt(position + checkPosX1)) finalPosition.x += front.x * movementSpeed * deltaTime;
+            if (!blockExistsAt(position + checkPosZ0) && !blockExistsAt(position + checkPosZ1)) finalPosition.z += front.z * movementSpeed * deltaTime;
+			position = finalPosition;
         }
         if (mainWindow.getKeys()[GLFW_KEY_S]) {
             position -= vec3(front.x * movementSpeed * deltaTime, 0, front.z * movementSpeed * deltaTime);
@@ -1138,7 +1121,7 @@ public:
 
         if (mainWindow.getKeys()[GLFW_KEY_L]) {
             position.y = 100;
-            if (mainWindow.getKeys()[GLFW_KEY_B]) {
+            if (mainWindow.getKeys()[GLFW_KEY_C]) {
                 position = vec3(1000.0f, 100.0f, 1000.0f);
             }
         }

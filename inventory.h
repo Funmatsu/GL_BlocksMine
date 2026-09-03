@@ -723,7 +723,7 @@ void render3Din2D(mat4 itemModel, LightMesh object3D, mat4 quadModel, LightMesh 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glEnable(GL_DEPTH_TEST);
     glViewport(0, 0, mainWindow.getBufferWidth(), mainWindow.getBufferHeight());
-    //glDisable(GL_DEPTH_TEST);
+    glDisable(GL_DEPTH_TEST);
 
     shaders[4]->useShader();
     glUniformMatrix4fv(shaders[4]->getOrthoLocation(), 1, GL_FALSE, glm::value_ptr(itemOrtho));
