@@ -37,7 +37,7 @@ uint8 attrs[19] = { // block attributes : {bool unculled | bool placeable | bool
 	0x24,
 	0x24,
 	0x24,
-	0x24,
+	0x25,
 	0x64,
 	0x24,
 	0x66,
@@ -85,6 +85,7 @@ public:
 	} 
 
 	void deassignLight(PointLight* pLight, vec3 position) {
+		if(pointLightCount > 0)
 		pLight[pointLightCount] = PointLight();
 		if (isLuninous() && pointLightCount > 0) {
 			pointLightCount--;

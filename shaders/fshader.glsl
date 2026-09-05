@@ -4,11 +4,12 @@ out vec4 color;
 in vec4 pdc;
 in vec2 texCoords;
 flat in float transparency;
+in float bLight;
 in vec3 normal;
 in vec3 FragPos;
 in vec3 colorMask;
 in vec4 directionalLightSpacePos;  
-int bufferWidth = 1920	;
+int bufferWidth = 1920;
 int bufferHeight = 1059;
 
 const int MAX_POINT_LIGHTS = 100;
@@ -179,7 +180,7 @@ float LinearizeDepth(float depth, float near, float far) {
 void main(){
 	uint uvs = floatBitsToUint(transparency);
 	uint tileSize = (uvs >> 16) & 0xFFu;
-
+	
 	vec2 uv = vec2((uvs & 0xFFu), (uvs >> 8) & 0xFFu);
 	vec2 uvCoords = (fract(texCoords) + uv) / float(tileSize);
 	vec4 tex = texture(theTexture, uvCoords);
@@ -209,7 +210,7 @@ void main(){
 	vec4 overlayColorMask = ((uvCoords.y >= 0.4 && uvCoords.x >= 0.6) && (uvCoords.y <= 0.6 && uvCoords.x <= 0.8)) || ((uvCoords.y >= 0.6 && uvCoords.x >= 0.0) && (uvCoords.y <= 0.8 && uvCoords.x <= 0.2)) ? vec4(1.0f) : vec4(colorMask, 1.0f);
 	vec4 breakStageTex = isBreakingBlock ? mix(texture(breakStageTexture, vec2(localuv.x + uniformBreaking, localuv.y) * 0.2), vec4(1), 0.25) : vec4(1);
 
-	vec4 fragCol = (topTex * (vec4(colorMask, 1.0f) - vec4(0.3f, 0.0f, 0.1f, 0.0f)) + max((tex) * overlayColorMask - topTex * vec4(0.2f, 1.0f, 0.2f, 1.0f), vec4(0.2f))) * vec4(1.0, 1.0f, 1.0f, 1.0f) * finalColor;
+	vec4 fragCol = (topTex * (vec4(colorMask, 1.0f) - vec4(0.3f, 0.0f, 0.1f, 0.0f)) + max((tex) * overlayColorMask - topTex * vec4(0.2f, 1.0f, 0.2f, 1.0f), vec4(0.2f))) * bLight * finalColor;
 
 	color = vec4(mix(vec3(0.6f, 0.7f, 0.85f), breakStageTex.rgb*fragCol.rgb, fogFactor), fogAlpha);
 };

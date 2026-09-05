@@ -66,18 +66,29 @@ struct MeshData {
 
 struct BlockData {
     Item blockType;
-    //abyte blight = 0xF;
+    a_byte bLight = 0x0;
     //uint8_t orientation = (1 << 2); // 00 01 00 = 0,1,0  00 11 00 = 0,-1,0
     BlockData() { blockType = AIR; }
     BlockData(Item type) {
         blockType = type;
     }
+    BlockData(BlockData& type) {
+        blockType = type.blockType;
+		bLight = type.bLight;
+    }
     bool operator==(Item item) {
         return item == blockType;
     }
-    //BlockData(const BlockData& data) {
-    //    blockType = data.blockType;
-    //}
+    bool operator==(BlockData item) {
+        return item.blockType == blockType && item.bLight == bLight;
+    }
+    bool operator!=(BlockData item) {
+        return item.blockType != blockType || item.bLight != bLight;
+    }
+    BlockData(const BlockData& data) {
+        blockType = data.blockType;
+		bLight = data.bLight;
+    }
 };
 // use it ? nope :) vectors allocate inside the heap (not the stack like some other :) which makes it better than using array or well a c array or a C++11 array<T, N> outside of scope. Hope I got that
 // Maps are horrible and a despicable wastage of memory BUT provide O(1) acess which is all I need
@@ -104,7 +115,7 @@ public:
     
     uint32_t coord;
     
-	a_byte reserved           : 8; // + 9 bits for future use
+	//a_byte reserved           : 8; // + 9 bits for future use
     a_byte neighboursPresent  : 5;
     a_byte safe_unload        : 1;
 	a_byte requestProcesed    : 1;

@@ -10,6 +10,7 @@ out vec3 normal;
 out vec4 pdc;
 out vec2 texCoords;
 flat out float transparency;
+out float bLight;
 out vec3 FragPos;
 out vec3 colorMask;
                                                        
@@ -41,4 +42,7 @@ void main(){
 		cy = int((unormcol >> 13u) & 0x7Fu),
 		cz = int((unormcol >>  6u) & 0x7Fu);
 	colorMask = vec3(cx, cy, cz)/100;
+	
+    uint blockLight = (unormcol >> 27u) & 0xFu;
+	bLight = float(blockLight) / 15.f;
 };

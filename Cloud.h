@@ -14,6 +14,11 @@ inline uint32_t pack(ivec2 xz) {
     return x | z;
 }
 
+inline uint32_t pack(int _x, int _z) {
+    uint32_t x = uint16_t(_x) << 16, z = uint16_t(_z);
+    return x | z;
+}
+
 class CloudMesh {
 public:
     unique_ptr<Mesh> mesh;

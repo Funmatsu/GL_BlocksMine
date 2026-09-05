@@ -736,8 +736,8 @@ void World::createItem(vec3 blockPos, Item blockType, vec3 direction) {
     blockData = BlockData(blockType);
     ivec3 trueDir = floor(blockPos - direction) + vec3(1.0);
     
-    inventory.deassignInvSlot(slot, 3);
-    blockData.blockType.assignLight(pointLights, blockPos);
+    inventory.deassignInvSlot(slot, 3);    
+    //blockData.blockType.assignLight(pointLights, blockPos);
 }
 
 bool isAir(Item item);

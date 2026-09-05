@@ -16,16 +16,18 @@ class Block {
 public:
     vec3 position = vec3(0.0f);
     Item type;
+    int bLight = 0;
 
     Block();
 
-    Block(vec3 pos, Item blockType);
+    Block(vec3 pos, Item blockType, int blockLight = 0);
 
     Block(const Block& block);
 
     void operator=(Block block) {
         type = block.type;
         position = block.position;
+		bLight = block.bLight;
     }
 
     bool operator==(Block block) {
@@ -39,14 +41,16 @@ Block::Block() {
     type = AIR;
 }
 
-Block::Block(vec3 pos, Item blockType) {
+Block::Block(vec3 pos, Item blockType, int blockLight) {
     position = pos;
     type = blockType;
+    bLight = blockLight;
 }
 
 Block::Block(const Block& block) {
     position = block.position;
     type = block.type;
+	bLight = block.bLight;
 }
 
 vector<GLfloat> blockVerts = {

@@ -50,6 +50,8 @@ std::mutex worldChunkDataMutex;
 std::queue<chNeighPackPtr*> chunkCleanupQueue;
 std::queue<chNeighResult*> chunkMeshResult;
 
+std::queue<Block> lightsQueue;
+
 std::atomic<bool> chunkGenRunning = true;
 std::atomic<bool> chunkGenRunning2 = true;
 std::atomic<bool> chunkUpdateGenRunning = true;
@@ -76,7 +78,9 @@ nextChunkNormalZ1 = unitNormalZ1 * CHUNK_SIZE,
 nextChunkNormalY0 = unitNormalY0 * CHUNK_SIZE,
 nextChunkNormalY1 = unitNormalY1 * CHUNK_SIZE;
 
-int dirs[] = { -1, 1, 0, 0,   0, 0, -1, 1 };
+int dirs[]   = { -1, 1, 0, 0,   0, 0, -1, 1 };
+//int dirs3D[] = { -1, 1, 0, 0, 0, 0,   0, 0, 0, 0, -1, 1,   0, 0, -1, 1, 0, 0 };
+vec3 dirs3D[] = { {-1, 0, 0}, { 1, 0, 0}, { 0,-1, 0}, { 0, 1, 0}, { 0, 0,-1}, { 0, 0, 1} };
 
 std::random_device rd;
 std::mt19937 gen(rd()); // Mersenne Twister engine
@@ -140,6 +144,45 @@ void initChunksNoise() {
 }
 
 bool isAir(Item item);
+
+void propagateBlockLight(Chunk* ch) {
+    vector<ivec3> covered;
+    while (!lightsQueue.empty()) {
+        auto light = lightsQueue.front();
+        lightsQueue.pop();
+        light.bLight--;
+        for (int j = 0; j < 6; j++) {
+            ivec3 neighpos = light.position + dirs3D[j];
+            if (std::find(covered.begin(), covered.end(), neighpos) != covered.end()) continue;
+            uint chNeighPos = pack(floorDiv(neighpos.x, CHUNK_SIZE), floorDiv(neighpos.z, CHUNK_SIZE));
+            auto& neighChunk = world.chunkData.at(chNeighPos);
+            BlockData& neighBlock = (*neighChunk)[neighpos];
+            covered.push_back(neighpos);
+            neighBlock.bLight = light.bLight;// > (int)neighBlock.bLight ? light.bLight : (int)neighBlock.bLight;// std::max(light.bLight, (int)neighBlock.bLight);
+            neighChunk->setAsDirty();
+
+            if (light.bLight > 0) {
+                lightsQueue.push(Block(neighpos, neighBlock.blockType, neighBlock.bLight));
+            }
+        }
+    }
+}
+
+void propagateSkyLight(Chunk* ch) {
+    for (int i = 0; i < CHUNK_SIZE * CHUNK_SIZE; i++) {
+        int x = i % CHUNK_SIZE;
+        int z = i / CHUNK_SIZE;
+
+        int skyLight = 15;
+        for (int y = CHUNK_HEIGHT - 1; y >= 0; y--) {
+            BlockData& block = ch->block_data[at(ivec3(x, y, z))];
+
+            block.bLight = std::max((int)block.bLight, skyLight);
+            if (block.blockType != AIR) { skyLight--; }
+            if (!skyLight) { break; }
+        }
+    }
+}
 
 void generateBlocks(vec2 xyChunk, Chunk* repChunk) {
     mutex genBlocksMutex;
@@ -262,6 +305,8 @@ void generateBlocks(vec2 xyChunk, Chunk* repChunk) {
             }
         }
     }
+
+    propagateSkyLight(&ch);
     //repChunk->terrainHeight = maxHeight;
     //auto end = chrono::high_resolution_clock::now();
     //double timelapsed = chrono::duration<double>(end - start).count();
@@ -592,7 +637,7 @@ bool buildMask(Chunk* ch, BlockData* bData, int planeDirVal, int faceDir, int W,
     return allAir;
 }
 
-bool buildMaskY(BlockData* bData, int planeDirVal, int faceDir, int W, int H, uint8_t* mask, int normal) {
+bool buildMaskY(BlockData* bData, int planeDirVal, int faceDir, int W, int H, BlockData* mask, int normal) {
     bool allAir = true;
     //ivec3 pos = ivec3(0, planeDirVal, 0);
     int posx, posy = planeDirVal, posz;
@@ -602,12 +647,12 @@ bool buildMaskY(BlockData* bData, int planeDirVal, int faceDir, int W, int H, ui
     for (int l = 0; l < H; l++) {
         for (int b = 0; b < W; b++) {
             int idx = b + l * W;
-            uint8_t& maskItem = mask[idx]; maskItem = 0;
+            BlockData& maskItem = mask[idx]; maskItem = AIR;
             posx = b, posz = l;
 
-            uint8_t neighItem = bData[at(posx, checkposy, posz)].blockType.id;
-            if (items[neighItem].isUncullable())
-                maskItem = bData[at(posx, posy, posz)].blockType.id;
+            BlockData neighItem = bData[at(posx, checkposy, posz)];
+            if (items[neighItem.blockType.id].isUncullable())
+                maskItem = bData[at(posx, posy, posz)];
         }
     }
     return allAir;
@@ -639,7 +684,7 @@ void buildMask(Chunk* ch, BlockData* bData, BlockData* neighData, int planeDirVa
     }
 }
 
-void buildMaskX(BlockData* bData, BlockData* neighData, int planeDirVal, int faceDir, int W, int H, uint8_t* mask, int normal) {
+void buildMaskX(BlockData* bData, BlockData* neighData, int planeDirVal, int faceDir, int W, int H, BlockData* mask, int normal) {
     int posz, posy, posx = planeDirVal;
     int checkposx = planeDirVal + normal;
     int xnorm = -normal * CHUNK_HEIGHT; // indexing adds CHUNK_SIZE for each unit step in the x axis
@@ -647,7 +692,7 @@ void buildMaskX(BlockData* bData, BlockData* neighData, int planeDirVal, int fac
     for (int l = 0; l < H; l++) {
         for (int b = 0; b < W; b++) {
             int idx = b + l * W;
-            uint8_t& maskItem = mask[idx]; maskItem = 0;
+            BlockData& maskItem = mask[idx]; maskItem = AIR;
             posy = l, posz = b;
 
             BlockData* neighbour = nullptr; int nextPos = at(checkposx, posy, posz);
@@ -656,21 +701,22 @@ void buildMaskX(BlockData* bData, BlockData* neighData, int planeDirVal, int fac
             uint8_t neighItem = neighbour[nextPos].blockType.id;
             if (items[neighItem].isUncullable()) {
                 int index = at(posx, posy, posz);
-                if (localInBounds(posx, posy, posz)) maskItem = bData[index].blockType.id;
-                else { maskItem = neighData[index + xnorm].blockType.id; }
+                if (localInBounds(posx, posy, posz)) { maskItem = bData[index]; }
+                else { maskItem = neighData[index + xnorm]; }
+                //if(maskItem.bLight > 10) { cout << itemTypeString[maskItem.blockType.id] << endl; }
             }
         }
     }
 }
 
-void buildMaskZ(BlockData* bData, BlockData* neighData, int planeDirVal, int faceDir, int W, int H, uint8_t* mask, int normal) {
+void buildMaskZ(BlockData* bData, BlockData* neighData, int planeDirVal, int faceDir, int W, int H, BlockData* mask, int normal) {
     int posx, posy, posz = planeDirVal;
     int checkposz = planeDirVal + normal;
     int znorm = -normal * CHUNK_SIZE;
     for (int l = 0; l < H; l++) {
         for (int b = 0; b < W; b++) {
             int idx = b + l * W;
-            uint8_t& maskItem = mask[idx]; maskItem = 0;
+            BlockData& maskItem = mask[idx]; maskItem = AIR;
             posx = b, posy = l;
 
             BlockData* neighbour = nullptr; int nextPos = at(posx, posy, checkposz);
@@ -679,8 +725,8 @@ void buildMaskZ(BlockData* bData, BlockData* neighData, int planeDirVal, int fac
             uint8_t neighItem = neighbour[nextPos].blockType.id;
             if (items[neighItem].isUncullable()) {
                 int index = at(posx, posy, posz);
-                if (localInBounds(posx, posy, posz)) maskItem = bData[index].blockType.id;
-                else { maskItem = neighData[index + znorm].blockType.id; }
+                if (localInBounds(posx, posy, posz)) maskItem = bData[index];
+                else { maskItem = neighData[index + znorm]; }
             }
         }
     }
@@ -703,22 +749,23 @@ void feed(float* uv, float w, float h, float packed, int direction) { // directi
     }
 };
 
-void emitFace(Mesh& m, int face, uint8_t blockType, ivec3 blockPos, ivec3 dims, ivec3 normals, int& base) {
+void emitFace(Mesh& m, int face, BlockData block, ivec3 blockPos, ivec3 dims, ivec3 normals, int& base) {
+    static int count = 0;
     float v[12];
     float uv[12];
     vec3 cMask(1.0);
     const int bottomDir = 4;
     const int topDir = 5;
     float tintr, tintg, tintb;
-    if ((blockType == GRASS.id || blockType == OAK_LEAVES.id) || (blockType == GRASS_BLOCK.id && face != 4)) {
+    if ((block == GRASS || block == OAK_LEAVES) || (block == GRASS_BLOCK && face != 4)) {
         tintr = 0.1f, tintg = 0.75f, tintb = 0.1f;
         cMask = { tintr, tintg, tintb };
-        if (isFlat(blockType)) { normals = vec3(0, -1, 0); }
+        if (isFlat(block.blockType.id)) { normals = vec3(0, -1, 0); }
     }
-    bool flat = items[(blockType)].isFlat();
-
+    bool flat = items[(block.blockType.id)].isFlat();
+	//if (block.bLight > 5) { cout << "Block: " << itemTypeString[block.blockType.id] << " at face " << face << " has light level: " << (int)block.bLight << endl; }
     float* UVs;
-    UVs = getUVs(blockType);
+    UVs = getUVs(block.blockType);
     float xoffset = UVs[0],
         yoffset = UVs[1],
         xoffsetTop = UVs[2],
@@ -730,7 +777,7 @@ void emitFace(Mesh& m, int face, uint8_t blockType, ivec3 blockPos, ivec3 dims, 
     int dir = face / 2;
     float clipX = 0.0f, clipY = 1.0f;
     float clipXX = 0.0f, clipXY = !flat ? ((dir == 0) ? dims.z : dims.x) : 1.0f,
-        clipYX = 0.0f, clipYY = !flat ? ((dir == 2) ? dims.z : dims.y) : 1.0f;
+          clipYX = 0.0f, clipYY = !flat ? ((dir == 2) ? dims.z : dims.y) : 1.0f;
     int   offsetX = 0, offsetY = 0;
     // Simple tile UV (replace with atlas lookup per block/face but now is length of tile based in greedy meshing)
 
@@ -760,14 +807,15 @@ void emitFace(Mesh& m, int face, uint8_t blockType, ivec3 blockPos, ivec3 dims, 
     uint32_t uintUVs = ((uint8_t)(blockPos.y / 3) << 24) | ((uint8_t)(xdimens) << 16) | ((uint8_t)(yoffset + offsetY) << 8) | (uint8_t)(xoffset + offsetX); // Packaging floats into one integer
     float startUvs;
     memcpy(&startUvs, &uintUVs, sizeof(float));
-    uint32_t norm_color = ((normals.x & 0x3) << 4)
-                        | ((normals.y & 0x3) << 2)
-                        | ((normals.z & 0x3) << 0)
-                        | ((a_byte(cMask.x * 100) & 0x7F) << 20)
-                        | ((a_byte(cMask.y * 100) & 0x7F) << 13)
-                        | ((a_byte(cMask.z * 100) & 0x7F) << 6);
-    float normcolor;
-    memcpy(&normcolor, &norm_color, sizeof(float));
+    uint32_t norm_color_blight = ((normals.x & 0x3) << 4)
+                               | ((normals.y & 0x3) << 2)
+                               | ((normals.z & 0x3) << 0)
+                               | ((a_byte(block.bLight)  & 0x0F) << 27)
+                               | ((a_byte(cMask.x * 100) & 0x7F) << 20)
+                               | ((a_byte(cMask.y * 100) & 0x7F) << 13)
+                               | ((a_byte(cMask.z * 100) & 0x7F) << 6);
+    float normcolorblight;
+    memcpy(&normcolorblight, &norm_color_blight, sizeof(float));
 
     int direction = (face == 0 || face == 3 || face == 4) ? 0 : !flat;
     feed(uv, clipXY, clipYY, startUvs, direction);
@@ -782,7 +830,7 @@ void emitFace(Mesh& m, int face, uint8_t blockType, ivec3 blockPos, ivec3 dims, 
         finalVerts[idx + 3] = uv[uvidx + 0];
         finalVerts[idx + 4] = uv[uvidx + 1];
         finalVerts[idx + 5] = uv[uvidx + 2];
-        finalVerts[idx + 6] = normcolor;
+        finalVerts[idx + 6] = normcolorblight;
     }
     finalInds[0] = base + 0; finalInds[1] = base + 1; finalInds[2] = base + 2;
     finalInds[3] = base + 2; finalInds[4] = base + 3; finalInds[5] = base + 0;
@@ -874,13 +922,13 @@ void emitFaceX(Mesh& m, int face, uint8_t blockType, int blockPosx, int blockPos
     base += 4;
 }
 
-void greedyMerge(uint8_t* mask, Mesh& m, ivec2& xyChunk, int planeDirVal, int W, int H, int faceDir, ivec3 normals, int& base) {
+void greedyMerge(BlockData* mask, Mesh& m, ivec2& xyChunk, int planeDirVal, int W, int H, int faceDir, ivec3 normals, int& base) {
     int dir = faceDir / 2;
     int minX = xyChunk.x * CHUNK_SIZE, minZ = xyChunk.y * CHUNK_SIZE;
     for (int l = 0; l < H; l++) {
         for (int b = 0; b < W;) {
             int idx = b + l * W;
-            uint8_t type = mask[idx];
+            BlockData type = mask[idx];
             if (type == 0) {
                 b++; continue;
             }
@@ -899,10 +947,10 @@ void greedyMerge(uint8_t* mask, Mesh& m, ivec2& xyChunk, int planeDirVal, int W,
             ivec3 dims = (dir == 0) ? vec3(1, h, w) : (dir == 1) ? vec3(w, h, 1) : vec3(w, 1, h);
             ivec3 blockPos = (dir == 0) ? ivec3(planeDirVal, l, minZ + b) : (dir == 1) ? ivec3(minX + b, l, planeDirVal) : ivec3(minX + b, planeDirVal, minZ + l);
             emitFace(m, faceDir, type, blockPos, dims, normals, base);
-            uint8_t* maskPtr = &mask[b + l * W];
+            BlockData* maskPtr = &mask[b + l * W];
             for (int i = 0; i < h; i++) {
                 for (int j = 0; j < w; j++) {
-                    *(maskPtr + j + i * W) = 0;
+                    *(maskPtr + j + i * W) = AIR;
                 }
             }
             b += w;
@@ -933,7 +981,7 @@ void greedyMergeX(uint8_t* mask, Mesh& m, vec2& xyChunk, int planeDirVal, int W,
         not_type:
             ivec3 dims = vec3(1, h, w);
             ivec3 blockPos = ivec3(planeDirVal, l, minZ + b);
-            emitFace(m, faceDir, type, blockPos, dims, normals, base);
+            //emitFace(m, faceDir, type, blockPos, dims, normals, base);
 
             for (int i = 0; i < h; i++) {
                 for (int j = 0; j < w; j++) {
@@ -968,7 +1016,7 @@ void greedyMergeZ(uint8_t* mask, Mesh& m, vec2& xyChunk, int planeDirVal, int W,
         not_type:
             ivec3 dims = vec3(w, h, 1);
             ivec3 blockPos = ivec3(minX + b, l, planeDirVal);
-            emitFace(m, faceDir, type, blockPos, dims, normals, base);
+            //emitFace(m, faceDir, type, blockPos, dims, normals, base);
 
             for (int i = 0; i < h; i++) {
                 for (int j = 0; j < w; j++) {
@@ -1003,7 +1051,7 @@ void greedyMergeY(uint8_t* mask, Mesh& m, vec2& xyChunk, int planeDirVal, int W,
         not_type:
             ivec3 dims = vec3(w, 1, h);
             ivec3 blockPos = ivec3(minX + b, planeDirVal, minZ + l);
-            emitFace(m, faceDir, type, blockPos, dims, normals, base);
+            //emitFace(m, faceDir, type, blockPos, dims, normals, base);
 
             for (int i = 0; i < h; i++) {
                 for (int j = 0; j < w; j++) {
@@ -1026,9 +1074,9 @@ void meshChunk(chNeighPack* chNeigh) {
     m.indices.reserve(5000 * 2.5);
     int base = 0;
 
-    uint8_t maskY[CHUNK_SIZE * CHUNK_SIZE];
-    uint8_t maskX[CHUNK_SIZE * CHUNK_HEIGHT];
-    uint8_t maskZ[CHUNK_SIZE * CHUNK_HEIGHT];
+    BlockData maskY[CHUNK_SIZE * CHUNK_SIZE];
+    BlockData maskX[CHUNK_SIZE * CHUNK_HEIGHT];
+    BlockData maskZ[CHUNK_SIZE * CHUNK_HEIGHT];
 
     int minX = xyChunk.x * CHUNK_SIZE, minY = 0, minZ = xyChunk.y * CHUNK_SIZE;
 
@@ -1084,14 +1132,17 @@ void meshChunk(chNeighPackPtr* chNeigh) {
         }
     }
 
+	propagateBlockLight(chNeigh->mainChunk);
+    propagateSkyLight(chNeigh->mainChunk);
+
     Mesh& m = *mesh;
     m.vertices.reserve(5000 * 7.5);
     m.indices .reserve(4000 * 2.5);
     int base = 0;
     
-    uint8_t maskY[CHUNK_SIZE * CHUNK_SIZE];
-    uint8_t maskX[CHUNK_SIZE * CHUNK_HEIGHT];
-    uint8_t maskZ[CHUNK_SIZE * CHUNK_HEIGHT];
+    BlockData maskY[CHUNK_SIZE * CHUNK_SIZE];
+    BlockData maskX[CHUNK_SIZE * CHUNK_HEIGHT];
+    BlockData maskZ[CHUNK_SIZE * CHUNK_HEIGHT];
 
     int minX = xyChunk.x * CHUNK_SIZE, minY = 0, minZ = xyChunk.y * CHUNK_SIZE;
 
@@ -1138,7 +1189,11 @@ void blockBreakMainThread() {
 
 void blockPlaceMainThread() {
     if (blockPlacingOut) {
-        world.addBlocklook_at(inventory.mainInventorySlots[3][slot].item);
+        Block block = world.addBlocklook_at(inventory.mainInventorySlots[3][slot].item);
+        if (block.type.isLuninous()) {
+            Block lightBlock(block.position, block.type, 15);
+            lightsQueue.push(lightBlock);
+        }
         blockPlacingOut = false;
     }
 }

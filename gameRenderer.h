@@ -478,11 +478,6 @@ public:
                     //    + (inventory.invChange() ? " inventory updating...." : " inventory up to date! "
                     //        + to_string(renderDistance) + " render distance"), normalize(vec3(1.3, 1, 0)), vec2(50, 1550));
 
-                    if (!(count_time++ % 10)) {
-                        auto end = chrono::high_resolution_clock::now();
-                        double frame_duration(chrono::duration<double>(end - start).count());
-                        fpscount = (int(1 / frame_duration));
-                    }
                 }
 
                 if (mainWindow.getKeys()[GLFW_KEY_ENTER]) {
@@ -517,19 +512,17 @@ public:
             Textures[FACE_TEX]->useTexture();
             //~0.1 - 0.2ms
             
-            mat4 modelHead = translate(mat4(1.0f), firstCamera.getPosition());
             mat4 rotation(1.0f);
             vec3 dir = normalize(firstCamera.getFront());
             vec3 right = cross(vec3(0, 1, 0), dir);
             vec3 up = cross(dir, right);
             rotation[0] = vec4(normalize(right), 0.0f); rotation[1] = vec4(normalize(up), 0.0f); rotation[2] = vec4(normalize(-dir), 0.0f);
-            modelHead *= rotation;
-            glUniformMatrix4fv(shaders[0]->getModelLocation(), 1, GL_FALSE, value_ptr(modelHead));
-            headMesh.renderMesh();
-            Textures[SLOT_TEX]->useTexture();
 
-            vec3 cameraPosition = firstCamera.getPosition();
-            
+            mat4 modelHead = translate(mat4(1.0f), firstCamera.getPosition()) * rotation;
+            glUniformMatrix4fv(shaders[0]->getModelLocation(), 1, GL_FALSE, value_ptr(modelHead));
+            //headMesh.renderMesh();
+            Textures[SLOT_TEX]->useTexture();
+                        
             if (!blockExistsAt((vec3(ftoint(ball.position.x), ftoint(ball.position.y - 0.5), ftoint(ball.position.z))))) {
                 tp = 1;
                 if (ball.shot) {
@@ -856,6 +849,12 @@ public:
 
             auto endframe = chrono::high_resolution_clock::now();
             frame_duration_calc = (chrono::duration<double>(endframe - startframe).count());
+
+            if (!(count_time++ % 10)) {
+                auto end = chrono::high_resolution_clock::now();
+                double frame_duration(chrono::duration<double>(end - start).count());
+                fpscount = (int(1 / frame_duration));
+            }
         }
 
     }////
