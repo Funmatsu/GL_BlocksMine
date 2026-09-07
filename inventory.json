@@ -96,22 +96,22 @@
         ],
         [
             {
-                "count": 31,
+                "count": 55,
                 "id": 3,
                 "item": "iron_ore"
             },
             {
-                "count": 20,
+                "count": 33,
                 "id": 1,
                 "item": "diamond_ore"
             },
             {
-                "count": 31,
+                "count": 43,
                 "id": 8,
                 "item": "oak_leaves"
             },
             {
-                "count": 106,
+                "count": 224,
                 "id": 5,
                 "item": "dirt_block"
             },
@@ -143,22 +143,22 @@
         ],
         [
             {
-                "count": 53,
+                "count": 754,
                 "id": 4,
                 "item": "stone_block"
             },
             {
-                "count": 10,
+                "count": 16,
                 "id": 6,
                 "item": "oak_wood"
             },
             {
-                "count": 24,
+                "count": 22,
                 "id": 12,
                 "item": "grass"
             },
             {
-                "count": 143,
+                "count": 277,
                 "id": 2,
                 "item": "grass_block"
             },
@@ -168,17 +168,17 @@
                 "item": "wooden_pickaxe"
             },
             {
-                "count": 982,
+                "count": 783,
                 "id": 7,
                 "item": "cloud"
             },
             {
-                "count": 317,
+                "count": 250,
                 "id": 4,
                 "item": "stone_block"
             },
             {
-                "count": 142,
+                "count": 100,
                 "id": 9,
                 "item": "oak_plank"
             },

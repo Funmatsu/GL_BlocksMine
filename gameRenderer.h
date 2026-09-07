@@ -777,26 +777,26 @@ public:
                 }
             }
             
-            for (int i = 0; i < 9; i++) {
-                mat4 itemModel = scale(mat4(1.0f), vec3(0.1f, 0.12f, 0.1f)) * rotate(mat4(1.0f), radians(-90.0f), vec3(0, 0, 1)) *
-                    ((!inventory.hotbarSlots[i].item.isFlat()) ? rotate(mat4(1.0f), radians(30.0f), vec3(1, 0, 0)) * rotate(mat4(1.0f), radians(45.0f), vec3(0, 1, 0)) : mat4(1.0f)) *
-                    rotate(mat4(1.0f), radians(inventory.hotbarSlots[i].angle), vec3(0, 1, 0));
-                inventory.hotbarSlots[i].angle += 0.5f;
-                render3Din2D(itemModel, inventory.hotbarSlots[i].mesh, inventory.hotbarSlots[i].model, inventory.hotbarSlots[i].quadMesh, ortho, itemView, itemProj, inventory.hotbarSlots[i].item);
-                inventory.hotbarSlots[i].textCount.drawText(ortho);
-            }
+            //for (int i = 0; i < 9; i++) {
+            //    mat4 itemModel = scale(mat4(1.0f), vec3(0.1f, 0.12f, 0.1f)) * rotate(mat4(1.0f), radians(-90.0f), vec3(0, 0, 1)) *
+            //        ((!inventory.hotbarSlots[i].item.isFlat()) ? rotate(mat4(1.0f), radians(30.0f), vec3(1, 0, 0)) * rotate(mat4(1.0f), radians(45.0f), vec3(0, 1, 0)) : mat4(1.0f)) *
+            //        rotate(mat4(1.0f), radians(inventory.hotbarSlots[i].angle), vec3(0, 1, 0));
+            //    inventory.hotbarSlots[i].angle += 0.5f;
+            //    render3Din2D(itemModel, inventory.hotbarSlots[i].mesh, inventory.hotbarSlots[i].model, inventory.hotbarSlots[i].quadMesh, ortho, itemView, itemProj, inventory.hotbarSlots[i].item);
+            //    inventory.hotbarSlots[i].textCount.drawText(ortho);
+            //}
 
-            mat4 handModel = itemModel * breakModel
-                * rotate(mat4(1.0f), radians((!currentBlock.item.isTool() ? -35.f : 0.f)), vec3(1, 1, 1))
-                * rotate(mat4(1.0f), radians((!currentBlock.item.isTool() ? 45.f : 200.f)), vec3(0, 1, 0))
-                * rotate(mat4(1.0f), radians((!currentBlock.item.isTool() ? 0.f : 30.f)), vec3(0, 0, 1));
+            //mat4 handModel = itemModel * breakModel
+            //    * rotate(mat4(1.0f), radians((!currentBlock.item.isTool() ? -35.f : 0.f)), vec3(1, 1, 1))
+            //    * rotate(mat4(1.0f), radians((!currentBlock.item.isTool() ? 45.f : 200.f)), vec3(0, 1, 0))
+            //    * rotate(mat4(1.0f), radians((!currentBlock.item.isTool() ? 0.f : 30.f)), vec3(0, 0, 1));
 
-            render3Din2D(handModel, currentBlock.mesh, translate(mat4(1.0f), 
-                vec3((float)centerX + 600.f - 20.f * (firstCamera.getYaw() - lastYaw),
-                     (float)centerY - 650.f - 20.f * (firstCamera.getPitch() - lastPitch) - 2 * (firstCamera.initial_velocity.y + firstCamera.velocity.y), 0.f)),
-                currentBlock.quadMesh, ortho, currentBlockView, itemProj, currentBlock.item);
+            //render3Din2D(handModel, currentBlock.mesh, translate(mat4(1.0f), 
+            //    vec3((float)centerX + 600.f - 20.f * (firstCamera.getYaw() - lastYaw),
+            //         (float)centerY - 650.f - 20.f * (firstCamera.getPitch() - lastPitch) - 2 * (firstCamera.initial_velocity.y + firstCamera.velocity.y), 0.f)),
+            //    currentBlock.quadMesh, ortho, currentBlockView, itemProj, currentBlock.item);
 
-            angletest += 1;
+            //angletest += 1;
 
             if (inventory.invChange()) { inventory.updateInventory(); }
 
