@@ -29,6 +29,7 @@ public:
 		turnSpeed = other.turnSpeed;
 		initial_velocity = vec3(0);
 		gravity = other.gravity;
+		acceleration = vec3(0, -gravity, 0);
 		update();
 	}
 	void keyControl(bool* keys, float deltaTime, float dt);
@@ -46,7 +47,7 @@ public:
 	float getGravity() { return gravity; }
 	void setGravity(float g) { gravity = g; }
 	mat4 calcViewMatrix();
-	vec3 velocity = vec3(0), initial_velocity, acceleration = vec3(0,-gravity, 0), velocity_factor = vec3(1);
+	vec3 velocity = vec3(0), initial_velocity, acceleration, velocity_factor = vec3(1);
 	void calculateCamPos(float dt);
 private:
 	vec3 position, front, up, right, worldUp;

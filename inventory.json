@@ -49,9 +49,9 @@
         ],
         [
             {
-                "count": 155,
-                "id": 4,
-                "item": "stone_block"
+                "count": 0,
+                "id": 0,
+                "item": "air"
             },
             {
                 "count": 1,
@@ -96,24 +96,24 @@
         ],
         [
             {
-                "count": 55,
+                "count": 74,
                 "id": 3,
                 "item": "iron_ore"
             },
             {
-                "count": 33,
+                "count": 43,
                 "id": 1,
                 "item": "diamond_ore"
             },
             {
-                "count": 43,
-                "id": 8,
-                "item": "oak_leaves"
-            },
-            {
-                "count": 224,
+                "count": 30,
                 "id": 5,
                 "item": "dirt_block"
+            },
+            {
+                "count": 1,
+                "id": 10,
+                "item": "poppy"
             },
             {
                 "count": 14,
@@ -126,9 +126,9 @@
                 "item": "air"
             },
             {
-                "count": 1,
-                "id": 17,
-                "item": "wooden_pickaxe"
+                "count": 0,
+                "id": 0,
+                "item": "air"
             },
             {
                 "count": 2,
@@ -143,9 +143,9 @@
         ],
         [
             {
-                "count": 754,
-                "id": 4,
-                "item": "stone_block"
+                "count": 49,
+                "id": 8,
+                "item": "oak_leaves"
             },
             {
                 "count": 16,
@@ -153,12 +153,12 @@
                 "item": "oak_wood"
             },
             {
-                "count": 22,
+                "count": 24,
                 "id": 12,
                 "item": "grass"
             },
             {
-                "count": 277,
+                "count": 289,
                 "id": 2,
                 "item": "grass_block"
             },
@@ -168,17 +168,17 @@
                 "item": "wooden_pickaxe"
             },
             {
-                "count": 783,
+                "count": 750,
                 "id": 7,
                 "item": "cloud"
             },
             {
-                "count": 250,
-                "id": 4,
-                "item": "stone_block"
+                "count": 95,
+                "id": 5,
+                "item": "dirt_block"
             },
             {
-                "count": 100,
+                "count": 48,
                 "id": 9,
                 "item": "oak_plank"
             },

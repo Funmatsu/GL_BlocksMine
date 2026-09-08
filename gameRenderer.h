@@ -1085,8 +1085,10 @@ public:
                  checkPosZ0 = vec3(                    0, 0, rtoint(-front.z) - .5),// + vec3(0, -1, front.z * movementSpeed * deltaTime),
                  checkPosX1 = vec3(rtoint( front.x) + .5, 0,                     0),// + vec3(front.x * movementSpeed * deltaTime, 0, 0),
                  checkPosZ1 = vec3(                    0, 0, rtoint( front.z) + .5);// + vec3(0, 0, front.z * movementSpeed * deltaTime);
-            if (!blockExistsAt(position + checkPosX0) && !blockExistsAt(position + checkPosX1)) finalPosition.x += front.x * movementSpeed * deltaTime;
-            if (!blockExistsAt(position + checkPosZ0) && !blockExistsAt(position + checkPosZ1)) finalPosition.z += front.z * movementSpeed * deltaTime;
+            //if (!blockExistsAt(position + checkPosX0) && !blockExistsAt(position + checkPosX1)) 
+                finalPosition.x += front.x * movementSpeed * deltaTime;
+            //if (!blockExistsAt(position + checkPosZ0) && !blockExistsAt(position + checkPosZ1)) 
+                finalPosition.z += front.z * movementSpeed * deltaTime;
 			position = finalPosition;
         }
         if (mainWindow.getKeys()[GLFW_KEY_S]) {

@@ -50,6 +50,7 @@ std::mutex worldChunkDataMutex;
 std::queue<chNeighPackPtr*> chunkCleanupQueue;
 std::queue<chNeighResult*> chunkMeshResult;
 
+std::queue<Block> tempLightsQueue;
 std::queue<Block> lightsQueue;
 
 std::atomic<bool> chunkGenRunning = true;
@@ -175,25 +176,30 @@ bool isAir(Item item);
 
 void propagateBlockLight(Chunk* ch) {
     vector<ivec3> covered;
-    while (!lightsQueue.empty()) {
-        auto light = lightsQueue.front();
-        lightsQueue.pop();
-        light.bLight--;
-        for (int j = 0; j < 6; j++) {
-            ivec3 neighpos = light.position + dirs3D[j];
-            if (std::find(covered.begin(), covered.end(), neighpos) != covered.end()) continue;
-            uint chNeighPos = pack(floorDiv(neighpos.x, CHUNK_SIZE), floorDiv(neighpos.z, CHUNK_SIZE));
-            auto& neighChunk = world.chunkData.at(chNeighPos);
-            BlockData& neighBlock = (*neighChunk)[neighpos];
-            covered.push_back(neighpos);
-            neighBlock.bLight = light.bLight;// > (int)neighBlock.bLight ? light.bLight : (int)neighBlock.bLight;// std::max(light.bLight, (int)neighBlock.bLight);
-            neighChunk->setAsDirty();
+  //  for (int i = 0; i < lightsQueue.size(); i++) {
+  //      auto light = lightsQueue.front();
+		//if (ch->inBounds(light.position))
+  //          tempLightsQueue.push(light);
+        while (!tempLightsQueue.empty()) {
+            auto light = tempLightsQueue.front();
+            tempLightsQueue.pop();
+            light.bLight--;
+            for (int j = 0; j < 6; j++) {
+                ivec3 neighpos = light.position + dirs3D[j];
+                if (std::find(covered.begin(), covered.end(), neighpos) != covered.end()) continue;
+                uint chNeighPos = pack(floorDiv(neighpos.x, CHUNK_SIZE), floorDiv(neighpos.z, CHUNK_SIZE));
+                auto& neighChunk = world.chunkData.at(chNeighPos);
+                BlockData& neighBlock = (*neighChunk)[neighpos];
+                covered.push_back(neighpos);
+                neighBlock.bLight = light.bLight;// > (int)neighBlock.bLight ? light.bLight : (int)neighBlock.bLight;// std::max(light.bLight, (int)neighBlock.bLight);
+                neighChunk->setAsDirty();
 
-            if (light.bLight > 0) {
-                lightsQueue.push(Block(neighpos, neighBlock.blockType, neighBlock.bLight));
+                if (light.bLight > 0) {
+                    tempLightsQueue.push(Block(neighpos, neighBlock.blockType, neighBlock.bLight));
+                }
             }
         }
-    }
+    //}
 }
 
 void propagateSkyLight(Chunk* ch) {
@@ -204,7 +210,7 @@ void propagateSkyLight(Chunk* ch) {
             for (int y = CHUNK_HEIGHT - 1; y >= 0; y--) {
                 BlockData& block = ch->block_data[at(ivec3(x, y, z))];
 
-                block.bLight = std::max((int)block.bLight, skyLight);
+                block.bLight = skyLight;
                 if (block.blockType != AIR) { skyLight--; } //if (block.blockType.isFlat()) { skyLight-=3; }
                 if (skyLight <= 5) { break; }
             }
@@ -270,9 +276,10 @@ void generateBlocks(vec2 xyChunk, Chunk* repChunk) {
                 //else continue;
                 density = caveNoise.GetNoise(fx, (float)y, fz);
                 //if (!(blockType == 0) && skylight > 1) { ch(x, y, z).blight = skylight--; }
-                if (density < -0.6f) {
+                if (density <= -0.5f) {
                     continue;
                 }
+
                 blockType.bLight = skyLight;
                 if (blockType.blockType != AIR && skyLight >= 5) { skyLight--; } 
 
@@ -962,7 +969,7 @@ void emitFaceX(Mesh& m, int face, uint8_t blockType, int blockPosx, int blockPos
     base += 4;
 }
 
-void greedyMerge(BlockData* mask, Mesh& m, ivec2& xyChunk, int planeDirVal, int W, int H, int faceDir, ivec3 normals, int& base) {
+void greedyMerge(BlockData* mask, Chunk* neighs[4], Mesh& m, ivec2& xyChunk, int planeDirVal, int W, int H, int faceDir, ivec3 normals, int& base) {
     int dir = faceDir / 2;
     int minX = xyChunk.x * CHUNK_SIZE, minZ = xyChunk.y * CHUNK_SIZE;
     for (int l = 0; l < H; l++) {
@@ -993,6 +1000,94 @@ void greedyMerge(BlockData* mask, Mesh& m, ivec2& xyChunk, int planeDirVal, int 
             //}
             //int h_1 = 0, w_1 = 0;// w - 1;
             //for (int i = 0; i < 9; i++) {
+            //	int maskIdx = (l + (int)dirs2DCage[i].y) * W + (b + (int)dirs2DCage[i].x);
+            //	if (maskIdx <= 0 || maskIdx >= W * H) { bLights[i] = 15; continue; }
+            //    bLights[i] = mask[maskIdx].bLight;
+            //    //cout << to_string(dirs2DCage[i]) << " " << maskIdx << " " << bLights[i] << endl;
+            //}
+            ivec3 blockPos = (dir == 0) ? ivec3(planeDirVal, l, minZ + b) : (dir == 1) ? ivec3(minX + b, l, planeDirVal) : ivec3(minX + b, planeDirVal, minZ + l);
+    //        for (int i = 0; i < 9; i++) { //+------+
+    //            //+------+
+    //            int wdir = dirs2DCage[i].x <= 0 ? dirs2DCage[i].x : dirs2DCage[i].x * w,
+    //                hdir = dirs2DCage[i].y <= 0 ? dirs2DCage[i].y : dirs2DCage[i].y * h;
+				//vec3 neighPos = (dir == 0) ? vec3(planeDirVal, l + hdir, minZ + b + wdir) : (dir == 1) ? vec3(minX + b + wdir, l + hdir, planeDirVal) : vec3(minX + b + wdir, planeDirVal, minZ + l + hdir);
+    //            int maskIdx = (l + hdir) * W + (b + wdir);
+    //  //          if (maskIdx <= 0 || maskIdx >= W * H) { 
+    //  //              int n_idx = 0;
+    //  ////              for (; n_idx < 4; n_idx++) {
+				//		////if (neighs[n_idx]->inBounds(neighPos)) {
+				//		////	bLights[i] = neighs[n_idx]->block_data[at(neighPos)].bLight;
+				//		////	break;
+				//		////}
+    //  ////              }
+    //  ////              if (n_idx == 4) bLights[i] = neighs[0]->block_data[at(neighPos)].bLight;
+    //  //              bLights[i] = i > 0 ? bLights[i - 1] : mask[maskIdx + 1].bLight; 
+    //  //              continue; 
+    //  //          }
+    //            initLight = (i == 0) ? mask[maskIdx].bLight : initLight;
+    //            if (initLight != mask[maskIdx].bLight) { w = 1; h = 1; memset(bLights, type.bLight, 9); break; }
+    //            bLights[i] = mask[maskIdx].bLight;
+    //            //cout << to_string(dirs2DCage[i]) << " " << maskIdx << " " << bLights[i] << endl;
+    //        }
+            for (int i = 0; i < 9; i++) { //+------+
+                //+------+
+				if (type.blockType.isLuninous()) { bLights[i] = type.bLight; continue; }
+                int wdir = dirs2DCage[i].x <= 0 ? dirs2DCage[i].x : dirs2DCage[i].x * w,
+                    hdir = dirs2DCage[i].y <= 0 ? dirs2DCage[i].y : dirs2DCage[i].y * h;
+                int maskIdx = (l + hdir) * W + (b + wdir);
+                //if (maskIdx <= 0 || maskIdx >= W * H) { bLights[i] = i > 0 ? bLights[i - 1] : 15; continue; }
+                if (((l + hdir) >= H || (l + hdir) < 0) || ((b + wdir) >= W || (b + wdir) < 0)) { bLights[i] = type.bLight; continue; }
+                initLight = (i == 0) ? mask[maskIdx].bLight : initLight;
+                //if (initLight != mask[maskIdx].bLight) { w = 1; h = 1; memset(bLights, type.bLight, 9); break; }
+                bLights[i] = mask[maskIdx].bLight;
+                //cout << to_string(dirs2DCage[i]) << " " << maskIdx << " " << bLights[i] << endl;
+            }
+
+            ivec3 dims = (dir == 0) ? vec3(1, h, w) : (dir == 1) ? vec3(w, h, 1) : vec3(w, 1, h);
+            
+            emitFace(m, faceDir, type, blockPos, dims, normals, base, bLights);
+            BlockData* maskPtr = &mask[b + l * W];
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    maskPtr[j + i * W].blockType = AIR;
+                }
+            }
+            b += w;
+        }
+    }
+}
+
+void greedyMerge(BlockData* mask, Mesh& m, ivec2& xyChunk, int planeDirVal, int W, int H, int faceDir, ivec3 normals, int& base) {
+    int dir = faceDir / 2;
+    int minX = xyChunk.x * CHUNK_SIZE, minZ = xyChunk.y * CHUNK_SIZE;
+    for (int l = 0; l < H; l++) {
+        for (int b = 0; b < W;) {
+            int idx = b + l * W;
+            BlockData type = mask[idx];
+            if (type == 0) {
+                b++; continue;
+            }
+
+            int w = 1, h = 1; int stop = 0;
+            while (b + w < W && mask[idx + w] == type) { w++; }
+            while (l + h < H) {
+                int row = (l + h) * W + b;
+                for (int d = 0; d < w; d++) {
+                    if (mask[row + d] != type) { stop = 1; break; }
+                }
+                if (stop) break;
+                h++;
+            }
+
+            int bLights[9], initLight = 0;
+            //for (int i = 0; i < 4; i++) {
+            //    int maskIdx = (l + (int)dirs2D_Cage[i].y) * W + (b + (int)dirs2D_Cage[i].x);
+            //    if (maskIdx <= 0 || maskIdx >= W * H) { bLights[i] = 15; continue; }
+            //    bLights[i] = mask[maskIdx].bLight;
+            //    //cout << to_string(dirs2DCage[i]) << " " << maskIdx << " " << bLights[i] << endl;
+            //}
+            //int h_1 = 0, w_1 = 0;// w - 1;
+            //for (int i = 0; i < 9; i++) {
 			//	int maskIdx = (l + (int)dirs2DCage[i].y) * W + (b + (int)dirs2DCage[i].x);
 			//	if (maskIdx <= 0 || maskIdx >= W * H) { bLights[i] = 15; continue; }
             //    bLights[i] = mask[maskIdx].bLight;
@@ -1003,9 +1098,9 @@ void greedyMerge(BlockData* mask, Mesh& m, ivec2& xyChunk, int planeDirVal, int 
                 int wdir = dirs2DCage[i].x <= 0 ? dirs2DCage[i].x : dirs2DCage[i].x * w,
                     hdir = dirs2DCage[i].y <= 0 ? dirs2DCage[i].y : dirs2DCage[i].y * h;
                 int maskIdx = (l + hdir) * W + (b + wdir);
-                if (maskIdx <= 0 || maskIdx >= W * H) { bLights[i] = 15; continue; }
-				//initLight = i == 0? mask[maskIdx].bLight : initLight;
-                //if (initLight != mask[maskIdx].bLight) { w = 1; h = 1; memset(bLights, type.bLight, 9); break; }
+                if (maskIdx <= 0 || maskIdx >= W * H) { bLights[i] = i > 0 ? bLights[i - 1] : mask[maskIdx + 1].bLight; continue; }
+                initLight = (i == 0) ? mask[maskIdx].bLight : initLight;
+                if (initLight != mask[maskIdx].bLight) { w = 1; h = 1; memset(bLights, type.bLight, 9); break; }
                 bLights[i] = mask[maskIdx].bLight;
                 //cout << to_string(dirs2DCage[i]) << " " << maskIdx << " " << bLights[i] << endl;
             }
@@ -1109,24 +1204,24 @@ void meshChunk(chNeighPackPtr* chNeigh) {
 
     for (int x = minX; x < minX + CHUNK_SIZE; ++x) {
         buildMaskX(chNeigh->mainChunk->block_data.data(), neighChunks[0]->block_data.data(), (x + 0) - minX, 0, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskX, -1);
-        greedyMerge(maskX, m, xyChunk, x + 0, CHUNK_SIZE, CHUNK_HEIGHT - 1, 0, unitNormalX0, base);
+        greedyMerge(maskX, neighChunks, m, xyChunk, x + 0, CHUNK_SIZE, CHUNK_HEIGHT - 1, 0, unitNormalX0, base);
 
         buildMaskX(chNeigh->mainChunk->block_data.data(), neighChunks[1]->block_data.data(), (x + 1) - minX, 1, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskX, 1);
-        greedyMerge(maskX, m, xyChunk, x + 1, CHUNK_SIZE, CHUNK_HEIGHT - 1, 1, unitNormalX1, base);
+        greedyMerge(maskX, neighChunks, m, xyChunk, x + 1, CHUNK_SIZE, CHUNK_HEIGHT - 1, 1, unitNormalX1, base);
     }
     for (int z = minZ; z < minZ + CHUNK_SIZE; ++z) {
         buildMaskZ(chNeigh->mainChunk->block_data.data(), neighChunks[2]->block_data.data(), (z + 0) - minZ, 2, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskZ, -1);
-        greedyMerge(maskZ, m, xyChunk, z + 0, CHUNK_SIZE, CHUNK_HEIGHT - 1, 2, unitNormalZ0, base);
+        greedyMerge(maskZ, neighChunks, m, xyChunk, z + 0, CHUNK_SIZE, CHUNK_HEIGHT - 1, 2, unitNormalZ0, base);
 
         buildMaskZ(chNeigh->mainChunk->block_data.data(), neighChunks[3]->block_data.data(), (z + 1) - minZ, 3, CHUNK_SIZE, CHUNK_HEIGHT - 1, maskZ, 1);
-        greedyMerge(maskZ, m, xyChunk, z + 1, CHUNK_SIZE, CHUNK_HEIGHT - 1, 3, unitNormalZ1, base);
+        greedyMerge(maskZ, neighChunks, m, xyChunk, z + 1, CHUNK_SIZE, CHUNK_HEIGHT - 1, 3, unitNormalZ1, base);
     }
     for (int y = minY; y < minY + CHUNK_HEIGHT - 1; ++y) {
         buildMaskY(chNeigh->mainChunk->block_data.data(), y + 0, 4, CHUNK_SIZE, CHUNK_SIZE, maskY, -1);
-        greedyMerge(maskY, m, xyChunk, y + 0, CHUNK_SIZE, CHUNK_SIZE, 4, unitNormalY0, base);
+        greedyMerge(maskY, neighChunks, m, xyChunk, y + 0, CHUNK_SIZE, CHUNK_SIZE, 4, unitNormalY0, base);
 
         buildMaskY(chNeigh->mainChunk->block_data.data(), y + 1, 5, CHUNK_SIZE, CHUNK_SIZE, maskY, 1);
-        greedyMerge(maskY, m, xyChunk, y + 1, CHUNK_SIZE, CHUNK_SIZE, 5, unitNormalY1, base);
+        greedyMerge(maskY, neighChunks, m, xyChunk, y + 1, CHUNK_SIZE, CHUNK_SIZE, 5, unitNormalY1, base);
     }
         
     sendmesh:
@@ -1153,7 +1248,7 @@ void blockPlaceMainThread() {
         Block block = world.addBlocklook_at(inventory.mainInventorySlots[3][slot].item);
         if (block.type.isLuninous()) {
             Block lightBlock(block.position, block.type, 15);
-            lightsQueue.push(lightBlock);
+            tempLightsQueue.push(lightBlock);
         }
         blockPlacingOut = false;
     }

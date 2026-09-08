@@ -26,6 +26,8 @@ Camera::Camera(vec3 startPosition, vec3 startUp, float startYaw, float startPitc
 	turnSpeed = startTurnSpeed;
 	initial_velocity = vec3(0);
 	velocity = vec3(0);
+	gravity = 10.0f;
+	acceleration = vec3(0, -gravity, 0);
 
 	update();
 }
