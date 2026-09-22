@@ -47,6 +47,7 @@ struct Projectile {
         velocity += vec3(0, -10, 0) * vec3(0.01);
         position += (initial_velocity + velocity) * vec3(0.01);
     }
+
     void draw() {
         mesh.renderMesh();
     }
@@ -372,15 +373,15 @@ LightMesh World::createProjectileMesh(vec3 blockPos, float scale, Item blockType
         finalvertices.push_back(globalUVs[i + 1]);
         finalvertices.push_back(globalUVs[i + 2]);
 
-        uint32_t norm_color = ((a_byte(normals[i + 0] < 0 ? 1 : 0) & 0x1) << 5) | ((a_byte(absl(normals[i + 0])) & 0x1) << 4)
-            | ((a_byte(normals[i + 1] < 0 ? 1 : 0) & 0x1) << 3) | ((a_byte(absl(normals[i + 1])) & 0x1) << 2)
-            | ((a_byte(normals[i + 2] < 0 ? 1 : 0) & 0x1) << 1) | ((a_byte(absl(normals[i + 2])) & 0x1) << 0)
-            | ((a_byte(tintr * 100) & 0x7F) << 20)
-            | ((a_byte(tintg * 100) & 0x7F) << 13)
-            | ((a_byte(tintb * 100) & 0x7F) << 6);
+        uint32 ncblightnum = (a_byte(0x0F) << 27)
+                            | ((a_byte(tintr * 100) & 0x7F) << 20)
+                            | ((a_byte(tintg * 100) & 0x7F) << 13)
+                            | ((a_byte(tintb * 100) & 0x7F) << 6)
+                            | (((int)normals[i + 0] & 0x3) << 4)
+                            | (((int)normals[i + 1] & 0x3) << 2)
+                            | (((int)normals[i + 2] & 0x3) << 0);
         float normcolor;
-        memcpy(&normcolor, &norm_color, sizeof(float));
-
+        memcpy(&normcolor, &ncblightnum, sizeof(float));
         finalvertices.push_back(normcolor);
 
         //finalvertices.push_back(normals[i + 0]);  

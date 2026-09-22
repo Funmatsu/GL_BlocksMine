@@ -297,8 +297,9 @@ void getUVs(Item blockType, float* attrs, int du) {
 
 struct UIElement {
 public:
-	mat4 model = mat4(1.0f);
+	mat4 model = mat4(1.0f);	
 	LightMesh quadMesh;
+	glColorTexture tex;
 	int x, y, w, h;
 	virtual void onClick() {};
 };
@@ -317,7 +318,6 @@ public:
 	}
 };
 
-
 Cursor cursor;
 
 struct InventorySlot : UIElement
@@ -328,6 +328,7 @@ public:
 	Item item = AIR;
 	int count = 0;
 	Text textCount;
+	mat4 itemModel = mat4(1.0f);
 	void updateCount(int num) {
 		textCount = Text(num);
 	}

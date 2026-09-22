@@ -145,9 +145,9 @@ public:
         inventory.initInventorySlots();
         sky.buildSky();
 
-
         for (int i = 0; i < 1; ++i) {
-            workers.push_back(thread(chunkWorker)); // worker thread is somewhere in threading.h
+            if(i < 5)
+                workers.push_back(thread(chunkWorker)); // worker thread is somewhere in threading.h
             workers.push_back(thread(updateChunkJob));
         }
 
@@ -181,6 +181,7 @@ public:
     void run() {
         while (!mainWindow.getShouldClose()) {
             auto startframe = chrono::high_resolution_clock::now();
+            vector<InventorySlot*> toRender3Din2D;
             shaders[0]->useShader();
             
             static bool breakblockdb = 0, placeblockdb = 0, invtoggledb = 0; // db = debounce
@@ -189,8 +190,7 @@ public:
 			static int spiralCount = 0;
             
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            glfwPollEvents(); 
-            
+                        
             sky.applySky(view, projection);
             glEnable(GL_DEPTH_TEST);
             glDepthFunc(GL_LESS);
@@ -223,7 +223,7 @@ public:
                     }
                     queueCV.notify_one();
                 }
-                if (!(++count % 128)) { break; }
+                if (!(++count % spiral.size())) { break; }
             }
 
             while (!chunkMeshResult.empty()) {
@@ -238,7 +238,7 @@ public:
                 chunk->mesh->createMesh(chNeighRes->mesh->vertices, chNeighRes->mesh->indices);
                 delete chNeighRes;
 
-                if (!(++count % 2)) break; // To mesh as fast as ossible, donot cap n_o chunks meshed per frame.
+                if (!(++count % 2)) break; // To mesh as fast as ossible, donot cap n_o chunks meshed per frame...NEVERMIND!
             }
 
             while (!chunkResultQueue.empty()) {
@@ -249,7 +249,7 @@ public:
                     chunkResultQueue.pop();
                 }
                 world.chunkData.try_emplace(ch.coords, move(ch.chPtr));
-                if (!(++count % 128)) break;
+                //if (!(++count % 128)) break;
             }
 
             VP = projection * firstCamera.calcViewMatrix();
@@ -362,7 +362,7 @@ public:
                     breaking += toolSpeed;
                     if (breakingBlock == lookBlock && itemSoftness != -1) {
                         if (!(breaking % itemSoftness)) {
-                            breakReqQueue.push(vec3(1.0f));
+                            //breakReqQueue.push(vec3(1.0f));
                             if (!blockBreakingOut) {
                                 blockBreakingOut = true;
                             }
@@ -395,7 +395,7 @@ public:
                         }
                         if (inventory.mainInventorySlots[3][slot].item != AIR && recipe.itemPlaceable(inventory.mainInventorySlots[3][slot].item)) {
                             {
-                                placeReqQueue.push(vec3(1.0f));
+                                //placeReqQueue.push(vec3(1.0f));
                                 blockPlacingOut = true;
                             }
                         }
@@ -435,7 +435,7 @@ public:
                 }
 
                 if (mainWindow.getKeys()[GLFW_KEY_U]) {
-                    ball.shoot(firstCamera.getPosition(), firstCamera.getFront(), CLOUD, vec3(1.0f));
+                    ball.shoot(firstCamera.getPosition(), firstCamera.getFront(), CLOUD, vec3(100 * 3 * movementSpeed, 1.f, 100 * 3 * movementSpeed));
                     ball.mesh = world.createMeshCube(vec3(0), -4.0f, ball.item);
                 }
 
@@ -546,7 +546,7 @@ public:
             Textures[BLOCK_TEX]->useTexture();
             Textures[TOP_TEX]->useNextTexture();
             glUniform1i(glGetUniformLocation(shaders[0]->getShaderId(), "topTexture"), 2);
-            for (int dropIdx = 0; dropIdx < dropped.size(); dropIdx++) {
+            for (int dropIdx = 1; dropIdx < dropped.size(); dropIdx++) {
                 Projectile& drop = dropped[dropIdx];
                 if (drop.item.isTool()) {
                     Textures[TOOLS_TEX]->useTexture();
@@ -777,26 +777,85 @@ public:
                 }
             }
             
-            //for (int i = 0; i < 9; i++) {
-            //    mat4 itemModel = scale(mat4(1.0f), vec3(0.1f, 0.12f, 0.1f)) * rotate(mat4(1.0f), radians(-90.0f), vec3(0, 0, 1)) *
-            //        ((!inventory.hotbarSlots[i].item.isFlat()) ? rotate(mat4(1.0f), radians(30.0f), vec3(1, 0, 0)) * rotate(mat4(1.0f), radians(45.0f), vec3(0, 1, 0)) : mat4(1.0f)) *
-            //        rotate(mat4(1.0f), radians(inventory.hotbarSlots[i].angle), vec3(0, 1, 0));
-            //    inventory.hotbarSlots[i].angle += 0.5f;
-            //    render3Din2D(itemModel, inventory.hotbarSlots[i].mesh, inventory.hotbarSlots[i].model, inventory.hotbarSlots[i].quadMesh, ortho, itemView, itemProj, inventory.hotbarSlots[i].item);
-            //    inventory.hotbarSlots[i].textCount.drawText(ortho);
-            //}
+            for (int i = 0; i < 9; i++) {
+                mat4 itemModel = scale(mat4(1.0f), vec3(0.1f, 0.12f, 0.1f)) * rotate(mat4(1.0f), radians(-90.0f), vec3(0, 0, 1)) *
+                    ((!inventory.hotbarSlots[i].item.isFlat()) ? rotate(mat4(1.0f), radians(30.0f), vec3(1, 0, 0)) * rotate(mat4(1.0f), radians(45.0f), vec3(0, 1, 0)) : mat4(1.0f)) *
+                    rotate(mat4(1.0f), radians(inventory.hotbarSlots[i].angle), vec3(0, 1, 0));
+                inventory.hotbarSlots[i].angle += 0.5f;
+                inventory.hotbarSlots[i].itemModel = itemModel;
+                //toRender3Din2D.push_back(&inventory.hotbarSlots[i]);
+                render3Din2D(itemModel, inventory.hotbarSlots[i].mesh, inventory.hotbarSlots[i].model, inventory.hotbarSlots[i].quadMesh, ortho, itemView, itemProj, inventory.hotbarSlots[i].item);
+                //inventory.hotbarSlots[i].textCount.drawText(ortho);
+            }
 
-            //mat4 handModel = itemModel * breakModel
-            //    * rotate(mat4(1.0f), radians((!currentBlock.item.isTool() ? -35.f : 0.f)), vec3(1, 1, 1))
-            //    * rotate(mat4(1.0f), radians((!currentBlock.item.isTool() ? 45.f : 200.f)), vec3(0, 1, 0))
-            //    * rotate(mat4(1.0f), radians((!currentBlock.item.isTool() ? 0.f : 30.f)), vec3(0, 0, 1));
+            mat4 handModel = itemModel * breakModel
+                * rotate(mat4(1.0f), radians((!currentBlock.item.isTool() ? -35.f : 0.f)), vec3(1, 1, 1))
+                * rotate(mat4(1.0f), radians((!currentBlock.item.isTool() ? 45.f : 200.f)), vec3(0, 1, 0))
+                * rotate(mat4(1.0f), radians((!currentBlock.item.isTool() ? 0.f : 30.f)), vec3(0, 0, 1));
+            mat4 quadModel = translate(mat4(1.0f),
+                vec3((float)centerX + 600.f - 20.f * (firstCamera.getYaw() - lastYaw),
+                     (float)centerY - 650.f - 20.f * (firstCamera.getPitch() - lastPitch) - 2 * (firstCamera.initial_velocity.y + firstCamera.velocity.y), 0.f));
 
-            //render3Din2D(handModel, currentBlock.mesh, translate(mat4(1.0f), 
-            //    vec3((float)centerX + 600.f - 20.f * (firstCamera.getYaw() - lastYaw),
-            //         (float)centerY - 650.f - 20.f * (firstCamera.getPitch() - lastPitch) - 2 * (firstCamera.initial_velocity.y + firstCamera.velocity.y), 0.f)),
-            //    currentBlock.quadMesh, ortho, currentBlockView, itemProj, currentBlock.item);
+            currentBlock.model = quadModel;
+			currentBlock.itemModel = handModel;
+            render3Din2D(handModel, currentBlock.mesh, quadModel, currentBlock.quadMesh, ortho, currentBlockView, itemProj, currentBlock.item);
 
             //angletest += 1;
+            //bool toolset = 1;// , blockset = 0;
+            //int texIdx = 0;
+            //            
+            //glBindFramebuffer(GL_FRAMEBUFFER, itemFbo);
+            //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            //glEnable(GL_DEPTH_TEST);
+            //glDepthMask(GL_TRUE);
+            //glDepthFunc(GL_LESS);
+            ////glDepthFunc(GL_LESS);
+
+            //    //glClearColor(1, 1, 1, 0.5);
+            //shaders[3]->useShader();
+            //shaders[3]->setDirectionalLight(&auxLight);
+            //glUniform1i(glGetUniformLocation(shaders[3]->getShaderId(), "topTexture"), 2);
+            //glUniformMatrix4fv(shaders[3]->getViewLocation(), 1, GL_FALSE, value_ptr(itemView));
+            //glUniformMatrix4fv(shaders[3]->getProjectionLocation(), 1, GL_FALSE, value_ptr(itemProj));
+            //Textures[TOP_TEX]->useNextTexture();
+            //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            //glViewport(0, 0, 1600, 1600);
+
+            //for (; texIdx < toRender3Din2D.size(); texIdx++) { //toRender3Din2D.size()
+            //    //glViewport(texIdx * 150, texIdx * 150, 800, 800);
+
+            //    glUniformMatrix4fv(shaders[3]->getModelLocation(), 1, GL_FALSE, value_ptr(toRender3Din2D[texIdx]->itemModel));//<-
+            //    
+            //    if (recipe.isTool(toRender3Din2D[texIdx]->item) && !toolset) {
+            //        Textures[TOOLS_TEX]->useTexture(); toolset = 1;
+            //    }
+            //    else if (toolset) {
+            //        Textures[BLOCK_TEX]->useTexture(); toolset = 0;
+            //    }
+
+            //    toRender3Din2D[texIdx]->mesh.renderMesh();//<-
+            //}
+
+            //glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            //glEnable(GL_DEPTH_TEST);
+            //glViewport(0, 0, mainWindow.getBufferWidth(), mainWindow.getBufferHeight());
+            //glDisable(GL_DEPTH_TEST);
+
+            //shaders[4]->useShader();
+
+            //glActiveTexture(GL_TEXTURE0);
+            //glBindTexture(GL_TEXTURE_2D, itemColorTex);
+            //glUniform1i(glGetUniformLocation(shaders[4]->getShaderId(), "theTexture"), 0);
+
+            //for (int idx = 0; idx < toRender3Din2D.size(); idx++) {
+            //    glUniformMatrix4fv(shaders[4]->getOrthoLocation(), 1, GL_FALSE, glm::value_ptr(ortho));
+            //    glUniformMatrix4fv(shaders[4]->getModelLocation(), 1, GL_FALSE, glm::value_ptr(toRender3Din2D[idx ]->model));
+
+            //    toRender3Din2D[idx]->quadMesh.renderMesh();//<-
+            //}
+            //texIdx = ++texIdx % toRender3Din2D.size();
+            //}
+            //quad2D.renderMesh();//<-
 
             if (inventory.invChange()) { inventory.updateInventory(); }
 
@@ -826,6 +885,7 @@ public:
                     cout << "Joining thread " << workers.size() << endl;
                     t.join();
                 }
+                glfwTerminate();
 
                 return;
             }
@@ -845,6 +905,7 @@ public:
             }
             
             mainWindow.updateLastKeyPress();
+            glfwPollEvents();
             mainWindow.swapBuffers();
 
             auto endframe = chrono::high_resolution_clock::now();

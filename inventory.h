@@ -299,7 +299,7 @@ LightMesh createMeshCube(vec3 xyz, float scale, Item blockType) {
         }
 
         vertices = {
-            -0.5f * scale + xyz.x,  -0.5f * scale * yexponent + xyz.y,  -0.5f * scale + xyz.z,
+            -0.5f * scale + xyz.x,  -0.5f * scale * yexponent + xyz.y,  -0.5f * scale + xyz.z, 
             -0.5f * scale + xyz.x,   0.5f * scale * yexponent + xyz.y,  -0.5f * scale + xyz.z,
             -0.5f * scale + xyz.x,   0.5f * scale * yexponent + xyz.y,   0.5f * scale + xyz.z,
             -0.5f * scale + xyz.x,  -0.5f * scale * yexponent + xyz.y,   0.5f * scale + xyz.z,
@@ -364,7 +364,7 @@ LightMesh createMeshCube(vec3 xyz, float scale, Item blockType) {
         }
     }
 
-    normals.assign(vertices.size(), 1);
+    //normals.assign(vertices.size(), 1);
     //globalUVs.assign(vertices.size(), 1);
     vector<GLfloat> colorMask;
     float tintr = 1.0f, tintg = 1.0f, tintb = 1.0f;
@@ -384,11 +384,18 @@ LightMesh createMeshCube(vec3 xyz, float scale, Item blockType) {
 
             finalvertices.push_back(globalUVs[i + 0]);
             finalvertices.push_back(globalUVs[i + 1]);
-            finalvertices.push_back(globalUVs[i + 2]);
+            //finalvertices.push_back(globalUVs[i + 2]);
 
-            finalvertices.push_back(normals[i + 0]);
-            finalvertices.push_back(normals[i + 1]);
-            finalvertices.push_back(normals[i + 2]);
+            uint32 ncblightnum =  (((int)normals[i + 0] & 0x3) << 4)
+                                | (((int)normals[i + 1] & 0x3) << 2)
+                                | (((int)normals[i + 2] & 0x3) << 0);
+            float normcolor;
+            memcpy(&normcolor, &ncblightnum, sizeof(float));
+            finalvertices.push_back(1.0f);
+
+            finalvertices.push_back(normcolor);
+            finalvertices.push_back(1.0f);
+            finalvertices.push_back(1.0f);
 
             finalvertices.push_back(colorMask[i + 0]);
             finalvertices.push_back(colorMask[i + 1]);
@@ -404,10 +411,17 @@ LightMesh createMeshCube(vec3 xyz, float scale, Item blockType) {
             finalvertices.push_back(vertices[8 * i + 3]);
             finalvertices.push_back(vertices[8 * i + 4]);
 
+            uint32 ncblightnum =  (((int)vertices[8 * i + 5] & 0x3) << 4)
+                                | (((int)vertices[8 * i + 6] & 0x3) << 2)
+                                | (((int)vertices[8 * i + 7] & 0x3) << 0);
+            float normcolor;
+            memcpy(&normcolor, &ncblightnum, sizeof(float));
             finalvertices.push_back(1.0f);
+
+            finalvertices.push_back(normcolor);
             finalvertices.push_back(vertices[8 * i + 5]);
             finalvertices.push_back(vertices[8 * i + 6]);
-            finalvertices.push_back(vertices[8 * i + 7]);
+            //finalvertices.push_back(vertices[8 * i + 7]);
 
             finalvertices.push_back(colorMask[3 * i + 0]);
             finalvertices.push_back(colorMask[3 * i + 1]);

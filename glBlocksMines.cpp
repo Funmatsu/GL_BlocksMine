@@ -1,5 +1,6 @@
 #define GLEW_STATIC
 
+//#pragma opm parallel
 #include "libraries.h"
 
 using namespace std;
@@ -17,7 +18,7 @@ unsigned int pointLightCount = 0;
 
 int main(){
 	startMenu startMenu;
-	startMenu.launch();
+	//startMenu.launch();
 	Game game;
 	game.run();
 }

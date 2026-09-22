@@ -28,13 +28,16 @@ void main(){
 	texCoords = inTex;
 	transparency = transparencyIn;
 	uint unormcol = floatBitsToUint(normcol);
-
-	int normfactorx = -(int((unormcol >> 5u) & 1u) + 1)/2, 
-		normfactory = -(int((unormcol >> 3u) & 1u) + 1)/2,
-		normfactorz = -(int((unormcol >> 1u) & 1u) + 1)/2;
-	int nx = normfactorx * int((unormcol >> 4u) & 1u),
-		ny = normfactory * int((unormcol >> 2u) & 1u),
-		nz = normfactorz * int((unormcol >> 0u) & 1u);
+	
+	//int normfactorx = -(int((unormcol >> 5u) & 1u) + 1)/2, 
+	//	normfactory = -(int((unormcol >> 3u) & 1u) + 1)/2,
+	//	normfactorz = -(int((unormcol >> 1u) & 1u) + 1)/2;
+	//int nx = normfactorx * int((unormcol >> 4u) & 1u),
+	//	ny = normfactory * int((unormcol >> 2u) & 1u),
+	//	nz = normfactorz * int((unormcol >> 0u) & 1u);
+	int nx = (int((unormcol >> 4u) & 3u) << 30) >> 30,
+		ny = (int((unormcol >> 2u) & 3u) << 30) >> 30,
+		nz = (int((unormcol >> 0u) & 3u) << 30) >> 30;
 
 	normal = normalize(mat3(transpose(inverse(model))) * vec3(nx, ny, nz));
 	FragPos = (model * vec4(pos, 1.0)).xyz;

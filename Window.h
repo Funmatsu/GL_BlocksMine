@@ -55,6 +55,7 @@ private:
 	double mouseX = 0, mouseY = 0;
 	bool mouseFirstMoved;
 
+
 	void createCalbacks();
 	static void handleKeys(GLFWwindow *window, int key, int code, int action, int mode);
 	static void handleMouse(GLFWwindow* window, double xPos, double yPos);

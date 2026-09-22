@@ -65,3 +65,14 @@ inline void addTextures() {
 
 	for (int i = BLOCK_TEX; i < Textures.size(); i++) { Textures[i]->loadTexture(); }
 }
+
+class glColorTexture {
+public:
+	glColorTexture();
+	glColorTexture(int width, int height);
+	void useTexture();
+	void useTexture(GLenum tex);
+private:
+	int width, height;
+	unsigned int texId;
+};

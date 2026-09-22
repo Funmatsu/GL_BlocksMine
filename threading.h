@@ -51,7 +51,7 @@ std::queue<chNeighPackPtr*> chunkCleanupQueue;
 std::queue<chNeighResult*> chunkMeshResult;
 
 std::queue<Block> tempLightsQueue;
-std::queue<Block> lightsQueue;
+std::vector<Block> lightsQueue;
 
 std::atomic<bool> chunkGenRunning = true;
 std::atomic<bool> chunkGenRunning2 = true;
@@ -65,19 +65,19 @@ std::atomic<bool> stopChunkNeighCheck = false;
 bool blockBreakingOut = false;
 bool blockPlacingOut = false;
 
-ivec3   unitNormalX0 = ivec3(1, 0, 0),
-unitNormalX1 = ivec3(-1, 0, 0),
-unitNormalZ0 = ivec3(0, 0, 1),
-unitNormalZ1 = ivec3(0, 0, -1),
-unitNormalY0 = ivec3(0, 1, 0),
-unitNormalY1 = ivec3(0, -1, 0);
+ivec3   unitNormalX0 = ivec3( 1, 0, 0),
+        unitNormalX1 = ivec3(-1, 0, 0),
+        unitNormalZ0 = ivec3( 0, 0, 1),
+        unitNormalZ1 = ivec3( 0, 0,-1),
+        unitNormalY0 = ivec3( 0, 1, 0),
+        unitNormalY1 = ivec3( 0,-1, 0);
 
 ivec3   nextChunkNormalX0 = unitNormalX0 * CHUNK_SIZE,
-nextChunkNormalX1 = unitNormalX1 * CHUNK_SIZE,
-nextChunkNormalZ0 = unitNormalZ0 * CHUNK_SIZE,
-nextChunkNormalZ1 = unitNormalZ1 * CHUNK_SIZE,
-nextChunkNormalY0 = unitNormalY0 * CHUNK_SIZE,
-nextChunkNormalY1 = unitNormalY1 * CHUNK_SIZE;
+        nextChunkNormalX1 = unitNormalX1 * CHUNK_SIZE,
+        nextChunkNormalZ0 = unitNormalZ0 * CHUNK_SIZE,
+        nextChunkNormalZ1 = unitNormalZ1 * CHUNK_SIZE,
+        nextChunkNormalY0 = unitNormalY0 * CHUNK_SIZE,
+        nextChunkNormalY1 = unitNormalY1 * CHUNK_SIZE;
 
 int dirs[]   = { -1, 1, 0, 0,   0, 0, -1, 1 };
 //int dirs3D[] = { -1, 1, 0, 0, 0, 0,   0, 0, 0, 0, -1, 1,   0, 0, -1, 1, 0, 0 };
@@ -176,20 +176,22 @@ bool isAir(Item item);
 
 void propagateBlockLight(Chunk* ch) {
     vector<ivec3> covered;
-  //  for (int i = 0; i < lightsQueue.size(); i++) {
-  //      auto light = lightsQueue.front();
-		//if (ch->inBounds(light.position))
-  //          tempLightsQueue.push(light);
+    for (int i = 0; i < lightsQueue.size(); i++) {
+        auto tempLight = lightsQueue[i];
+		if (ch->inBounds(tempLight.position))
+            tempLightsQueue.push(tempLight);
         while (!tempLightsQueue.empty()) {
             auto light = tempLightsQueue.front();
             tempLightsQueue.pop();
             light.bLight--;
             for (int j = 0; j < 6; j++) {
+                bool inUse = false;
                 ivec3 neighpos = light.position + dirs3D[j];
                 if (std::find(covered.begin(), covered.end(), neighpos) != covered.end()) continue;
                 uint chNeighPos = pack(floorDiv(neighpos.x, CHUNK_SIZE), floorDiv(neighpos.z, CHUNK_SIZE));
                 auto& neighChunk = world.chunkData.at(chNeighPos);
                 BlockData& neighBlock = (*neighChunk)[neighpos];
+                if (light.bLight <= neighBlock.bLight) continue;
                 covered.push_back(neighpos);
                 neighBlock.bLight = light.bLight;// > (int)neighBlock.bLight ? light.bLight : (int)neighBlock.bLight;// std::max(light.bLight, (int)neighBlock.bLight);
                 neighChunk->setAsDirty();
@@ -199,7 +201,7 @@ void propagateBlockLight(Chunk* ch) {
                 }
             }
         }
-    //}
+    }
 }
 
 void propagateSkyLight(Chunk* ch) {
@@ -211,7 +213,8 @@ void propagateSkyLight(Chunk* ch) {
                 BlockData& block = ch->block_data[at(ivec3(x, y, z))];
 
                 block.bLight = skyLight;
-                if (block.blockType != AIR) { skyLight--; } //if (block.blockType.isFlat()) { skyLight-=3; }
+                if (block.blockType.isFlat()) { skyLight -= 4;}
+                else if (block.blockType != AIR) { skyLight--; }                 
                 if (skyLight <= 5) { break; }
             }
         }
@@ -258,10 +261,10 @@ void generateBlocks(vec2 xyChunk, Chunk* repChunk) {
                 jump = 0;
 
                 int radius = 3;  //adjust for size
-                if (y >= scaledHeight - 1) {
+                if (y > scaledHeight - 1) {
                     blockType = GRASS_BLOCK;
                 }
-                else if (y > scaledHeight - 4 && y < scaledHeight - 1) {
+                else if (y > scaledHeight - 4 && y <= scaledHeight - 1) {
                     blockType = DIRT_BLOCK;
                 }
                 else if (y <= scaledHeight - 4 && y > scaledHeight - 7) {
@@ -273,16 +276,15 @@ void generateBlocks(vec2 xyChunk, Chunk* repChunk) {
                 else if (y <= scaledHeight - 20) {
                     blockType = items[blockTypes2[dist2(gen)]];
                 }
+                //blockType.bLight = skyLight >= 5 ? skyLight : blockType.bLight;
+                //if (blockType.blockType != AIR) { skyLight--; }
                 //else continue;
                 density = caveNoise.GetNoise(fx, (float)y, fz);
                 //if (!(blockType == 0) && skylight > 1) { ch(x, y, z).blight = skylight--; }
                 if (density <= -0.5f) {
                     continue;
                 }
-
-                blockType.bLight = skyLight;
-                if (blockType.blockType != AIR && skyLight >= 5) { skyLight--; } 
-
+                
                 ch(x, y, z) = blockType;
 
                 //Making the trees and leaves
@@ -342,6 +344,7 @@ void generateBlocks(vec2 xyChunk, Chunk* repChunk) {
             }
         }
     }
+	propagateSkyLight(repChunk);
     //repChunk->terrainHeight = maxHeight;
     //auto end = chrono::high_resolution_clock::now();
     //double timelapsed = chrono::duration<double>(end - start).count();
@@ -788,7 +791,7 @@ void emitFace(Mesh& m, int face, BlockData block, ivec3 blockPos, ivec3 dims, iv
     static int count = 0;
 	vec4 bLight = vec4(block.bLight);
     int* dirs2DArr;
-    dirs2DArr = (face == 1 || face == 2 || face == 5) ? dirs2DArr_CW : dirs2DArrCCW;
+    dirs2DArr = ((face == 1 || face == 2 || face == 5) && !block.blockType.isFlat()) ? dirs2DArr_CW : dirs2DArrCCW;
     //dirs2DArr = (face == 1 || face == 2 || face == 5) ? dirs2DArr_CW_2 : dirs2DArrCCW_2;
     //for (int i = 3; i >= 0; i--) {
     //    bLight[3 - i] = (block.bLight + bLightArr[dirs2DArr[2 * i]] + bLightArr[dirs2DArr[2 * i + 1]]) / 3;
@@ -838,8 +841,8 @@ void emitFace(Mesh& m, int face, BlockData block, ivec3 blockPos, ivec3 dims, iv
     else {
         switch (face) {
         case 0: v[0] = blockPos.x + -0.5f, v[1] = blockPos.y + -0.5f, v[2] = blockPos.z + -0.5f;          v[3] = blockPos.x + -0.5f, v[4] = blockPos.y + -0.5f + dims.y, v[5] = blockPos.z + -0.5f;          v[6] = blockPos.x +  0.5f, v[7] = blockPos.y + -0.5f + dims.y, v[8] = blockPos.z +  0.5f;          v[9] = blockPos.x +  0.5f, v[10] = blockPos.y + -0.5f, v[11] = blockPos.z +  0.5f; break; // -X disgonal
-        case 1: v[0] = blockPos.x + -0.5f, v[1] = blockPos.y + -0.5f, v[2] = blockPos.z +  0.5f;          v[3] = blockPos.x + -0.5f, v[4] = blockPos.y + -0.5f + dims.y, v[5] = blockPos.z +  0.5f;          v[6] = blockPos.x +  0.5f, v[7] = blockPos.y + -0.5f + dims.y, v[8] = blockPos.z + -0.5f;          v[9] = blockPos.x +  0.5f, v[10] = blockPos.y + -0.5f, v[11] = blockPos.z + -0.5f; break; // +X diagonal
-        case 2: v[0] = blockPos.x +  0.5f, v[1] = blockPos.y + -0.5f, v[2] = blockPos.z +  0.5f;          v[3] = blockPos.x +  0.5f, v[4] = blockPos.y + -0.5f + dims.y, v[5] = blockPos.z +  0.5f;          v[6] = blockPos.x + -0.5f, v[7] = blockPos.y + -0.5f + dims.y, v[8] = blockPos.z + -0.5f;          v[9] = blockPos.x + -0.5f, v[10] = blockPos.y + -0.5f, v[11] = blockPos.z + -0.5f; break; // -X disgonal
+        case 1: v[0] = blockPos.x +  0.5f, v[1] = blockPos.y + -0.5f, v[2] = blockPos.z +  0.5f;          v[3] = blockPos.x +  0.5f, v[4] = blockPos.y + -0.5f + dims.y, v[5] = blockPos.z +  0.5f;          v[6] = blockPos.x + -0.5f, v[7] = blockPos.y + -0.5f + dims.y, v[8] = blockPos.z + -0.5f;          v[9] = blockPos.x + -0.5f, v[10] = blockPos.y + -0.5f, v[11] = blockPos.z + -0.5f; break; // -X disgonal
+        case 2: v[0] = blockPos.x + -0.5f, v[1] = blockPos.y + -0.5f, v[2] = blockPos.z +  0.5f;          v[3] = blockPos.x + -0.5f, v[4] = blockPos.y + -0.5f + dims.y, v[5] = blockPos.z +  0.5f;          v[6] = blockPos.x +  0.5f, v[7] = blockPos.y + -0.5f + dims.y, v[8] = blockPos.z + -0.5f;          v[9] = blockPos.x +  0.5f, v[10] = blockPos.y + -0.5f, v[11] = blockPos.z + -0.5f; break; // +X diagonal
         case 3: v[0] = blockPos.x +  0.5f, v[1] = blockPos.y + -0.5f, v[2] = blockPos.z + -0.5f;          v[3] = blockPos.x +  0.5f, v[4] = blockPos.y + -0.5f + dims.y, v[5] = blockPos.z + -0.5f;          v[6] = blockPos.x + -0.5f, v[7] = blockPos.y + -0.5f + dims.y, v[8] = blockPos.z +  0.5f;          v[9] = blockPos.x + -0.5f, v[10] = blockPos.y + -0.5f, v[11] = blockPos.z +  0.5f; break; // +X diagonal
         default:memset(v, 0, sizeof(float) * 12); break;
         }
@@ -981,15 +984,15 @@ void greedyMerge(BlockData* mask, Chunk* neighs[4], Mesh& m, ivec2& xyChunk, int
             }
 
             int w = 1, h = 1; int stop = 0;
-            //while (b + w < W && mask[idx + w] == type) { w++; }
-            //while (l + h < H) {
-            //    int row = (l + h) * W + b;
-            //    for (int d = 0; d < w; d++) {
-            //        if (mask[row + d] != type) { stop = 1; break; }
-            //    }
-            //    if (stop) break;
-            //    h++;
-            //}
+            while (b + w < W && mask[idx + w] == type) { w++; }
+            while (l + h < H) {
+                int row = (l + h) * W + b;
+                for (int d = 0; d < w; d++) {
+                    if (mask[row + d] != type) { stop = 1; break; }
+                }
+                if (stop) break;
+                h++;
+            }
 
             int bLights[9], initLight = 0;
             //for (int i = 0; i < 4; i++) {
@@ -1037,7 +1040,7 @@ void greedyMerge(BlockData* mask, Chunk* neighs[4], Mesh& m, ivec2& xyChunk, int
                 int maskIdx = (l + hdir) * W + (b + wdir);
                 //if (maskIdx <= 0 || maskIdx >= W * H) { bLights[i] = i > 0 ? bLights[i - 1] : 15; continue; }
                 if (((l + hdir) >= H || (l + hdir) < 0) || ((b + wdir) >= W || (b + wdir) < 0)) { bLights[i] = type.bLight; continue; }
-                initLight = (i == 0) ? mask[maskIdx].bLight : initLight;
+                //initLight = (i == 0) ? mask[maskIdx].bLight : initLight;
                 //if (initLight != mask[maskIdx].bLight) { w = 1; h = 1; memset(bLights, type.bLight, 9); break; }
                 bLights[i] = mask[maskIdx].bLight;
                 //cout << to_string(dirs2DCage[i]) << " " << maskIdx << " " << bLights[i] << endl;
@@ -1177,6 +1180,7 @@ void meshChunk(chNeighPackPtr* chNeigh) {
         auto it = world.chunkData.find(idxcrds);
         if (it != world.chunkData.end() && it->second->inUse.compare_exchange_strong(chunkReady, true)) {
             neighChunks[i] = it->second.get();
+            continue;
         }
         else {
             chNeigh->mainChunk->setAsDirty();
@@ -1238,6 +1242,14 @@ void meshChunk(chNeighPackPtr* chNeigh) {
 void blockBreakMainThread() {
     if (blockBreakingOut) {
         Block block = world.delBlocklook_at();
+        cout << block.type.isLuninous() << endl;
+        if (block.type.isLuninous()) {
+   //         auto it = std::find(lightsQueue.begin(), lightsQueue.end(), block);
+			//int index = it - lightsQueue.begin();
+   //         cout << "dt : " << index << endl;
+            //lightsQueue[index] = lightsQueue.back();
+            lightsQueue.pop_back();
+        }
         blockBreakingOut = false;
 		breakResQueue.push(block);
     }
@@ -1248,7 +1260,7 @@ void blockPlaceMainThread() {
         Block block = world.addBlocklook_at(inventory.mainInventorySlots[3][slot].item);
         if (block.type.isLuninous()) {
             Block lightBlock(block.position, block.type, 15);
-            tempLightsQueue.push(lightBlock);
+            lightsQueue.push_back(lightBlock);
         }
         blockPlacingOut = false;
     }

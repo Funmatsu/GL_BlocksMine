@@ -188,7 +188,7 @@ void main(){
 	
 	float lightFactor = 1.0f;
 	if(normal.y == -1) lightFactor *= 1.0f;
-	else if(normal.y == 1) lightFactor *= 0.;
+	else if(normal.y == 1) lightFactor *= 0.4f;
 	else if(normal.x != 0) lightFactor *= 0.7f;
 	else if(normal.z != 0) lightFactor *= 0.9f; //if(normal.x != 0)
 	
