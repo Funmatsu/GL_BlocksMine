@@ -29,7 +29,9 @@ std::condition_variable chunkUpdateCV;
 //#define WOODEN_PICKAXE 101
 //#define STICK 102
 
-uint8 attrs[19] = { // block attributes : {bool unculled | bool placeable | bool useable | bool toolable | bool breakable | bool flatable | int luminable}
+#define GLOBAL_ITEM_NUM 19
+
+uint8 attrs[GLOBAL_ITEM_NUM] = { // block attributes : {bool unculled | bool placeable | bool useable | bool toolable | bool breakable | bool flatable | int luminable}
 	0x44,
 	0x24,
 	0x24,
@@ -435,13 +437,13 @@ unsigned int itemFbo, itemColorTex, itemDepthTex;
 void initItemTextures() {
 	glGenTextures(1, &itemColorTex);
 	glBindTexture(GL_TEXTURE_2D, itemColorTex);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 1600, 1600, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 512, 512, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	glGenRenderbuffers(1, &itemDepthTex);
 	glBindRenderbuffer(GL_RENDERBUFFER, itemDepthTex);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, 1600, 1600);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, 512, 512);
 
 	glGenFramebuffers(1, &itemFbo);
 	glBindFramebuffer(GL_FRAMEBUFFER, itemFbo);

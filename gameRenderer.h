@@ -69,7 +69,7 @@ public:
     Block lookBlock;
 
     vec3 headPos, headFront;
-
+    
     Game() {
         ifstream playerJSON("player.json");
         if (!playerJSON) {
@@ -145,18 +145,23 @@ public:
         inventory.initInventorySlots();
         sky.buildSky();
 
-        for (int i = 0; i < 1; ++i) {
+        for (int i = 0; i < GLOBAL_ITEM_NUM; i++) {
+            Item item = items[i];
+            LightMesh mesh     = createMeshCube(vec3(0.0f), 35.0, item),
+                      quadMesh = createMeshQuad(50.f);
+            mat4 itemModel = scale(mat4(1.0f), vec3(0.1f, 0.12f, 0.1f)) * rotate(mat4(1.0f), radians(-90.0f), vec3(0, 0, 1)) *
+                ((!inventory.hotbarSlots[i].item.isFlat()) ? rotate(mat4(1.0f), radians(30.0f), vec3(1, 0, 0)) * rotate(mat4(1.0f), radians(45.0f), vec3(0, 1, 0)) : mat4(1.0f));
+            
+            render3Din2D(itemModel, mesh, mat4(1.0f), quadMesh, ortho, itemView, itemProj, item);
+            itemTextures[i] = new GL_Texture();
+            itemTextures[i]->readTexture(512, 512);
+        }
+
+        for (int i = 0; i < 3; ++i) {
             if(i < 5)
                 workers.push_back(thread(chunkWorker)); // worker thread is somewhere in threading.h
             workers.push_back(thread(updateChunkJob));
         }
-
-        //workers.push_back(thread(blockBreakThreadWorker));
-        //workers.push_back(thread(blockPlaceThreadWorker));
-
-        //for (int i = 0; i < 1; ++i) {
-        //    workers.push_back(thread(chunkMeshSchedWorker));
-        //}
 
         mainLight = DirectionalLight(mainWindow.getBufferWidth(), mainWindow.getBufferHeight(),
             1.0f, 1.0f, 1.0f,
@@ -179,9 +184,9 @@ public:
     }
 
     void run() {
-        while (!mainWindow.getShouldClose()) {
+        while (true) {
             auto startframe = chrono::high_resolution_clock::now();
-            vector<InventorySlot*> toRender3Din2D;
+            //vector<InventorySlot*> toRender3Din2D;
             shaders[0]->useShader();
             
             static bool breakblockdb = 0, placeblockdb = 0, invtoggledb = 0; // db = debounce
@@ -717,14 +722,25 @@ public:
                 for (int i = 0; i < (sizeof(inventory.mainCraftingSlots) / sizeof(inventory.mainCraftingSlots[0])); i++) {
                     mat4 mod = translate(mat4(1.0f), vec3(centerX, centerY, 0)), craftmod = translate(mat4(1.0f), vec3(centerX + 100, centerY, 0));;
                     for (int j = 0; j < (sizeof(inventory.mainCraftingSlots[0]) / sizeof(InventorySlot)); j++) {
-                        render3Din2D(itemModel, inventory.mainCraftingSlots[i][j].mesh, inventory.mainCraftingSlots[i][j].model, inventory.mainCraftingSlots[i][j].quadMesh, ortho, itemView, itemProj, inventory.mainCraftingSlots[i][j].item);
+                        //render3Din2D(itemModel, inventory.mainCraftingSlots[i][j].mesh, inventory.mainCraftingSlots[i][j].model, inventory.mainCraftingSlots[i][j].quadMesh, ortho, itemView, itemProj, inventory.mainCraftingSlots[i][j].item);
+                        glUniformMatrix4fv(shaders[4]->getModelLocation(), 1, GL_FALSE, glm::value_ptr(inventory.mainCraftingSlots[i][j].model));
+                        itemTextures[inventory.mainCraftingSlots[i][j].item.id]->useTexture();
+                        inventory.mainCraftingSlots[i][j].quadMesh.renderMesh();
                         inventory.mainCraftingSlots[i][j].textCount.drawText(ortho);
                     }
                 }
-                render3Din2D(itemModel, craftedItem.mesh, craftedItem.model, craftedItem.quadMesh, ortho, itemView, itemProj, craftedItem.item);
+                //render3Din2D(itemModel, craftedItem.mesh, craftedItem.model, craftedItem.quadMesh, ortho, itemView, itemProj, craftedItem.item);
+                glUniformMatrix4fv(shaders[4]->getModelLocation(), 1, GL_FALSE, glm::value_ptr(craftedItem.model));
+                itemTextures[craftedItem.item.id]->useTexture();
+                craftedItem.quadMesh.renderMesh();
                 craftedItem.textCount.drawText(ortho);
 
-                render3Din2D(itemModel, cursor.mesh, translate(mat4(1.0f), vec3((float(cursor.x) / mainWindow.getBufferWidth()) * WIDTH, ((float)cursor.y / mainWindow.getBufferHeight()) * HEIGHT, 0)), cursor.quadMesh, ortho, itemView, itemProj, cursor.item);
+                //render3Din2D(itemModel, cursor.mesh, translate(mat4(1.0f), vec3((float(cursor.x) / mainWindow.getBufferWidth()) * WIDTH, ((float)cursor.y / mainWindow.getBufferHeight()) * HEIGHT, 0)), cursor.quadMesh, ortho, itemView, itemProj, cursor.item);
+                mat4 cursorModel = translate(mat4(1.0f), vec3((float(cursor.x) / mainWindow.getBufferWidth()) * WIDTH, ((float)cursor.y / mainWindow.getBufferHeight()) * HEIGHT, 0));
+                glUniformMatrix4fv(shaders[4]->getModelLocation(), 1, GL_FALSE, glm::value_ptr(cursorModel));
+                itemTextures[cursor.item.id]->useTexture();
+                cursor.quadMesh.renderMesh();
+
                 cursor.textCount.model = translate(mat4(1.0f), vec3((float(cursor.x) / mainWindow.getBufferWidth()) * WIDTH, ((float)cursor.y / mainWindow.getBufferHeight()) * HEIGHT, 0));
                 if (cursor.count > 1) {
                     cursor.textCount.drawText(ortho);
@@ -763,31 +779,29 @@ public:
 
                 for (int i = 0; i < (sizeof(inventory.craftingTableSlots) / sizeof(inventory.craftingTableSlots[0])); i++) {
                     for (int j = 0; j < (sizeof(inventory.craftingTableSlots[0]) / sizeof(InventorySlot)); j++) {
-                        render3Din2D(itemModel, inventory.craftingTableSlots[i][j].mesh, inventory.craftingTableSlots[i][j].model, inventory.craftingTableSlots[i][j].quadMesh, ortho, itemView, itemProj, inventory.craftingTableSlots[i][j].item);
+                        glUniformMatrix4fv(shaders[4]->getModelLocation(), 1, GL_FALSE, glm::value_ptr(inventory.craftingTableSlots[i][j].model));
+                        itemTextures[inventory.craftingTableSlots[i][j].item.id]->useTexture();
+                        inventory.craftingTableSlots[i][j].quadMesh.renderMesh();
+                        //render3Din2D(itemModel, inventory.craftingTableSlots[i][j].mesh, inventory.craftingTableSlots[i][j].model, inventory.craftingTableSlots[i][j].quadMesh, ortho, itemView, itemProj, inventory.craftingTableSlots[i][j].item);
                         inventory.craftingTableSlots[i][j].textCount.drawText(ortho);
                     }
                 }
-                render3Din2D(itemModel, craftedItem.mesh, craftedItem.model, craftedItem.quadMesh, ortho, itemView, itemProj, craftedItem.item);
+                glUniformMatrix4fv(shaders[4]->getModelLocation(), 1, GL_FALSE, glm::value_ptr(craftedItem.model));
+                itemTextures[craftedItem.item.id]->useTexture();
+                craftedItem.quadMesh.renderMesh();
+                //render3Din2D(itemModel, craftedItem.mesh, craftedItem.model, craftedItem.quadMesh, ortho, itemView, itemProj, craftedItem.item);
                 craftedItem.textCount.drawText(ortho);
 
-                render3Din2D(itemModel, cursor.mesh, translate(mat4(1.0f), vec3((float(cursor.x) / mainWindow.getBufferWidth()) * WIDTH, ((float)cursor.y / mainWindow.getBufferHeight()) * HEIGHT, 0)), cursor.quadMesh, ortho, itemView, itemProj, cursor.item);
+                glUniformMatrix4fv(shaders[4]->getModelLocation(), 1, GL_FALSE, glm::value_ptr(translate(mat4(1.0f), vec3((float(cursor.x) / mainWindow.getBufferWidth())* WIDTH))));
+                itemTextures[cursor.item.id]->useTexture();
+                cursor.quadMesh.renderMesh();
+                //render3Din2D(itemModel, cursor.mesh, translate(mat4(1.0f), vec3((float(cursor.x) / mainWindow.getBufferWidth()) * WIDTH, ((float)cursor.y / mainWindow.getBufferHeight()) * HEIGHT, 0)), cursor.quadMesh, ortho, itemView, itemProj, cursor.item);
                 cursor.textCount.model = translate(mat4(1.0f), vec3((float(cursor.x) / mainWindow.getBufferWidth()) * WIDTH, ((float)cursor.y / mainWindow.getBufferHeight()) * HEIGHT, 0));;
                 if (cursor.count > 1) {
                     cursor.textCount.drawText(ortho);
                 }
             }
-            
-            for (int i = 0; i < 9; i++) {
-                mat4 itemModel = scale(mat4(1.0f), vec3(0.1f, 0.12f, 0.1f)) * rotate(mat4(1.0f), radians(-90.0f), vec3(0, 0, 1)) *
-                    ((!inventory.hotbarSlots[i].item.isFlat()) ? rotate(mat4(1.0f), radians(30.0f), vec3(1, 0, 0)) * rotate(mat4(1.0f), radians(45.0f), vec3(0, 1, 0)) : mat4(1.0f)) *
-                    rotate(mat4(1.0f), radians(inventory.hotbarSlots[i].angle), vec3(0, 1, 0));
-                inventory.hotbarSlots[i].angle += 0.5f;
-                inventory.hotbarSlots[i].itemModel = itemModel;
-                //toRender3Din2D.push_back(&inventory.hotbarSlots[i]);
-                render3Din2D(itemModel, inventory.hotbarSlots[i].mesh, inventory.hotbarSlots[i].model, inventory.hotbarSlots[i].quadMesh, ortho, itemView, itemProj, inventory.hotbarSlots[i].item);
-                //inventory.hotbarSlots[i].textCount.drawText(ortho);
-            }
-
+                        
             mat4 handModel = itemModel * breakModel
                 * rotate(mat4(1.0f), radians((!currentBlock.item.isTool() ? -35.f : 0.f)), vec3(1, 1, 1))
                 * rotate(mat4(1.0f), radians((!currentBlock.item.isTool() ? 45.f : 200.f)), vec3(0, 1, 0))
@@ -799,6 +813,28 @@ public:
             currentBlock.model = quadModel;
 			currentBlock.itemModel = handModel;
             render3Din2D(handModel, currentBlock.mesh, quadModel, currentBlock.quadMesh, ortho, currentBlockView, itemProj, currentBlock.item);
+
+            shaders[4]->useShader();
+            glUniformMatrix4fv(shaders[4]->getOrthoLocation(), 1, GL_FALSE, glm::value_ptr(ortho));
+            glUniformMatrix4fv(shaders[4]->getModelLocation(), 1, GL_FALSE, glm::value_ptr(mat4(1.0f)));
+
+            glActiveTexture(GL_TEXTURE0);
+            for (int i = 0; i < 9; i++) {
+                //mat4 itemModel = scale(mat4(1.0f), vec3(0.1f, 0.12f, 0.1f)) * rotate(mat4(1.0f), radians(-90.0f), vec3(0, 0, 1)) *
+                //    ((!inventory.hotbarSlots[i].item.isFlat()) ? rotate(mat4(1.0f), radians(30.0f), vec3(1, 0, 0)) * rotate(mat4(1.0f), radians(45.0f), vec3(0, 1, 0)) : mat4(1.0f)) *
+                //    rotate(mat4(1.0f), radians(inventory.hotbarSlots[i].angle), vec3(0, 1, 0));
+                //inventory.hotbarSlots[i].angle += 0.5f;
+                //inventory.hotbarSlots[i].itemModel = itemModel;
+                //toRender3Din2D.push_back(&inventory.hotbarSlots[i]);
+                //itemTextures[inventory.hotbarSlots[i].item.id]->useTexture();
+                //shaders[4]->useShader();
+                //glUniformMatrix4fv(shaders[4]->getOrthoLocation(), 1, GL_FALSE, glm::value_ptr(ortho));
+                //render3Din2D(itemModel, inventory.hotbarSlots[i].mesh, inventory.hotbarSlots[i].model, inventory.hotbarSlots[i].quadMesh, ortho, itemView, itemProj, inventory.hotbarSlots[i].item);
+                glUniformMatrix4fv(shaders[4]->getModelLocation(), 1, GL_FALSE, glm::value_ptr(inventory.hotbarSlots[i].model));
+                itemTextures[inventory.hotbarSlots[i].item.id]->useTexture();
+                inventory.hotbarSlots[i].quadMesh.renderMesh();
+                inventory.hotbarSlots[i].textCount.drawText(ortho);
+            }
 
             //angletest += 1;
             //bool toolset = 1;// , blockset = 0;
@@ -868,6 +904,8 @@ public:
                 ofstream playerJSON("player.json");
                 playerJSON << lastPlayer.dump(4);
 
+                cout << "Saved inventory" << endl;
+
                 chunkGenRunning = false;
                 chunkUpdateCV.notify_all();
                 stopChunkUpdaters = true;
@@ -875,6 +913,8 @@ public:
                 queueCV.notify_all();
                 blockPlacing = false;
                 blockBreaking = false;
+
+                cout << "Stopping threads..." << endl;
                 
                 stopChunkUpdaters = true;
                 chunkGenRunning2 = false;

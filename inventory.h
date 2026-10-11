@@ -713,7 +713,7 @@ void render3Din2D(mat4 itemModel, LightMesh object3D, mat4 quadModel, LightMesh 
     glEnable(GL_DEPTH_TEST);
 	glDepthMask(GL_TRUE);
     glDepthFunc(GL_LESS);
-    glViewport(0, 0, 1600, 1600);
+    glViewport(0, 0, 512, 512);
     //glDepthFunc(GL_LESS);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     //glClearColor(1, 1, 1, 0.5);
@@ -758,10 +758,11 @@ void Inventory::drawMainInventorySlots(mat4 ortho, mat4 itemView, mat4 itemProj)
                     (!inventory.mainInventorySlots[i][j].item.isFlat()) ?
                     rotate(mat4(1.0f), radians(40.0f), vec3(1, 0, 0)) *
                     rotate(mat4(1.0f), radians(45.0f), vec3(0, 1, 0)) : mat4(1.0f));
-                //rotate(mat4(1.0f), radians(inventory.mainInventorySlots[3][i].angle), vec3(0, 1, 0));
-            inventory.mainInventorySlots[3][i].angle += 0.5f;
             if (inventory.mainInventorySlots[i][j].count > 0) {
-                render3Din2D(itemModel, inventory.mainInventorySlots[i][j].mesh, inventory.mainInventorySlots[i][j].model, inventory.mainInventorySlots[i][j].quadMesh, ortho, itemView, itemProj, inventory.mainInventorySlots[i][j].item);
+                glUniformMatrix4fv(shaders[4]->getModelLocation(), 1, GL_FALSE, glm::value_ptr(inventory.mainInventorySlots[i][j].model));
+                itemTextures[inventory.mainInventorySlots[i][j].item.id]->useTexture();
+                inventory.mainInventorySlots[i][j].quadMesh.renderMesh();
+                //render3Din2D(itemModel, inventory.mainInventorySlots[i][j].mesh, inventory.mainInventorySlots[i][j].model, inventory.mainInventorySlots[i][j].quadMesh, ortho, itemView, itemProj, inventory.mainInventorySlots[i][j].item);
             }
             inventory.mainInventorySlots[i][j].textCount.drawText(ortho);
         }

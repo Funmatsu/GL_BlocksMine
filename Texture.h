@@ -20,9 +20,13 @@ using namespace std;
 #define FOLL_TEX            10
 #define UI_BUTTON_TEX       11
 
+#define GLOBAL_ITEM_NUM 19
+
 class GL_Texture;
 
 inline vector<unique_ptr<GL_Texture>> Textures;
+
+inline GL_Texture* itemTextures[GLOBAL_ITEM_NUM];
 
 class GL_Texture
 {
@@ -38,6 +42,7 @@ public:
 	void useNextTexture();
 	void unbindNextTexture();
 	void clearTexture();
+	void readTexture(int w, int h);
 	int getWidth() { return width; }
 	int getHeight() { return height; }
 	~GL_Texture();

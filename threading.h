@@ -984,15 +984,15 @@ void greedyMerge(BlockData* mask, Chunk* neighs[4], Mesh& m, ivec2& xyChunk, int
             }
 
             int w = 1, h = 1; int stop = 0;
-            while (b + w < W && mask[idx + w] == type) { w++; }
-            while (l + h < H) {
-                int row = (l + h) * W + b;
-                for (int d = 0; d < w; d++) {
-                    if (mask[row + d] != type) { stop = 1; break; }
-                }
-                if (stop) break;
-                h++;
-            }
+            //while (b + w < W && mask[idx + w] == type) { w++; }
+            //while (l + h < H) {
+            //    int row = (l + h) * W + b;
+            //    for (int d = 0; d < w; d++) {
+            //        if (mask[row + d] != type) { stop = 1; break; }
+            //    }
+            //    if (stop) break;
+            //    h++;
+            //}
 
             int bLights[9], initLight = 0;
             //for (int i = 0; i < 4; i++) {
@@ -1174,18 +1174,22 @@ void meshChunk(chNeighPackPtr* chNeigh) {
     Chunk* neighChunks[4];
 	
     for (int i = 0; i < 4; i++) {
-        bool chunkReady = false;
+        bool chunkReady = true;
         ivec2 chcrds = xyChunk + ivec2(dirs[i], dirs[i + 4]);
         uint idxcrds = pack(chcrds);
         auto it = world.chunkData.find(idxcrds);
-        if (it != world.chunkData.end() && it->second->inUse.compare_exchange_strong(chunkReady, true)) {
+        if (it != world.chunkData.end() && !it->second->inUse.compare_exchange_strong(chunkReady, false)) {
             neighChunks[i] = it->second.get();
-            continue;
         }
         else {
-            chNeigh->mainChunk->setAsDirty();
-            for (int j = i - 1; j >= 0; j--)
+            chunkReady = false; // IT WORKSS????
+            if (!chNeigh->mainChunk->inUse.compare_exchange_strong(chunkReady, false)) {
+                chNeigh->mainChunk->setAsDirty();
+            }
+            for (int j = i - 1; j >= 0; j--) {
+                neighChunks[j]->setAsDirty();
                 neighChunks[j]->inUse.store(false);
+            }
             delete chNeigh;
 			delete chNeighRes;
             return;
